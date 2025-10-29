@@ -60,23 +60,23 @@ class PhysicsInformedNN(nn.Module):
         self.dropout_rate = dropout_rate
         
         # Convolutional Encoder
-        # Input: (batch, 1, 64, 64)
+        # Input: (batch, 1, H, W) - supports variable sizes
         self.encoder = nn.Sequential(
-            # Conv block 1: 64×64 → 32×32
+            # Conv block 1: H×W → H/2×W/2
             nn.Conv2d(1, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
             nn.Dropout2d(dropout_rate),
             
-            # Conv block 2: 32×32 → 16×16
+            # Conv block 2: H/2×W/2 → H/4×W/4
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
             nn.MaxPool2d(2, 2),
             nn.Dropout2d(dropout_rate),
             
-            # Conv block 3: 16×16 → 8×8
+            # Conv block 3: H/4×W/4 → H/8×W/8
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(),
@@ -84,8 +84,12 @@ class PhysicsInformedNN(nn.Module):
             nn.Dropout2d(dropout_rate),
         )
         
-        # Calculate flattened size after convolutions
-        # After 3 pooling layers: 64 → 32 → 16 → 8
+        # Adaptive pooling: Forces output to 8×8 regardless of input size
+        # Supports 64×64, 128×128, 256×256, etc.
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((8, 8))
+        
+        # Calculate flattened size after adaptive pooling
+        # Always 8×8 after adaptive pool regardless of input size
         self.encoded_size = 128 * 8 * 8  # 8192
         
         # Dense layers
@@ -149,6 +153,7 @@ class PhysicsInformedNN(nn.Module):
         ----------
         x : torch.Tensor
             Input images of shape (batch, 1, H, W)
+            Supports variable sizes: 64×64, 128×128, 256×256, etc.
         
         Returns
         -------
@@ -162,8 +167,11 @@ class PhysicsInformedNN(nn.Module):
         # Encode image
         encoded = self.encoder(x)
         
+        # Apply adaptive pooling to force 8×8 output
+        pooled = self.adaptive_pool(encoded)
+        
         # Flatten
-        flattened = encoded.view(encoded.size(0), -1)
+        flattened = pooled.view(pooled.size(0), -1)
         
         # Dense feature extraction
         features = self.dense(flattened)
@@ -224,6 +232,134 @@ class PhysicsInformedNN(nn.Module):
                 'class_labels': class_labels,
                 'dm_type': dm_types
             }
+
+
+def compute_nfw_deflection(
+    M_vir: torch.Tensor,
+    r_s: torch.Tensor,
+    theta_x: torch.Tensor,
+    theta_y: torch.Tensor,
+    z_l: float = 0.5,
+    z_s: float = 2.0,
+    H0: float = 70.0,
+    Omega_m: float = 0.3
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Compute NFW deflection angle using differentiable PyTorch operations.
+    
+    Implements the NFW deflection angle formula:
+    α(θ) = (4 G M_vir / c²) * (D_ls / D_s) * f(x) / r_s
+    
+    where f(x) is the NFW deflection function and x = θ / θ_s.
+    
+    Parameters
+    ----------
+    M_vir : torch.Tensor
+        Virial mass in units of 10^12 M_sun, shape (batch, 1)
+    r_s : torch.Tensor
+        Scale radius in kpc, shape (batch, 1)
+    theta_x : torch.Tensor
+        Image plane x-coordinates in arcsec, shape (batch, n_points)
+    theta_y : torch.Tensor
+        Image plane y-coordinates in arcsec, shape (batch, n_points)
+    z_l : float
+        Lens redshift (default: 0.5)
+    z_s : float
+        Source redshift (default: 2.0)
+    H0 : float
+        Hubble constant in km/s/Mpc (default: 70.0)
+    Omega_m : float
+        Matter density parameter (default: 0.3)
+    
+    Returns
+    -------
+    alpha_x : torch.Tensor
+        Deflection angle x-component in arcsec, shape (batch, n_points)
+    alpha_y : torch.Tensor
+        Deflection angle y-component in arcsec, shape (batch, n_points)
+    
+    Notes
+    -----
+    - All operations are differentiable for backpropagation
+    - Uses proper NFW profile deflection (not simplified point mass)
+    - Includes cosmological distance ratios D_ls/D_s
+    - Reference: Wright & Brainerd (2000), ApJ 534, 34
+    """
+    # Physical constants
+    G = 4.517e-48  # Gravitational constant in kpc^3 / (M_sun * s^2)
+    c = 299792.458  # Speed of light in km/s
+    
+    # Convert to proper units
+    M_vir_solar = M_vir * 1e12  # Convert to solar masses
+    
+    # Compute angular diameter distances (simplified flat ΛCDM)
+    # D_l ≈ c/H0 * z_l (for small z)
+    # D_s ≈ c/H0 * z_s
+    # D_ls ≈ c/H0 * (z_s - z_l)
+    D_l = (c / H0) * z_l * 1000  # kpc (multiply by 1000 for Mpc to kpc)
+    D_s = (c / H0) * z_s * 1000  # kpc
+    D_ls = (c / H0) * (z_s - z_l) * 1000  # kpc
+    
+    # Distance ratio
+    D_ratio = D_ls / D_s  # Dimensionless
+    
+    # Convert angular positions to physical coordinates
+    # θ (arcsec) → r (kpc): r = θ * D_l * (π / 180 / 3600)
+    arcsec_to_rad = torch.tensor(np.pi / 180.0 / 3600.0, device=theta_x.device)
+    r_x_kpc = theta_x * D_l * arcsec_to_rad  # kpc
+    r_y_kpc = theta_y * D_l * arcsec_to_rad  # kpc
+    
+    # Radial distance from lens center
+    r_kpc = torch.sqrt(r_x_kpc**2 + r_y_kpc**2 + 1e-8)  # Add small epsilon for stability
+    
+    # Dimensionless radius x = r / r_s
+    x = r_kpc / (r_s + 1e-8)  # (batch, n_points)
+    
+    # NFW deflection function f(x)
+    # For x < 1: f(x) = [1 - (2/sqrt(1-x²)) * arctanh(sqrt((1-x)/(1+x)))] / (x² - 1)
+    # For x = 1: f(x) = 1/3
+    # For x > 1: f(x) = [1 - (2/sqrt(x²-1)) * arctan(sqrt((x-1)/(x+1)))] / (x² - 1)
+    
+    # Mask for different regimes
+    mask_less = x < 0.99
+    mask_greater = x > 1.01
+    mask_equal = ~(mask_less | mask_greater)  # 0.99 <= x <= 1.01
+    
+    # Initialize f(x)
+    f_x = torch.zeros_like(x)
+    
+    # Case 1: x < 1
+    if mask_less.any():
+        x_less = x[mask_less]
+        sqrt_term = torch.sqrt((1.0 - x_less) / (1.0 + x_less) + 1e-10)
+        arctanh_term = torch.atanh(sqrt_term.clamp(-0.999, 0.999))  # Clamp for stability
+        f_x[mask_less] = (1.0 - 2.0 * arctanh_term / torch.sqrt(1.0 - x_less**2 + 1e-10)) / (x_less**2 - 1.0)
+    
+    # Case 2: x > 1
+    if mask_greater.any():
+        x_greater = x[mask_greater]
+        sqrt_term = torch.sqrt((x_greater - 1.0) / (x_greater + 1.0) + 1e-10)
+        arctan_term = torch.atan(sqrt_term)
+        f_x[mask_greater] = (1.0 - 2.0 * arctan_term / torch.sqrt(x_greater**2 - 1.0 + 1e-10)) / (x_greater**2 - 1.0)
+    
+    # Case 3: x ≈ 1 (use Taylor expansion)
+    if mask_equal.any():
+        f_x[mask_equal] = 1.0 / 3.0
+    
+    # Deflection angle magnitude (in physical units, then convert to arcsec)
+    # α = (4 G M / c²) * (D_ls / D_s) * f(x) / r_s
+    prefactor = (4.0 * G * M_vir_solar / (c**2)) * D_ratio / (r_s + 1e-8)  # Dimensionless
+    alpha_mag = prefactor * f_x  # Dimensionless
+    
+    # Convert back to arcsec
+    alpha_mag_arcsec = alpha_mag / (D_l * arcsec_to_rad)  # arcsec
+    
+    # Decompose into x and y components
+    r_kpc_safe = r_kpc + 1e-8
+    alpha_x = alpha_mag_arcsec * r_x_kpc / r_kpc_safe  # arcsec
+    alpha_y = alpha_mag_arcsec * r_y_kpc / r_kpc_safe  # arcsec
+    
+    return alpha_x, alpha_y
 
 
 def physics_informed_loss(
@@ -295,41 +431,60 @@ def physics_informed_loss(
     theta_x = torch.rand(batch_size, n_sample_points, device=device) * 2 - 1  # [-1, 1]
     theta_y = torch.rand(batch_size, n_sample_points, device=device) * 2 - 1
     
-    # Extract predicted source positions
+    # Extract predicted source positions and lens parameters
     beta_x = pred_params[:, 2].unsqueeze(1)  # (batch, 1)
     beta_y = pred_params[:, 3].unsqueeze(1)
+    M_vir = pred_params[:, 0].unsqueeze(1)  # Virial mass (10^12 M_sun)
+    r_s = pred_params[:, 1].unsqueeze(1)  # Scale radius (kpc)
     
-    # Simple point mass deflection angle (normalized)
-    # α(θ) = θ_E^2 / r * θ_hat
-    # For simplicity, use: α ∝ M / r
-    M = pred_params[:, 0].unsqueeze(1)  # (batch, 1)
-    
-    # Compute radius from lens center
-    r = torch.sqrt(theta_x**2 + theta_y**2 + 1e-6)  # Avoid division by zero
-    
-    # Deflection magnitude (simplified, proportional to M/r)
-    # Normalize by typical mass scale
-    M_norm = M / 1e12  # Normalize by 10^12 solar masses
-    alpha_mag = M_norm / (r + 0.1)  # Add small offset for stability
-    
-    # Deflection components
-    alpha_x = alpha_mag * theta_x / r
-    alpha_y = alpha_mag * theta_y / r
+    # Compute NFW deflection angles using real physics
+    alpha_x, alpha_y = compute_nfw_deflection(
+        M_vir=M_vir,
+        r_s=r_s,
+        theta_x=theta_x,
+        theta_y=theta_y,
+        z_l=0.5,  # Typical lens redshift
+        z_s=2.0,  # Typical source redshift
+        H0=70.0,  # Hubble constant
+        Omega_m=0.3  # Matter density
+    )
     
     # Lens equation residual: |θ - β - α(θ)|²
+    # This enforces the fundamental lens equation
     residual_x = theta_x - beta_x - alpha_x
     residual_y = theta_y - beta_y - alpha_y
     
     physics_residual = torch.mean(residual_x**2 + residual_y**2)
     
+    # Parameter regularization: Penalize physically unrealistic values
+    # M_vir should be in range [1e11, 1e15] M_sun (i.e., [0.1, 1000] in units of 10^12)
+    # r_s should be in range [10, 1000] kpc
+    regularization = torch.zeros(1, device=device)
+    
+    # M_vir regularization (in units of 10^12 M_sun)
+    M_vir_min = 0.1  # 1e11 M_sun
+    M_vir_max = 1000.0  # 1e15 M_sun
+    M_vir_penalty = torch.relu(M_vir_min - M_vir) + torch.relu(M_vir - M_vir_max)
+    regularization += torch.mean(M_vir_penalty**2)
+    
+    # r_s regularization (in kpc)
+    r_s_min = 10.0  # kpc
+    r_s_max = 1000.0  # kpc
+    r_s_penalty = torch.relu(r_s_min - r_s) + torch.relu(r_s - r_s_max)
+    regularization += torch.mean(r_s_penalty**2)
+    
+    # Combined physics loss
+    physics_loss = physics_residual + regularization
+    
     # Total loss
-    total_loss = mse_params + ce_class + lambda_physics * physics_residual
+    total_loss = mse_params + ce_class + lambda_physics * physics_loss
     
     return {
         'total': total_loss,
         'mse_params': mse_params,
         'ce_class': ce_class,
-        'physics_residual': physics_residual
+        'physics_residual': physics_residual,
+        'regularization': regularization
     }
 
 
