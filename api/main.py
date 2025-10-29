@@ -28,17 +28,17 @@ import uuid
 import asyncio
 from pathlib import Path
 
-# Import app utilities
+# Import from src (shared utilities), NOT from app (frontend)
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent / 'app'))
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from app.utils import (
-    generate_synthetic_convergence,
+from src.utils.common import (
     load_pretrained_model,
     prepare_model_input,
     compute_classification_entropy
 )
+from src.ml.generate_dataset import generate_convergence_map_vectorized as generate_synthetic_convergence
+from src.api_utils.auth import get_current_user, get_optional_user, create_access_token
 
 # Configure logging
 logging.basicConfig(
@@ -200,18 +200,8 @@ def decode_base64_to_array(b64_string: str) -> np.ndarray:
     return np.load(buffer)
 
 
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> bool:
-    """
-    Verify JWT token (placeholder for production implementation)
-    In production, implement proper JWT verification
-    """
-    if credentials is None:
-        return True  # No auth required for now
-    
-    # TODO: Implement JWT verification
-    token = credentials.credentials
-    # Verify token here
-    return True
+# Note: Real authentication is now in src.api_utils.auth
+# Use get_current_user for required auth, get_optional_user for optional auth
 
 
 def load_model_cached():
@@ -270,10 +260,11 @@ async def health_check():
 @app.post("/api/v1/synthetic", response_model=SyntheticResponse)
 async def generate_synthetic(
     request: SyntheticRequest,
-    authenticated: bool = Depends(verify_token)
+    username: Optional[str] = Depends(get_optional_user)
 ):
     """
     Generate synthetic convergence map
+    (Optional authentication - works for both authenticated and anonymous users)
     
     Parameters:
     - profile_type: "NFW" or "Elliptical NFW"
@@ -336,10 +327,11 @@ async def generate_synthetic(
 @app.post("/api/v1/inference", response_model=InferenceResponse)
 async def run_inference(
     request: InferenceRequest,
-    authenticated: bool = Depends(verify_token)
+    username: Optional[str] = Depends(get_optional_user)
 ):
     """
     Run PINN model inference on convergence map
+    (Optional authentication)
     
     Parameters:
     - convergence_map: 2D array of convergence values
@@ -455,10 +447,11 @@ async def run_inference(
 async def submit_batch_job(
     request: BatchJobRequest,
     background_tasks: BackgroundTasks,
-    authenticated: bool = Depends(verify_token)
+    username: str = Depends(get_current_user)  # Batch jobs require authentication
 ):
     """
     Submit batch processing job
+    (Requires authentication)
     
     Parameters:
     - job_ids: List of job IDs to process
