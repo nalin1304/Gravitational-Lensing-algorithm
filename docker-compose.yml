@@ -25,6 +25,8 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: lensing-db
+    env_file:
+      - .env  # Load environment variables from .env file
     environment:
       POSTGRES_USER: lensing
       # 🔴 CHANGE THIS: Set secure password in .env as DB_PASSWORD
@@ -70,12 +72,14 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: lensing-api
+    env_file:
+      - .env  # Load environment variables from .env file
     environment:
       # 🔴 CHANGE THIS: Must match POSTGRES_PASSWORD above
       - DATABASE_URL=postgresql://lensing:${DB_PASSWORD:-changeme}@postgres:5432/lensing_db
       - REDIS_URL=redis://redis:6379
       - ENVIRONMENT=${ENVIRONMENT:-development}
-      - LOG_LEVEL=info
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
       - ./results:/app/results
       - ./data:/app/data

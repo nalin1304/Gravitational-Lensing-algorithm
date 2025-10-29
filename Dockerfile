@@ -40,11 +40,13 @@ RUN apt-get update && apt-get install -y \
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy application code
-COPY api/ ./api/
-COPY app/ ./app/
-COPY src/ ./src/
-COPY results/ ./results/
+# Copy application code (only necessary folders)
+COPY --chown=appuser:appuser api/ ./api/
+COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser database/ ./database/
+COPY --chown=appuser:appuser migrations/ ./migrations/
+COPY --chown=appuser:appuser alembic.ini ./
+COPY --chown=appuser:appuser requirements.txt ./
 
 # Set environment variables
 ENV PATH="/opt/venv/bin:$PATH"
@@ -52,8 +54,10 @@ ENV PYTHONPATH="/app:/app/src:/app/app"
 ENV PYTHONUNBUFFERED=1
 
 # Create non-root user for security
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+RUN useradd -m -u 1000 appuser
+
+# Set ownership after copying files
+# (Moved chown to COPY commands above)
 USER appuser
 
 # Expose port

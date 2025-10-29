@@ -1,32 +1,63 @@
-# Dockerfile for Streamlit Web Application
+# ============================================================================
+# Multi-Stage Dockerfile for Streamlit Application
+# Stage 1: Builder - Install dependencies
+# Stage 2: Runtime - Copy only necessary files, run as non-root
+# ============================================================================
 
-FROM python:3.10-slim
+# Stage 1: Build stage
+FROM python:3.10-slim as builder
 
-WORKDIR /app
+WORKDIR /opt/app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install system dependencies for building
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Create virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy application code
-COPY app/ ./app/
-COPY src/ ./src/
-COPY results/ ./results/
+# Copy and install dependencies
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# ============================================================================
+# Stage 2: Final runtime stage
+# ============================================================================
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN addgroup --system app && \
+    adduser --system --group app
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy only necessary application code
+COPY --chown=app:app ./app ./app
+COPY --chown=app:app ./src ./src
+COPY --chown=app:app requirements.txt .
 
 # Set environment variables
 ENV PYTHONPATH="/app:/app/src:/app/app"
 ENV PYTHONUNBUFFERED=1
 
-# Create non-root user
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
-USER appuser
+# Switch to non-root user
+USER app
 
 # Expose Streamlit port
 EXPOSE 8501
