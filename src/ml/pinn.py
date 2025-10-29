@@ -466,6 +466,13 @@ def physics_informed_loss(
     M_vir = pred_params[:, 0].unsqueeze(1)  # Virial mass (10^12 M_sun)
     r_s = pred_params[:, 1].unsqueeze(1)  # Scale radius (kpc)
     
+    # NUMERICAL STABILITY: Clamp parameters to physically reasonable ranges
+    # This prevents extreme values that cause NaN gradients
+    M_vir = torch.clamp(M_vir, min=0.01, max=1e4)  # [1e10, 1e16] M_sun
+    r_s = torch.clamp(r_s, min=1.0, max=1e4)  # [1, 10000] kpc
+    beta_x = torch.clamp(beta_x, min=-10.0, max=10.0)  # [-10, 10] arcsec
+    beta_y = torch.clamp(beta_y, min=-10.0, max=10.0)  # [-10, 10] arcsec
+    
     # Compute NFW deflection angles using real physics
     alpha_x, alpha_y = compute_nfw_deflection(
         M_vir=M_vir,
