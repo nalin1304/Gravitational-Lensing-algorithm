@@ -286,8 +286,12 @@ def compute_nfw_deflection(
     - Reference: Wright & Brainerd (2000), ApJ 534, 34
     """
     # Physical constants
-    G = 4.517e-48  # Gravitational constant in kpc^3 / (M_sun * s^2)
+    G = 4.517e-48  # Gravitational constant in kpc³ / (M_sun * s²)
     c = 299792.458  # Speed of light in km/s
+    kpc_to_km = 3.086e+16  # 1 kpc in km
+    
+    # Convert c to kpc/s for consistent units with G
+    c_kpc = c / kpc_to_km  # kpc/s (very small number!)
     
     # Convert to proper units
     M_vir_solar = M_vir * 1e12  # Convert to solar masses
@@ -346,15 +350,40 @@ def compute_nfw_deflection(
     if mask_equal.any():
         f_x[mask_equal] = 1.0 / 3.0
     
-    # Deflection angle magnitude (in physical units, then convert to arcsec)
-    # α = (4 G M / c²) * (D_ls / D_s) * f(x) / r_s
-    prefactor = (4.0 * G * M_vir_solar / (c**2)) * D_ratio / (r_s + 1e-8)  # Dimensionless
-    alpha_mag = prefactor * f_x  # Dimensionless
+    # === CORRECTED DEFLECTION CALCULATION WITH PROPER DIMENSIONAL ANALYSIS ===
+    # 
+    # Standard NFW deflection formula (Wright & Brainerd 2000):
+    # α(θ) = (4πG ρ_s r_s² / c²) × (D_LS / D_S) × g(x) / D_L
+    # where g(x) = f(x) / x² is the dimensionless deflection function
+    # 
+    # Step 1: Calculate critical surface density [M_sun/kpc²]
+    # Σ_crit = (c² / 4πG) × (D_S / (D_L × D_LS))
+    # Note: Using c in kpc/s to match G units
+    Sigma_crit = (c_kpc**2 / (4.0 * np.pi * G)) * (D_s / (D_l * D_ls + 1e-8))  # M_sun/kpc²
     
-    # Convert back to arcsec
-    alpha_mag_arcsec = alpha_mag / (D_l * arcsec_to_rad)  # arcsec
+    # Step 2: Calculate NFW characteristic density [M_sun/kpc³]
+    # For NFW: ρ_s = M_vir / (4π r_s³ × [ln(1+c) - c/(1+c)])
+    # Using concentration c = 10
+    c_nfw = 10.0
+    f_c = np.log(1.0 + c_nfw) - c_nfw / (1.0 + c_nfw)  # ≈ 2.16 (use numpy for constant)
+    rho_s = M_vir_solar / (4.0 * np.pi * r_s**3 * f_c + 1e-8)  # M_sun/kpc³
+    
+    # Step 3: Calculate convergence scale [dimensionless]
+    # κ_s = (ρ_s × r_s) / Σ_crit
+    kappa_s = (rho_s * r_s) / (Sigma_crit + 1e-8)  # dimensionless
+    
+    # Step 4: Calculate deflection angle in physical units (radians)
+    # α(r) = κ_s × (r_s / r) × f(x) [radians]
+    # Note: This is the magnitude of deflection at radius r
+    alpha_mag_rad = kappa_s * (r_s / (r_kpc + 1e-8)) * f_x  # radians
+    
+    # Step 5: Convert radians to arcseconds
+    # 1 radian = 206265 arcsec
+    rad_to_arcsec = 206265.0  # arcsec/radian
+    alpha_mag_arcsec = alpha_mag_rad * rad_to_arcsec  # arcsec
     
     # Decompose into x and y components
+    # α_x = α × (r_x / r), α_y = α × (r_y / r)
     r_kpc_safe = r_kpc + 1e-8
     alpha_x = alpha_mag_arcsec * r_x_kpc / r_kpc_safe  # arcsec
     alpha_y = alpha_mag_arcsec * r_y_kpc / r_kpc_safe  # arcsec
@@ -459,19 +488,19 @@ def physics_informed_loss(
     # Parameter regularization: Penalize physically unrealistic values
     # M_vir should be in range [1e11, 1e15] M_sun (i.e., [0.1, 1000] in units of 10^12)
     # r_s should be in range [10, 1000] kpc
-    regularization = torch.zeros(1, device=device)
+    regularization = torch.tensor(0.0, device=device, dtype=pred_params.dtype)
     
     # M_vir regularization (in units of 10^12 M_sun)
     M_vir_min = 0.1  # 1e11 M_sun
     M_vir_max = 1000.0  # 1e15 M_sun
     M_vir_penalty = torch.relu(M_vir_min - M_vir) + torch.relu(M_vir - M_vir_max)
-    regularization += torch.mean(M_vir_penalty**2)
+    regularization = regularization + torch.mean(M_vir_penalty**2)
     
     # r_s regularization (in kpc)
     r_s_min = 10.0  # kpc
     r_s_max = 1000.0  # kpc
     r_s_penalty = torch.relu(r_s_min - r_s) + torch.relu(r_s - r_s_max)
-    regularization += torch.mean(r_s_penalty**2)
+    regularization = regularization + torch.mean(r_s_penalty**2)
     
     # Combined physics loss
     physics_loss = physics_residual + regularization
