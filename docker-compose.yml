@@ -74,7 +74,7 @@ services:
       # 🔴 CHANGE THIS: Must match POSTGRES_PASSWORD above
       - DATABASE_URL=postgresql://lensing:${DB_PASSWORD:-changeme}@postgres:5432/lensing_db
       - REDIS_URL=redis://redis:6379
-      - ENVIRONMENT=production
+      - ENVIRONMENT=${ENVIRONMENT:-development}
       - LOG_LEVEL=info
     volumes:
       - ./results:/app/results

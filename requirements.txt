@@ -57,9 +57,6 @@ sqlalchemy==2.0.43
 alembic==1.16.5
 celery>=5.3.0
 
-# Scientific Validation & Benchmarking (Phase 13)
-scikit-image>=0.21.0
-
 # General Relativity & Advanced Physics (Critical for Research Paper)
 einsteinpy>=0.4.0
 

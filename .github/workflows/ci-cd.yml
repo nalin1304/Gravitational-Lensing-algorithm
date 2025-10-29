@@ -44,16 +44,13 @@ jobs:
     
     - name: Run Black (formatting check)
       run: black --check --diff .
-      continue-on-error: true
     
     - name: Run isort (import sorting)
       run: isort --check-only --diff .
-      continue-on-error: true
     
     - name: Run flake8 (linting)
       run: flake8 src/ api/ app/ --max-line-length=100 --ignore=E203,W503
-      continue-on-error: true
-    
+
     - name: Run pylint (code analysis)
       run: pylint src/ api/ --disable=C0111,R0913,R0914
       continue-on-error: true
@@ -64,6 +61,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: ${{ matrix.os }}
+    needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
