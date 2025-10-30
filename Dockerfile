@@ -37,10 +37,13 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security (before copying files)
+RUN useradd -m -u 1000 appuser
+
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy application code (only necessary folders)
+# Copy application code (only necessary folders) with correct ownership
 COPY --chown=appuser:appuser api/ ./api/
 COPY --chown=appuser:appuser src/ ./src/
 COPY --chown=appuser:appuser database/ ./database/
@@ -53,11 +56,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONPATH="/app:/app/src:/app/app"
 ENV PYTHONUNBUFFERED=1
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser
-
-# Set ownership after copying files
-# (Moved chown to COPY commands above)
+# Switch to non-root user
 USER appuser
 
 # Expose port
