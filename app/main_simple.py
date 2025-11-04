@@ -40,17 +40,32 @@ except Exception as e:
     logging.warning(f"Could not load styles: {e}")
 
 # Try to import project modules
+MODULES_AVAILABLE = False
+LENS_MODULES_AVAILABLE = False
+ML_MODULES_AVAILABLE = False
+LENS_IMPORT_ERROR = None
+ML_IMPORT_ERROR = None
 try:
     from src.lens_models import LensSystem, NFWProfile, EllipticalNFWProfile
+    LENS_MODULES_AVAILABLE = True
+except Exception as e:
+    LENS_IMPORT_ERROR = e
+
+try:
     from src.ml.pinn import PhysicsInformedNN
     from src.ml.generate_dataset import generate_convergence_map_vectorized
-    MODULES_AVAILABLE = True
-except ImportError as e:
-    MODULES_AVAILABLE = False
-    st.error(f"⚠️ Core modules not available: {e}")
+    ML_MODULES_AVAILABLE = True
 except Exception as e:
-    MODULES_AVAILABLE = False
-    st.error(f"⚠️ Unexpected error loading modules: {e}")
+    ML_IMPORT_ERROR = e
+
+# For the simple synthetic generation we need the lensing models; mark core modules
+# available if lens modules were imported successfully.
+MODULES_AVAILABLE = LENS_MODULES_AVAILABLE
+if not MODULES_AVAILABLE:
+    st.error(f"⚠️ Core lensing modules not available: {LENS_IMPORT_ERROR}")
+elif not ML_MODULES_AVAILABLE:
+    # ML features are optional; inform the user but don't disable lens generation
+    st.warning(f"⚠️ ML modules not available (optional): {ML_IMPORT_ERROR}")
 
 # Header
 st.markdown("""

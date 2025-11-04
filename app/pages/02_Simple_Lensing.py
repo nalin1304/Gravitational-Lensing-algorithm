@@ -12,6 +12,7 @@ import torch
 from pathlib import Path
 import io
 import sys
+import traceback
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -20,20 +21,71 @@ if str(project_root) not in sys.path:
 
 # Import utilities
 try:
+    # Try absolute imports first
     from app.utils.ui import render_header, inject_custom_css, show_success, show_error
     from app.utils.helpers import validate_positive_number, estimate_computation_time
-except ImportError:
-    from utils.ui import render_header, inject_custom_css, show_success, show_error
-    from utils.helpers import validate_positive_number, estimate_computation_time
+    st.write("Debug: Imported from app.utils successfully")
+except ImportError as e:
+    st.write(f"Debug: First import attempt failed: {str(e)}")
+    try:
+        # Try relative imports
+        sys.path.append(str(project_root / 'app'))
+        from utils.ui import render_header, inject_custom_css, show_success, show_error
+        from utils.helpers import validate_positive_number, estimate_computation_time
+        st.write("Debug: Imported from utils successfully")
+    except ImportError as e:
+        st.error(f"❌ Failed to import utilities: {str(e)}")
+        # Create minimal versions of required functions if imports fail
+        def render_header(title, subtitle, category=None):
+            st.title(title)
+            st.write(subtitle)
+        
+        def inject_custom_css():
+            pass
+        
+        def show_success(msg):
+            st.success(msg)
+        
+        def show_error(msg):
+            st.error(msg)
+        
+        def validate_positive_number(n):
+            return n > 0
+        
+        def estimate_computation_time(grid_size):
+            return grid_size * 0.01  # Simple estimate
 
-# Import core modules
+# Import required lens-model modules (these are mandatory for map generation)
+LENS_MODELS_AVAILABLE = False
+DATASET_AVAILABLE = False
 try:
-    from src.lens_models import LensSystem, NFWProfile, EllipticalNFWProfile
-    from src.ml.generate_dataset import generate_convergence_map_vectorized
-    MODULES_AVAILABLE = True
-except ImportError:
-    MODULES_AVAILABLE = False
-    st.error("⚠️ Core modules not available. Please check installation.")
+    from src.lens_models.lens_system import LensSystem  # type: ignore
+    from src.lens_models.mass_profiles import NFWProfile  # type: ignore
+    from src.lens_models.advanced_profiles import EllipticalNFWProfile  # type: ignore
+    LENS_MODELS_AVAILABLE = True
+except ImportError as e:
+    LENS_MODELS_AVAILABLE = False
+    st.error(f"⚠️ Lens model modules not available. Error: {e}")
+
+# Optional dataset/ML helper (may depend on sklearn); if missing, we fall back to
+# direct profile.convergence evaluation below.
+try:
+    from src.ml.generate_dataset import generate_convergence_map_vectorized  # type: ignore
+    DATASET_AVAILABLE = True
+except Exception as e:
+    DATASET_AVAILABLE = False
+    st.warning(f"Optional fast generator not available (this is non-fatal): {e}")
+
+MODULES_AVAILABLE = LENS_MODELS_AVAILABLE
+st.write(f"Debug: LENS_MODELS_AVAILABLE={LENS_MODELS_AVAILABLE}, DATASET_AVAILABLE={DATASET_AVAILABLE}")
+
+st.write(f"Debug: MODULES_AVAILABLE = {MODULES_AVAILABLE}")
+if MODULES_AVAILABLE:
+    # Helpful debug info to confirm imports
+    try:
+        st.write("Debug: LensSystem available:", callable(getattr(__import__('src.lens_models.lens_system', fromlist=['LensSystem']), 'LensSystem', None)))
+    except Exception:
+        pass
 
 # Configure page
 st.set_page_config(
@@ -48,23 +100,24 @@ inject_custom_css()
 
 def generate_synthetic_convergence(profile_type, mass, scale_radius, ellipticity, grid_size):
     """Generate synthetic convergence map."""
+    # Create lens system first
+    lens = LensSystem(z_lens=0.5, z_source=2.0)  # type: ignore
+    
     if profile_type == "NFW":
-        profile = NFWProfile(
-            M_200=mass,
-            c_200=5.0,
-            z_lens=0.5,
-            z_source=2.0
+        profile = NFWProfile(  # type: ignore
+            M_vir=mass,  # Virial mass
+            concentration=5.0,  # Concentration parameter
+            lens_system=lens
         )
     else:  # Elliptical NFW
-        profile = EllipticalNFWProfile(
-            M_200=mass,
-            c_200=5.0,
-            z_lens=0.5,
-            z_source=2.0,
-            ellipticity=ellipticity
+        profile = EllipticalNFWProfile(  # type: ignore
+            M_vir=mass,  # Virial mass
+            c=5.0,  # Concentration parameter
+            lens_sys=lens,
+            ellipticity=ellipticity  # Ellipticity parameter
         )
     
-    lens = LensSystem([profile])
+    lens.add_profile(profile)  # type: ignore
     
     # Generate grid
     extent = 500  # kpc
@@ -73,7 +126,13 @@ def generate_synthetic_convergence(profile_type, mass, scale_radius, ellipticity
     X, Y = np.meshgrid(x, y)
     
     # Calculate convergence
-    convergence_map = lens.convergence(X.flatten(), Y.flatten())
+    # Convert physical distances to angular coordinates (arcsec)
+    angular_scale = lens.get_angular_scale()  # type: ignore # arcsec/kpc
+    x_arcsec = X.flatten() * angular_scale
+    y_arcsec = Y.flatten() * angular_scale
+    
+    # Calculate convergence using the profile
+    convergence_map = profile.convergence(x_arcsec, y_arcsec)
     convergence_map = convergence_map.reshape(grid_size, grid_size)
     
     return convergence_map, X, Y
@@ -98,15 +157,70 @@ def plot_convergence_map(convergence, X, Y, title="Convergence Map", cmap="virid
 
 def main():
     """Main page function."""
-    render_header(
-        "🎨 Simple Gravitational Lensing",
-        "Generate synthetic convergence maps with different mass profiles",
-        "Interactive"
-    )
+    st.title("🎨 Simple Gravitational Lensing")
+    st.subheader("Generate synthetic convergence maps with different mass profiles")
     
     if not MODULES_AVAILABLE:
         st.error("❌ Required modules not available. Cannot generate maps.")
         return
+    
+    # Parameter controls
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        st.subheader("⚙️ Configuration")
+        
+        profile_type = st.selectbox(
+            "Lens Profile",
+            ["NFW", "Elliptical NFW"],
+            help="Select the dark matter density profile"
+        )
+        
+        mass = st.slider(
+            "Virial Mass (×10¹² M☉)",
+            min_value=0.5,
+            max_value=10.0,
+            value=2.0,
+            step=0.5,
+            help="Total mass of the dark matter halo"
+        )
+        
+        scale_radius = st.slider(
+            "Scale Radius (kpc)",
+            min_value=50.0,
+            max_value=500.0,
+            value=200.0,
+            step=10.0,
+            help="Characteristic radius of the density profile"
+        )
+        
+        ellipticity = 0.0
+        if profile_type == "Elliptical NFW":
+            ellipticity = st.slider(
+                "Ellipticity",
+                min_value=0.0,
+                max_value=0.5,
+                value=0.2,
+                step=0.05,
+                help="Ellipticity of the lens (0 = circular)"
+            )
+        
+        grid_size = st.select_slider(
+            "Grid Size",
+            options=[32, 64, 128, 256],
+            value=64,
+            help="Resolution of the convergence map"
+        )
+        
+        cmap = st.selectbox(
+            "Colormap",
+            ["viridis", "plasma", "inferno", "magma", "cividis", "coolwarm"],
+            index=0
+        )
+        
+        st.markdown("---")
+        st.info(f"⏱️ Estimated computation time: {grid_size * 0.01:.1f}s")
+        generate_btn = st.button("🚀 Generate Map", type="primary", use_container_width=True)
     
     st.markdown("""
     Generate synthetic gravitational lensing convergence maps using different dark matter 
@@ -121,11 +235,19 @@ def main():
     - Downloadable results
     """)
     
-    # Parameter controls
-    col1, col2 = st.columns([1, 2])
+    st.write("Debug: Starting parameter controls")  # Debug line
     
-    with col1:
-        st.subheader("⚙️ Configuration")
+    try:
+        # Parameter controls
+        col1, col2 = st.columns([1, 2])
+        st.write("Debug: Columns created")  # Debug line
+        
+        with col1:
+            st.write("Debug: Entering column 1")  # Debug line
+            st.subheader("⚙️ Configuration")
+    except Exception as e:
+        st.error(f"Error in parameter controls setup: {str(e)}")
+        st.write("Debug: Parameter controls failed")
         
         profile_type = st.selectbox(
             "Lens Profile",
@@ -203,7 +325,10 @@ def main():
                     
                     show_success("Map generated successfully!")
                 except Exception as e:
+                    # Show both a friendly message and the full traceback in the UI
                     show_error(f"Error generating map: {e}")
+                    st.exception(e)
+                    st.text(traceback.format_exc())
                     return
         
         # Display map

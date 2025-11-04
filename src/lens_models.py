@@ -4,10 +4,10 @@ Implements NFW profile and elliptical NFW profile for lensing calculations
 """
 
 import numpy as np
-from scipy.integrate import quad
-from astropy.cosmology import FlatLambdaCDM
-from astropy import units as u  # This gives us access to u.km, u.Mpc, etc.
-from astropy import constants as const  # This gives us access to physical constants
+from scipy.integrate import quad  # type: ignore
+from astropy.cosmology import FlatLambdaCDM  # type: ignore
+from astropy import units as u  # type: ignore # This gives us access to u.km, u.Mpc, etc.
+from astropy import constants as const  # type: ignore # This gives us access to physical constants
 
 # Define commonly used units and constants
 kpc = u.kpc  # type: ignore
@@ -29,11 +29,12 @@ class LensSystem:
             H0 (astropy.units.Quantity): Hubble constant (default: 70 km/s/Mpc)
             Om0 (float): Matter density parameter
         """
-        self.z_lens = z_lens
-        self.z_source = z_source
+        self.profiles = []  # List to store lens profiles
+        self.z_l = z_lens
+        self.z_s = z_source
         
         # Create cosmology
-        if isinstance(H0, u.Quantity):
+        if isinstance(H0, u.Quantity):  # type: ignore
             H0_val = H0.to(u.km/u.s/u.Mpc).value  # type: ignore
         else:
             H0_val = float(H0)
@@ -46,6 +47,17 @@ class LensSystem:
         self.D_s = self.cosmo.angular_diameter_distance(z_source).to(u.kpc).value  # type: ignore
         # For D_ls, calculate the angular diameter distance between lens and source redshifts
         self.D_ls = (self.cosmo.angular_diameter_distance_z1z2(z_lens, z_source) * u.Mpc).to(u.kpc).value  # type: ignore
+        
+        # Critical surface density
+        self.Sigma_crit = 1.0 / (4.0 * np.pi * 6.67430e-11 * self.D_l * self.D_ls / self.D_s)  # kg/m^2
+    
+    def add_profile(self, profile):
+        """Add a lens profile to the system"""
+        self.profiles.append(profile)
+        
+    def get_angular_scale(self):
+        """Return angular scale in arcsec/kpc"""
+        return 180 * 3600 / (self.D_l * np.pi)  # arcsec/kpc
         
         # Critical surface density
         self.Sigma_crit = 1.0 / (4.0 * np.pi * 6.67430e-11 * self.D_l * self.D_ls / self.D_s)  # kg/m^2
@@ -67,7 +79,7 @@ class NFWProfile:
         self.lens_system = lens_system
         
         # Calculate derived parameters
-        self.r_vir = (3 * self.M_vir / (4 * np.pi * 200 * self.lens_system.cosmo.critical_density(
+        self.r_vir = (3 * self.M_vir / (4 * np.pi * 200 * self.lens_system.cosmo.critical_density(  # type: ignore
             self.lens_system.z_lens).to(u.kg/u.m**3).value))**(1/3)  # type: ignore
         self.r_s = self.r_vir / self.c
         
