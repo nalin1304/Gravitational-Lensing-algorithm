@@ -10,6 +10,12 @@ import torch
 from pathlib import Path
 import sys
 import logging
+from astropy import units as u
+from astropy import constants as const
+from astropy.cosmology import FlatLambdaCDM
+
+# Constants
+M_sun = 1.989e30  # Solar mass in kg
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -39,9 +45,12 @@ try:
     from src.ml.pinn import PhysicsInformedNN
     from src.ml.generate_dataset import generate_convergence_map_vectorized
     MODULES_AVAILABLE = True
-except Exception as e:
+except ImportError as e:
     MODULES_AVAILABLE = False
     st.error(f"⚠️ Core modules not available: {e}")
+except Exception as e:
+    MODULES_AVAILABLE = False
+    st.error(f"⚠️ Unexpected error loading modules: {e}")
 
 # Header
 st.markdown("""
@@ -185,43 +194,45 @@ elif page == "🎨 Generate Synthetic":
     
     with col2:
         st.subheader("Convergence Map")
-        
+
         if generate_button:
-            with st.spinner("Generating convergence map..."):
-                try:
+            try:
+                with st.spinner("Generating convergence map..."):
                     # Create lens system
-                    lens_system = LensSystem(z_lens=0.5, z_source=1.5)
-                    
+                    lens_system = LensSystem(z_lens=0.5, z_source=1.5)  # type: ignore
+
+                    # Calculate virial radius
+                    # critical_density returns a Quantity; convert to kg/m^3 for safe arithmetic
+                    rho_crit = lens_system.cosmo.critical_density(lens_system.z_lens).to(u.kg / u.m**3).value  # type: ignore
+                    # mass from slider is in solar masses; convert to kg using M_sun constant
+                    R_vir_m = (3 * (mass * M_sun) / (4 * np.pi * 200 * rho_crit))**(1/3)  # meters
+                    # convert to kpc
+                    R_vir = R_vir_m / u.kpc.to(u.m)  # kpc  # type: ignore
+
+                    # Calculate concentration from scale radius
+                    concentration = R_vir / scale_radius
+
                     # Create profile
                     if profile_type == "NFW":
-                        lens = NFWProfile(
-                            M_vir=mass,
-                            concentration=10.0,
-                            lens_system=lens_system
-                        )
+                        # Use positional args to avoid static typing complaints
+                        lens = NFWProfile(mass, concentration, lens_system)  # type: ignore
                     else:
-                        lens = EllipticalNFWProfile(
-                            M_vir=mass,
-                            concentration=10.0,
-                            ellipticity=ellipticity,
-                            theta=45.0,
-                            lens_system=lens_system
-                        )
-                    
+                        lens = EllipticalNFWProfile(mass, concentration, ellipticity, 45.0, lens_system)  # type: ignore
+
                     # Generate map
                     fov = 4.0  # arcsec
                     extent = fov / 2
                     x = np.linspace(-extent, extent, grid_size)
                     y = np.linspace(-extent, extent, grid_size)
                     xx, yy = np.meshgrid(x, y)
-                    
+
                     convergence = lens.convergence(xx, yy)
-                    
+
                     # Plot
                     fig, ax = plt.subplots(figsize=(8, 8))
                     im = ax.imshow(
                         convergence,
-                        extent=[-extent, extent, -extent, extent],
+                        extent=(-extent, extent, -extent, extent),
                         origin='lower',
                         cmap='viridis'
                     )
@@ -229,11 +240,11 @@ elif page == "🎨 Generate Synthetic":
                     ax.set_ylabel('y (arcsec)')
                     ax.set_title(f'{profile_type} Convergence Map')
                     plt.colorbar(im, ax=ax, label='κ')
-                    
+
                     st.pyplot(fig)
-                    
+
                     st.success(f"✅ Generated {grid_size}×{grid_size} convergence map!")
-                    
+
                     # Stats
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -242,9 +253,9 @@ elif page == "🎨 Generate Synthetic":
                         st.metric("Mean κ", f"{convergence.mean():.4f}")
                     with col3:
                         st.metric("Min κ", f"{convergence.min():.4f}")
-                    
-                except Exception as e:
-                    st.error(f"❌ Error generating map: {e}")
+
+            except Exception as e:
+                st.error(f"❌ Error generating map: {e}")
         else:
             st.info("👈 Configure parameters and click Generate Map")
 
