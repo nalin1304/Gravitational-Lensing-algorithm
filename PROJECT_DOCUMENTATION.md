@@ -687,17 +687,18 @@ from src.validation import (
 ### 7.1 Quick Training (Jupyter)
 
 ```powershell
-# Open notebook
-jupyter notebook notebooks/phase5b_train_pinn.ipynb
+# Open advanced training notebook
+jupyter notebook notebooks/phase5d_advanced_training.ipynb
 
 # Run all cells (Shift+Enter)
-# - Cell 1: Imports
-# - Cell 2: Generate 5,000 training samples (~10 min)
-# - Cell 3: Initialize PINN
-# - Cell 4: Train 50 epochs (~15 min)
-# - Cell 5: Save model
+# - Cell 1: Imports and setup
+# - Cell 2: Advanced training with augmentation
+# - Cell 3: TensorBoard logging
+# - Cell 4: Model evaluation
+# - Features: Data augmentation, TensorBoard, LR scheduling, early stopping
 
-# Model saved to: results/pinn_model_best.pth
+# Model saved to: models/best_pinn_augmented.pth
+# View training: tensorboard --logdir=../runs
 ```
 
 ### 7.2 Training Script
