@@ -38,6 +38,35 @@ from ..utils.constants import (
 # Backend Selection and Validation
 # ============================================================================
 
+from enum import Enum
+
+class RayTracingMode(str, Enum):
+    """
+    Physical regimes for gravitational lensing ray tracing.
+    
+    THIN_LENS: Standard cosmological lensing (RECOMMENDED for z > 0.05)
+        - Uses GR-derived thin-lens formalism on FLRW background
+        - Includes proper angular diameter distances with cosmic expansion
+        - Valid for: galaxies, clusters, multi-plane systems
+        - Based on weak-field approximation of Einstein equations
+        
+    SCHWARZSCHILD: Strong-field geodesic integration (z ≈ 0 ONLY)
+        - Solves null geodesic ODE in Schwarzschild metric
+        - Assumes static, asymptotically flat spacetime
+        - Valid for: black hole shadows, extreme strong lensing near horizons
+        - INVALID for cosmological distances (ignores expansion)
+        
+    Scientific Guidance:
+    -------------------
+    - For HST/JWST galaxy lenses: ALWAYS use THIN_LENS
+    - For multi-plane lensing: ONLY THIN_LENS is supported
+    - For validation against literature: THIN_LENS reproduces Schneider+ results
+    - For black hole simulations at z≈0: SCHWARZSCHILD is appropriate
+    """
+    THIN_LENS = "thin_lens"
+    SCHWARZSCHILD = "schwarzschild_geodesic"
+
+
 RayTracingMethod = Literal["thin_lens", "schwarzschild_geodesic"]
 
 
@@ -49,6 +78,10 @@ def validate_method_compatibility(
     """
     Validate that ray-tracing method is appropriate for given redshifts.
     
+    ENFORCES SCIENTIFIC VALIDITY:
+    - Schwarzschild mode RAISES ERROR for z_lens > 0.05
+    - Thin-lens mode is ALWAYS safe for any redshift
+    
     Parameters
     ----------
     method : {"thin_lens", "schwarzschild_geodesic"}
@@ -58,36 +91,58 @@ def validate_method_compatibility(
     redshift_source : float
         Source redshift
         
+    Raises
+    ------
+    ValueError
+        If schwarzschild mode is used with z_lens > 0.05
+        
     Warns
     -----
     UserWarning
-        If method is inappropriate for given redshift regime
+        If method is suboptimal for given redshift regime
         
     Examples
     --------
     >>> validate_method_compatibility("schwarzschild_geodesic", 0.5, 1.0)
-    UserWarning: Schwarzschild geodesic mode not recommended for z_lens > 0.1
+    ValueError: Schwarzschild mode only valid for z_lens ≤ 0.05
+    
+    >>> validate_method_compatibility("thin_lens", 0.5, 1.0)
+    # No error - thin_lens is always valid
     """
-    if method == "schwarzschild_geodesic":
-        if redshift_lens > 0.1:
-            warnings.warn(
-                f"Schwarzschild geodesic mode assumes flat, static spacetime. "
-                f"For cosmological lensing at z_lens={redshift_lens:.2f}, "
-                f"use method='thin_lens' instead. "
-                f"Current configuration may produce unphysical results.",
-                UserWarning,
-                stacklevel=2
+    if method == "schwarzschild_geodesic" or method == RayTracingMode.SCHWARZSCHILD:
+        # HARD CONSTRAINT: Schwarzschild requires essentially local spacetime
+        if redshift_lens > 0.05:
+            raise ValueError(
+                f"Schwarzschild geodesic mode is ONLY valid for local, "
+                f"non-cosmological lenses (z_lens ≤ 0.05).\n"
+                f"Current z_lens = {redshift_lens:.4f} violates flat-spacetime assumption.\n"
+                f"\n"
+                f"For galaxy-scale lensing at cosmological distances:\n"
+                f"  → Use mode='thin_lens' (GR-derived formalism on FLRW background)\n"
+                f"\n"
+                f"Schwarzschild mode ignores:\n"
+                f"  - Cosmic expansion (H(z) ≠ 0)\n"
+                f"  - Angular diameter distance scaling: D_A ∝ 1/(1+z)\n"
+                f"  - Time dilation factors\n"
+                f"\n"
+                f"Scientific reference: Schneider, Ehlers & Falco (1992), §4.1"
             )
+        
+        if redshift_source > 0.05:
             logger.warning(
-                f"Schwarzschild mode used with z_lens={redshift_lens:.2f} > 0.1. "
-                f"This violates the flat-spacetime assumption."
+                f"Schwarzschild mode used with z_source={redshift_source:.4f}. "
+                f"This assumes static spacetime - not appropriate for cosmological sources."
             )
     
-    elif method == "thin_lens":
+    elif method == "thin_lens" or method == RayTracingMode.THIN_LENS:
+        # Thin-lens is ALWAYS scientifically valid
+        # It reduces to correct limits at all redshifts
         if redshift_lens < 0.01 and redshift_source < 0.01:
             logger.info(
                 f"Using thin_lens for very low redshifts (z_l={redshift_lens:.3f}). "
-                f"For strong-field tests near compact objects, consider schwarzschild_geodesic."
+                f"For strong-field tests near compact objects (e.g., photon rings), "
+                f"schwarzschild_geodesic may provide higher accuracy, but thin_lens "
+                f"is still scientifically valid."
             )
 
 

@@ -119,11 +119,18 @@ def multi_plane_trace(
     """
     Solve recursive multi-plane lens equation to find image position(s).
     
+    CRITICAL: Multi-plane lensing REQUIRES cosmological distances.
+    This function ONLY supports the thin-lens formalism on FLRW background.
+    Schwarzschild geodesics are NOT compatible with multi-plane systems.
+    
     This implements the TRUE multi-plane lens equation:
     
         θᵢ = θᵢ₊₁ + (Dᵢ,ᵢ₊₁ / Dᵢ₊₁) αᵢ(θᵢ)
         
     with θₙ = β + (Dₙ,ₛ / Dₛ) αₙ(θₙ)
+    
+    The distance ratios Dᵢ,ᵢ₊₁ / Dᵢ₊₁ REQUIRE angular diameter distances
+    in an expanding universe. These are undefined in Schwarzschild spacetime.
     
     Parameters
     ----------
@@ -131,13 +138,13 @@ def multi_plane_trace(
         Source position in arcseconds, shape (2,) for [x, y]
     lens_planes : List[Dict]
         List of lens plane dictionaries, each with:
-        - 'z': redshift
+        - 'z': redshift (MUST be > 0 for cosmological validity)
         - 'alpha_func': function (x, y) -> (alpha_x, alpha_y)
         Must be sorted by increasing redshift
     cosmology : FlatLambdaCDM
         Cosmology for distance calculations
     z_source : float
-        Source redshift
+        Source redshift (MUST be > all lens plane redshifts)
     max_iter : int, optional
         Maximum iterations for solving implicit equation (default: 50)
     tolerance : float, optional
@@ -153,7 +160,7 @@ def multi_plane_trace(
     Raises
     ------
     ValueError
-        If lens planes not sorted or z_plane >= z_source
+        If lens planes not sorted, z_plane >= z_source, or z_plane ≤ 0
     RuntimeError
         If iteration does not converge
         
@@ -193,6 +200,26 @@ def multi_plane_trace(
     if N == 0:
         # No lensing
         return beta.copy()
+    
+    # SCIENTIFIC VALIDITY CHECK: Multi-plane requires cosmological distances
+    # This ensures we're using thin-lens formalism, not Schwarzschild geodesics
+    for i, plane in enumerate(lens_planes):
+        z = plane['z']
+        if z <= 0.0:
+            raise ValueError(
+                f"Multi-plane lensing requires cosmological redshifts (z > 0).\n"
+                f"Plane {i} has z={z:.6f} ≤ 0, which is incompatible with "
+                f"angular diameter distance calculations in FLRW cosmology.\n"
+                f"\n"
+                f"Multi-plane lensing ONLY supports thin-lens formalism.\n"
+                f"For strong-field lensing near compact objects (z≈0), use "
+                f"single-plane Schwarzschild geodesics instead."
+            )
+    
+    if z_source <= 0.0:
+        raise ValueError(
+            f"Source redshift must be cosmological (z > 0), got z_source={z_source:.6f}"
+        )
     
     # Validate plane ordering
     z_prev = 0.0

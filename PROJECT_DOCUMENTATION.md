@@ -36,8 +36,8 @@ An advanced gravitational lensing simulation and analysis toolkit combining **Ph
 ### ✨ Key Features
 
 - **🤖 Physics-Informed ML**: Deep learning constrained by Einstein's equations
-- **⚡ General Relativity**: Full geodesic integration using Schwarzschild metric
-- **🌌 Multi-Plane Lensing**: Cosmologically accurate modeling
+- **⚡ General Relativity Integration**: GR-derived thin-lens formalism for cosmological lensing + optional Schwarzschild geodesics for strong-field validation
+- **🌌 Multi-Plane Lensing**: Cosmologically accurate recursive modeling with proper FLRW distances
 - **📊 Real Data Support**: Load HST, JWST, SDSS observations
 - **🎯 Bayesian Uncertainty**: Rigorous uncertainty quantification
 - **🔬 Scientific Validation**: Automated validation against known systems
@@ -245,30 +245,45 @@ multi_lens.add_plane(z=0.5, mass_profile=nfw2)
 alpha_total = multi_lens.compute_total_deflection(theta_x, theta_y)
 ```
 
-### 3.6 General Relativity vs Simplified
+### 3.6 Ray-Tracing Modes: Thin-Lens vs Schwarzschild Geodesics
 
-Compare full GR geodesics with Born approximation:
+The toolkit supports two distinct physical regimes:
 
 ```python
-from src.optics.geodesics import schwarzschild_deflection
-from src.lens_models import point_mass_deflection
+from src.optics.ray_tracing_backends import RayTracingMode
 
-# Full GR (Schwarzschild)
-alpha_gr = schwarzschild_deflection(
-    impact_parameter=b,
-    mass=M,
-    include_relativistic=True
-)
+# RECOMMENDED: Thin-lens for cosmological lensing (z > 0.05)
+# Uses GR-derived formalism on FLRW background with proper angular diameter distances
+from src.lens_models import LensSystem
+lens_sys = LensSystem(z_lens=0.5, z_source=1.5)
+# Thin-lens is used by default for all cosmological work
 
-# Simplified (Born approximation)
-alpha_born = point_mass_deflection(
-    theta=b/D_L,
-    mass=M
-)
+# OPTIONAL: Schwarzschild geodesics for strong-field validation (z ≈ 0)
+# Only for local black hole simulations - NOT for galaxy lenses
+# Will raise ValueError if z_lens > 0.05
+from src.optics.ray_tracing_backends import validate_method_compatibility
 
-# Compare errors
-error = abs(alpha_gr - alpha_born) / alpha_gr * 100  # %
+try:
+    validate_method_compatibility(
+        RayTracingMode.SCHWARZSCHILD,
+        z_lens=0.5,  # TOO HIGH for Schwarzschild
+        z_source=1.5
+    )
+except ValueError as e:
+    print(f"Error: {e}")
+    # → "Schwarzschild mode ONLY valid for z_lens ≤ 0.05"
+
+# For multi-plane lensing: ALWAYS uses thin-lens (enforced)
+from src.lens_models.multi_plane_recursive import multi_plane_trace
+# Automatically uses cosmological distances - no mode parameter needed
 ```
+
+**Scientific Guidance:**
+- **For HST/JWST galaxy lenses**: Use thin-lens formalism (default)
+- **For literature validation** (Einstein Cross, Twin Quasar): Use thin-lens
+- **For multi-plane systems**: Only thin-lens is supported (enforced)
+- **For black hole shadows at z≈0**: Schwarzschild geodesics are appropriate
+
 
 ### 3.7 Substructure Detection
 
@@ -1260,23 +1275,24 @@ print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
 **Slide 1: Introduction (2 min)**
 - "Built gravitational lensing analysis toolkit"
 - "Combines ML with physics constraints"
-- "Full general relativity implementation"
+- "Uses GR-derived thin-lens formalism for cosmological accuracy"
 
 **Slide 2: Live Demo - Synthetic (3 min)**
 1. Open http://localhost:8501
 2. Navigate to "Simple Lensing"
 3. Generate NFW convergence map
 4. Adjust mass → show Einstein radius
-5. "Generated using Einstein field equations"
+5. "Generated using proper angular diameter distances in expanding universe"
 
 **Slide 3: Live Demo - Advanced (3 min)**
 1. Show "Multi-Plane Lensing"
    - Multiple lens planes at different redshifts
-   - Cosmological distance calculations
-2. Show "GR vs Simplified"
-   - Full geodesic integration
-   - Compare with Born approximation
-   - Discuss error increases near Einstein radius
+   - Recursive lens equation with cosmological distances
+   - "This requires FLRW cosmology - can't use Schwarzschild geodesics"
+2. Show "Ray-Tracing Modes"
+   - Thin-lens: Default for galaxy lenses (z > 0.05)
+   - Schwarzschild: Optional for black hole validation (z ≈ 0)
+   - Demonstrate mode enforcement
 
 **Slide 4: Technical Depth (2 min)**
 - 15,000+ lines of Python
@@ -1287,7 +1303,9 @@ print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
 ### 13.2 Key Talking Points
 
 **"What's innovative?"**
-→ Uses full GR geodesics, not just weak lensing  
+→ Uses GR-derived thin-lens formalism on FLRW cosmology for galaxy-scale lensing  
+→ Implements proper recursive multi-plane equation (not simple deflection addition)  
+→ Enforces scientific validity by separating cosmological (thin-lens) from strong-field (Schwarzschild) regimes  
 → Multi-plane cosmology with proper distances  
 → Physics-informed ML constrained by equations  
 → Processes real HST/JWST data  
