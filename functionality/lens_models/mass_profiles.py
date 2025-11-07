@@ -294,6 +294,14 @@ class NFWProfile(MassProfile):
         Concentration parameter c = r_vir / r_s
     lens_system : LensSystem
         The lens system providing cosmological distances
+    ellipticity : float, optional
+        Halo ellipticity (0 = circular, <1 = elliptical). Default: 0
+    ellipticity_angle : float, optional
+        Position angle of major axis in degrees. Default: 0
+    include_subhalos : bool, optional
+        Whether to add subhalo population. Default: False
+    subhalo_fraction : float, optional
+        Fraction of mass in subhalos (0-0.1 typical). Default: 0.05
         
     Attributes
     ----------
@@ -305,6 +313,12 @@ class NFWProfile(MassProfile):
         Scale radius in arcseconds
     rho_s : float
         Characteristic density in Msun/pc³
+    ellipticity : float
+        Halo ellipticity
+    q : float
+        Axis ratio (1-ellipticity)
+    subhalos : list
+        List of subhalo profiles if include_subhalos=True
         
     Notes
     -----
@@ -312,22 +326,47 @@ class NFWProfile(MassProfile):
     Deflection angles are computed using the analytical formulas from
     Wright & Brainerd (2000, ApJ, 534, 34).
     
+    For elliptical halos, we use the prescription from Golse & Kneib (2002)
+    where the circular radius is replaced by an elliptical radius.
+    
+    Subhalos are generated following Springel et al. (2008) mass function.
+    
     Examples
     --------
     >>> from lens_models import LensSystem, NFWProfile
     >>> lens_sys = LensSystem(0.5, 1.5)
+    >>> # Circular halo
     >>> halo = NFWProfile(M_vir=1e12, concentration=5, lens_system=lens_sys)
+    >>> # Elliptical halo with substructure
+    >>> halo_ellip = NFWProfile(M_vir=1e12, concentration=5, lens_system=lens_sys,
+    ...                         ellipticity=0.3, include_subhalos=True)
     >>> kappa = halo.convergence(1.0, 0.0)
     """
     
-    def __init__(self, M_vir: float, concentration: float, lens_system):
+    def __init__(self, M_vir: float, concentration: float, lens_system,
+                 ellipticity: float = 0.0, ellipticity_angle: float = 0.0,
+                 include_subhalos: bool = False, subhalo_fraction: float = 0.05):
         """Initialize NFW profile."""
         self.M_vir = M_vir
         self.c = concentration
         self.lens_system = lens_system
         
+        # Ellipticity parameters
+        self.ellipticity = np.clip(ellipticity, 0.0, 0.99)  # Prevent extreme values
+        self.q = 1.0 - self.ellipticity  # Axis ratio
+        self.ellipticity_angle = ellipticity_angle * np.pi / 180.0  # Convert to radians
+        
+        # Subhalo parameters
+        self.include_subhalos = include_subhalos
+        self.subhalo_fraction = np.clip(subhalo_fraction, 0.0, 0.2)
+        self.subhalos = []
+        
         # Calculate scale radius and density
         self._compute_nfw_parameters()
+        
+        # Generate subhalo population if requested
+        if self.include_subhalos:
+            self._generate_subhalos()
         
     def _compute_nfw_parameters(self):
         """Compute NFW scale radius and density."""
@@ -368,6 +407,110 @@ class NFWProfile(MassProfile):
         # Surface density scale: Σ_s = ρ_s × r_s
         Sigma_s = rho_s_msun_pc3 * r_s_pc  # Msun/pc²
         self.kappa_s = Sigma_s / self.sigma_crit  # Dimensionless
+    
+    def _generate_subhalos(self):
+        """
+        Generate subhalo population following Springel et al. (2008).
+        
+        Uses the subhalo mass function: dn/dm ∝ m^(-1.9)
+        with mass range from 10^6 to 0.01 × M_vir
+        """
+        if self.subhalo_fraction <= 0:
+            return
+        
+        # Total mass in subhalos
+        M_sub_total = self.subhalo_fraction * self.M_vir
+        
+        # Subhalo mass function: dN/dM ∝ M^(-α) with α ≈ 1.9
+        alpha = 1.9
+        M_min = 1e6  # Minimum subhalo mass (Msun)
+        M_max = 0.01 * self.M_vir  # Maximum subhalo mass
+        
+        # Number of subhalos (order of magnitude estimate)
+        # For α = 1.9, most mass is in small halos, but most visible signal from large ones
+        N_sub = int(10 + 30 * (M_sub_total / 1e11)**0.5)  # Typical: 10-50 subhalos
+        
+        # Generate subhalo masses following power law
+        u = np.random.random(N_sub)
+        if alpha != 1.0:
+            M_sub = ((M_max**(1-alpha) - M_min**(1-alpha)) * u + M_min**(1-alpha))**(1/(1-alpha))
+        else:
+            M_sub = M_min * (M_max/M_min)**u
+        
+        # Normalize so total mass = M_sub_total
+        M_sub = M_sub * (M_sub_total / M_sub.sum())
+        
+        # Virial radius for spatial distribution
+        D_l = self.lens_system.angular_diameter_distance_lens().to(u.Mpc).value
+        h = self.lens_system.cosmology.H0.value / 100.0
+        rho_crit = 2.775e11 * h**2
+        r_vir_mpc = (3 * self.M_vir / (4 * np.pi * 200 * rho_crit))**(1/3)
+        theta_vir = r_vir_mpc / D_l * (180/np.pi) * 3600  # arcsec
+        
+        # Place subhalos following NFW profile (concentrated toward center)
+        # Use rejection sampling with NFW profile as probability
+        positions = []
+        for _ in range(N_sub):
+            accepted = False
+            while not accepted:
+                # Random position within virial radius
+                r = np.random.random() * theta_vir
+                angle = np.random.random() * 2 * np.pi
+                x = r * np.cos(angle)
+                y = r * np.sin(angle)
+                
+                # Acceptance probability ∝ NFW density
+                prob = 1.0 / ((r/self.r_s) * (1 + r/self.r_s)**2 + 1e-10)
+                if np.random.random() < prob / 10:  # Normalize acceptance
+                    positions.append((x, y))
+                    accepted = True
+        
+        # Create subhalo profiles
+        for i, (M_i, (x_i, y_i)) in enumerate(zip(M_sub, positions)):
+            # Subhalo concentration: typically higher than host
+            # Use Maccio+ (2008) relation: c ∝ M^(-0.1)
+            c_sub = self.c * (M_i / self.M_vir)**(-0.1)
+            c_sub = np.clip(c_sub, 5, 25)  # Reasonable range
+            
+            # Create subhalo (without substructure to avoid recursion)
+            subhalo = NFWProfile(M_i, c_sub, self.lens_system, 
+                               ellipticity=0.0, include_subhalos=False)
+            subhalo.x_offset = x_i
+            subhalo.y_offset = y_i
+            self.subhalos.append(subhalo)
+    
+    def _elliptical_radius(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Compute elliptical radius for elliptical halos.
+        
+        Transforms circular radius to elliptical using:
+        r_ell² = x'² + (y'/q)²
+        where (x', y') are rotated coordinates along principal axes.
+        
+        Parameters
+        ----------
+        x, y : np.ndarray
+            Coordinates in arcseconds
+            
+        Returns
+        -------
+        r_ell : np.ndarray
+            Elliptical radius in arcseconds
+        """
+        if self.ellipticity == 0:
+            return np.sqrt(x**2 + y**2)
+        
+        # Rotate coordinates to align with major axis
+        cos_theta = np.cos(self.ellipticity_angle)
+        sin_theta = np.sin(self.ellipticity_angle)
+        
+        x_rot = cos_theta * x + sin_theta * y
+        y_rot = -sin_theta * x + cos_theta * y
+        
+        # Elliptical radius: r² = x² + (y/q)²
+        r_ell = np.sqrt(x_rot**2 + (y_rot / self.q)**2)
+        
+        return r_ell
         
     def _f_nfw(self, x: np.ndarray) -> np.ndarray:
         """
@@ -452,6 +595,9 @@ class NFWProfile(MassProfile):
         where κ_s = (ρ_s × r_s) / Σ_crit is the characteristic convergence,
         θ_s = r_s is the angular scale radius, and f(x) is the NFW function.
         
+        For elliptical halos, uses elliptical radius and rotates deflection.
+        For halos with substructure, adds subhalo contributions.
+        
         Parameters
         ----------
         x : float or np.ndarray
@@ -469,7 +615,8 @@ class NFWProfile(MassProfile):
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
         
-        r = np.sqrt(x**2 + y**2)
+        # Use elliptical radius if halo is elliptical
+        r = self._elliptical_radius(x, y)
         
         # Avoid singularity at r=0
         epsilon = 1e-4 * self.r_s
@@ -486,9 +633,41 @@ class NFWProfile(MassProfile):
         # The self.kappa_s was pre-computed in _compute_nfw_parameters()
         alpha_magnitude = 4.0 * self.kappa_s * self.r_s * f_vals / x_scaled
         
-        # Decompose into x and y components
-        alpha_x = alpha_magnitude * (x / r)
-        alpha_y = alpha_magnitude * (y / r)
+        # For elliptical halos, direction is along elliptical radius
+        if self.ellipticity > 0:
+            # Rotate coordinates
+            cos_theta = np.cos(self.ellipticity_angle)
+            sin_theta = np.sin(self.ellipticity_angle)
+            x_rot = cos_theta * x + sin_theta * y
+            y_rot = -sin_theta * x + cos_theta * y
+            
+            # Elliptical gradient direction
+            grad_x = x_rot
+            grad_y = y_rot / (self.q**2)
+            grad_mag = np.sqrt(grad_x**2 + grad_y**2)
+            
+            # Deflection in rotated frame
+            alpha_x_rot = alpha_magnitude * (grad_x / (grad_mag + epsilon))
+            alpha_y_rot = alpha_magnitude * (grad_y / (grad_mag + epsilon))
+            
+            # Rotate back
+            alpha_x = cos_theta * alpha_x_rot - sin_theta * alpha_y_rot
+            alpha_y = sin_theta * alpha_x_rot + cos_theta * alpha_y_rot
+        else:
+            # Circular case
+            r_circ = np.sqrt(x**2 + y**2)
+            r_circ = np.maximum(r_circ, epsilon)
+            alpha_x = alpha_magnitude * (x / r_circ)
+            alpha_y = alpha_magnitude * (y / r_circ)
+        
+        # Add subhalo contributions
+        if self.include_subhalos and len(self.subhalos) > 0:
+            for subhalo in self.subhalos:
+                x_sub = x - subhalo.x_offset
+                y_sub = y - subhalo.y_offset
+                alpha_x_sub, alpha_y_sub = subhalo.deflection_angle(x_sub, y_sub)
+                alpha_x += alpha_x_sub
+                alpha_y += alpha_y_sub
         
         return alpha_x, alpha_y
     
@@ -499,6 +678,9 @@ class NFWProfile(MassProfile):
         
         Uses the formula: κ(r) = 2 κ_s × g(r/r_s)
         where g(x) is the NFW convergence function.
+        
+        For elliptical halos, uses elliptical radius.
+        For halos with substructure, adds subhalo contributions.
         
         Parameters
         ----------
@@ -515,7 +697,8 @@ class NFWProfile(MassProfile):
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
         
-        r = np.sqrt(x**2 + y**2)
+        # Use elliptical radius if halo is elliptical
+        r = self._elliptical_radius(x, y)
         
         # Avoid singularity
         epsilon = 1e-4 * self.r_s
@@ -528,6 +711,13 @@ class NFWProfile(MassProfile):
         # where κ_s was pre-computed in initialization
         g_vals = self._g_nfw(x_scaled)
         kappa = 2.0 * self.kappa_s * g_vals
+        
+        # Add subhalo contributions
+        if self.include_subhalos and len(self.subhalos) > 0:
+            for subhalo in self.subhalos:
+                x_sub = x - subhalo.x_offset
+                y_sub = y - subhalo.y_offset
+                kappa += subhalo.convergence(x_sub, y_sub)
         
         return kappa
     
