@@ -152,9 +152,38 @@ EINSTEIN_COEFF = 4.0 * G_CONST / (C_LIGHT**2)  # m kg⁻¹
 #: Used in: Σ_crit = c²/(4πG) × D_S/(D_L D_LS)
 SIGMA_CRIT_COEFF = (C_LIGHT**2) / (4.0 * np.pi * G_CONST)  # kg s² m⁻⁵
 
+#: Schwarzschild radius coefficient [m kg⁻¹]
+#: Used in: r_s = 2GM/c²
+SCHWARZSCHILD_COEFF = 2.0 * G_CONST / (C_LIGHT**2)  # m kg⁻¹
+
 # ============================================================================
 # Unit Conversions for Gravitational Lensing
 # ============================================================================
+
+def schwarzschild_radius(mass_kg: float) -> float:
+    """
+    Calculate Schwarzschild radius for a given mass.
+    
+    r_s = 2GM/c²
+    
+    Parameters
+    ----------
+    mass_kg : float
+        Mass in kilograms
+        
+    Returns
+    -------
+    r_s : float
+        Schwarzschild radius in meters
+        
+    Examples
+    --------
+    >>> M_bh = 1e6 * M_SUN_KG  # Million solar mass black hole
+    >>> r_s = schwarzschild_radius(M_bh)
+    >>> print(f"r_s = {r_s/1e3:.2f} km")
+    r_s = 2953.25 km
+    """
+    return SCHWARZSCHILD_COEFF * mass_kg
 
 def einstein_radius_arcsec(M_kg: float, D_l_m: float, D_s_m: float, D_ls_m: float) -> float:
     """
@@ -333,7 +362,7 @@ __all__ = [
     'OMEGA_B_PLANCK', 'OMEGA_DM_PLANCK', 'OMEGA_K', 'RHO_CRIT',
     
     # Lensing constants
-    'EINSTEIN_COEFF', 'SIGMA_CRIT_COEFF',
+    'EINSTEIN_COEFF', 'SIGMA_CRIT_COEFF', 'SCHWARZSCHILD_COEFF',
     
     # Typical scales
     'M_CLUSTER_TYPICAL', 'M_GALAXY_TYPICAL', 'R_S_CLUSTER_TYPICAL',
@@ -341,6 +370,7 @@ __all__ = [
     
     # Functions
     'critical_density', 'einstein_radius_arcsec', 'critical_surface_density',
+    'schwarzschild_radius',
     'mass_to_solar', 'solar_to_mass', 'kpc_to_meters', 'meters_to_kpc',
     'arcsec_to_radians', 'radians_to_arcsec'
 ]
