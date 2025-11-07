@@ -1,28 +1,52 @@
-# 🌌 Gravitational Lensing Analysis Toolkit
+# 🌌 Gravitational Lensing Toolkit (ISEF 2025)
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B.svg)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![ISEF](https://img.shields.io/badge/ISEF-2025-gold.svg)](https://www.societyforscience.org/isef/)
 
-> **Advanced gravitational lensing simulation and analysis toolkit with Physics-Informed Neural Networks, General Relativity integration, and multi-plane cosmological modeling.**
+> **Research-grade lens modeling in one command**  
+> Physics-informed neural networks + cosmological ray tracing for gravitational lensing analysis
 
-![Project Banner](docs/images/banner.png)
+## ▶️ Try a Demo Now
 
-## 🎯 Overview
+**Experience publication-quality gravitational lensing analysis in <15 seconds:**
 
-This toolkit provides a comprehensive platform for simulating, analyzing, and validating gravitational lensing phenomena. Built for the **Intel International Science and Engineering Fair (ISEF)**, it combines cutting-edge machine learning with rigorous physics modeling.
+```powershell
+git clone https://github.com/nalin1304/Gravitational-Lensing-algorithm
+cd Gravitational-Lensing-algorithm
+pip install -r requirements.txt
+streamlit run app/Home.py
+```
 
-### ✨ Key Features
+**Then click "Einstein Cross" → see results immediately**
 
-- **🤖 Physics-Informed Neural Networks (PINNs)**: Deep learning models constrained by gravitational lensing equations
-- **⚡ General Relativity Integration**: Full geodesic integration using Schwarzschild metric
-- **🌌 Multi-Plane Lensing**: Cosmologically accurate modeling of multiple lens planes
-- **📊 Real Data Support**: Load and analyze HST, JWST, and SDSS observations
-- **🎯 Bayesian Uncertainty Quantification**: Rigorous uncertainty estimation with calibration
-- **🔬 Scientific Validation**: Automated validation against known lensing systems
-- **🔭 Substructure Detection**: Dark matter sub-halo identification algorithms
-- **📈 Interactive Web Interface**: Professional Streamlit dashboard with 12 analysis modes
+✅ **No training** • ✅ **No config** • ✅ **Scientifically validated**
+
+---
+
+## 🎯 What This Does
+
+Turn **raw astronomical observations** into **validated mass maps** with **full uncertainty quantification** — automatically.
+
+**Built for ISEF 2025**, this toolkit demonstrates:
+- ✨ Physics-informed machine learning (PINNs constrained by General Relativity)
+- 🌌 Cosmological thin-lens ray tracing (ΛCDM distances)
+- 📊 Bayesian uncertainty quantification (Monte Carlo dropout)
+- 🔬 Sub-percent accuracy on benchmark lensing systems
+
+### Featured Demos (One-Click Ready)
+
+| Demo | System | Highlights |
+|------|--------|-----------|
+| **🌟 Einstein Cross** | Q2237+030 (z=0.04) | Quadruple-image quasar, classic strong lens |
+| **🔭 Twin Quasar** | Q0957+561 (z=0.36) | First discovered lens (1979), time delay demo |
+| **🪐 JWST Cluster** | Simulated (z=0.3) | Dark matter substructure detection with AI |
+
+All demos use **pre-trained PINN models** and **generate publication-ready figures automatically**.
+
+---
 
 ## 🚀 Quick Start
 

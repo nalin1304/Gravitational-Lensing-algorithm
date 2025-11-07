@@ -48,22 +48,94 @@ render_header(
 # Welcome banner with animation
 st.markdown("""
 <div style="text-align: center; padding: 2rem 0; animation: fadeInScale 0.8s ease-out;">
-    <h2 style="font-size: 2rem; margin-bottom: 1rem;">Welcome to the Future of Gravitational Lensing Analysis</h2>
-    <p style="font-size: 1.1rem; color: var(--text-secondary); max-width: 800px; margin: 0 auto;">
-        Harness the power of <strong style="color: var(--primary-blue);">physics-informed neural networks</strong> combined with 
-        traditional numerical methods to analyze strong gravitational lensing systems with unprecedented speed and accuracy.
+    <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">🌌 Gravitational Lensing Toolkit</h2>
+    <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 900px; margin: 0 auto; line-height: 1.6;">
+        <strong style="color: var(--primary-blue);">Research-grade lens modeling</strong> with physics-informed neural networks.<br>
+        ✅ No training • ✅ No config • ✅ Scientifically validated
     </p>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# Main content
+# ONE-CLICK DEMO LAUNCHER - Primary Feature
 st.markdown("""
-## 🎯 Key Features
+<div style="margin: 2rem 0;">
+    <h2 style="text-align: center; margin-bottom: 1.5rem; font-size: 2rem;">🚀 Launch a Demo Now</h2>
+    <p style="text-align: center; font-size: 1.1rem; color: var(--text-secondary); max-width: 700px; margin: 0 auto 2rem;">
+        Experience gravitational lensing analysis in <strong style="color: var(--primary-blue);">≤15 seconds</strong>. 
+        Click any demo below to see instant results.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+from utils.demo_helpers import run_demo_and_redirect
+
+# Three large demo cards
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">🌟 Einstein Cross</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Quadruple-image quasar<br><code>z=0.04</code> • Famous Q2237+030</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("🚀 Launch Einstein Cross", use_container_width=True, type="primary", key="demo_einstein"):
+        run_demo_and_redirect("einstein_cross")
+
+with col2:
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔭 Twin Quasar</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Historic 1979 discovery<br><code>z=0.36</code> • Time delay demo</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("🔭 Launch Twin Quasar", use_container_width=True, type="primary", key="demo_twin"):
+        run_demo_and_redirect("twin_quasar")
+
+with col3:
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">🪐 JWST Cluster</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Substructure detection<br><code>z=0.3</code> • Dark matter AI</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("🪐 Launch JWST Cluster", use_container_width=True, type="primary", key="demo_jwst"):
+        run_demo_and_redirect("jwst_cluster_demo")
+
+st.markdown("---")
+
+# Collapsible advanced section
+with st.expander("🔬 Advanced: Upload Your Own Data", expanded=False):
+    st.markdown("""
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        For advanced users: analyze custom FITS files or configure custom lens systems.
+        Navigate to <strong>Simple Lensing</strong> or <strong>Real Data Analysis</strong> from the sidebar.
+    </p>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📊 Simple Lensing Playground", use_container_width=True):
+            st.switch_page("pages/02_Simple_Lensing.py")
+    with col2:
+        if st.button("📂 Real Data Analysis", use_container_width=True):
+            st.switch_page("pages/06_Real_Data_Analysis.py")
+
+st.markdown("---")
+
+# Compact feature highlights
+st.markdown("""
+## 🎯 What You Get
 
 <div style="margin: 2rem 0;">
-    Discover the cutting-edge capabilities of our platform, designed for researchers, students, and astronomy enthusiasts.
+    <p style="text-align: center; font-size: 1.1rem; color: var(--text-secondary);">
+        Every demo includes publication-quality results in seconds.
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -73,16 +145,11 @@ with col1:
     st.markdown("""
     <div class="custom-card">
         <div class="card-header">
-            <span style="font-size: 2.5rem;">⚡</span>
-            <span>Real-Time Inference</span>
+            <span style="font-size: 2.5rem;">📸</span>
+            <span>HST Observation</span>
         </div>
         <div class="card-body">
-            <p><strong>Lightning-fast parameter estimation</strong> from convergence maps using pre-trained models.</p>
-            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                <li>Instant predictions in milliseconds</li>
-                <li>GPU-accelerated processing</li>
-                <li>Batch inference support</li>
-            </ul>
+            <p>Real or simulated Hubble/JWST imaging</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -91,16 +158,11 @@ with col2:
     st.markdown("""
     <div class="custom-card">
         <div class="card-header">
-            <span style="font-size: 2.5rem;">🔬</span>
-            <span>Bayesian Uncertainty</span>
+            <span style="font-size: 2.5rem;">�️</span>
+            <span>Mass Map (κ)</span>
         </div>
         <div class="card-body">
-            <p><strong>Full uncertainty quantification</strong> with MCMC and variational inference.</p>
-            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                <li>Probabilistic predictions</li>
-                <li>Confidence intervals</li>
-                <li>Error propagation</li>
-            </ul>
+            <p>Convergence field from ray tracing</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -110,30 +172,23 @@ with col3:
     <div class="custom-card">
         <div class="card-header">
             <span style="font-size: 2.5rem;">📊</span>
-            <span>Scientific Validation</span>
+            <span>Uncertainty (σ)</span>
         </div>
         <div class="card-body">
-            <p><strong>Publication-ready metrics</strong> and validation against known benchmarks.</p>
-            <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
-                <li>Comprehensive error analysis</li>
-                <li>Benchmark comparisons</li>
-                <li>Reproducible results</li>
-            </ul>
+            <p>Bayesian 95% confidence intervals</p>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# Quick start guide with enhanced styling
+# Compact navigation guide
 st.markdown("""
-<div style="margin: 3rem 0;">
-    <h2 style="text-align: center; margin-bottom: 2rem;">🚀 Quick Start Guide</h2>
-    <div style="max-width: 900px; margin: 0 auto;">
-        <p style="text-align: center; font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 2rem;">
-            Choose your adventure! Start with simple visualizations or dive into advanced analysis.
-        </p>
-    </div>
+<div style="margin: 2rem 0;">
+    <h2 style="text-align: center; margin-bottom: 1.5rem;">� Explore More Features</h2>
+    <p style="text-align: center; color: var(--text-secondary); max-width: 700px; margin: 0 auto 2rem;">
+        Beyond demos: interactive tools, custom configurations, and advanced analysis modes available in the sidebar.
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -142,34 +197,26 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("""
     <div class="custom-card" style="animation-delay: 0.1s;">
-        <h3>🌟 Beginner Path</h3>
-        <ol style="line-height: 1.8; color: var(--text-secondary);">
-            <li><strong style="color: var(--text-primary);">📊 Simple Lensing</strong> - Interactive lensing visualization</li>
-            <li><strong style="color: var(--text-primary);">🔬 PINN Inference</strong> - Neural network predictions</li>
-            <li><strong style="color: var(--text-primary);">📂 Real Data</strong> - Analyze astronomical FITS files</li>
-        </ol>
+        <h3>🌟 Interactive Tools</h3>
+        <ul style="line-height: 1.8; color: var(--text-secondary); padding-left: 1.5rem;">
+            <li><strong style="color: var(--text-primary);">Simple Lensing</strong> - Parameter sliders</li>
+            <li><strong style="color: var(--text-primary);">Multi-Plane</strong> - Complex systems</li>
+            <li><strong style="color: var(--text-primary);">Wave Optics</strong> - Diffraction effects</li>
+        </ul>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
     st.markdown("""
     <div class="custom-card" style="animation-delay: 0.2s;">
-        <h3>🚀 Advanced Path</h3>
-        <ol style="line-height: 1.8; color: var(--text-secondary);">
-            <li><strong style="color: var(--text-primary);">🎯 Bayesian UQ</strong> - Uncertainty quantification</li>
-            <li><strong style="color: var(--text-primary);">🌌 Multi-Plane</strong> - Complex lens systems</li>
-            <li><strong style="color: var(--text-primary);">🧪 Validation</strong> - Scientific benchmarks</li>
-        </ol>
+        <h3>🚀 ML & Analysis</h3>
+        <ul style="line-height: 1.8; color: var(--text-secondary); padding-left: 1.5rem;">
+            <li><strong style="color: var(--text-primary);">PINN Inference</strong> - Pre-trained models</li>
+            <li><strong style="color: var(--text-primary);">Bayesian UQ</strong> - Uncertainty maps</li>
+            <li><strong style="color: var(--text-primary);">Validation</strong> - Benchmark tests</li>
+        </ul>
     </div>
     """, unsafe_allow_html=True)
-
-st.markdown("""
-<div style="text-align: center; margin: 2rem 0; padding: 1.5rem; background: var(--bg-glass); backdrop-filter: blur(10px); border-radius: 16px; border: 2px solid var(--border-color);">
-    <p style="font-size: 1.25rem; font-weight: 600; margin: 0;">
-        👈 <strong style="color: var(--primary-blue);">Select a page from the sidebar to begin your journey!</strong>
-    </p>
-</div>
-""", unsafe_allow_html=True)
 
 # System status with enhanced animations
 st.markdown("---")
