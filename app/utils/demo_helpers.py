@@ -4,7 +4,6 @@ Demo Helper Utilities for Zero-Friction User Experience
 Handles asset loading, pipeline execution, and result management for one-click demos.
 """
 
-import os
 import yaml
 import numpy as np
 import streamlit as st
@@ -24,13 +23,17 @@ ASSETS_DIR = PROJECT_ROOT / "assets" / "demos"
 
 def ensure_demo_asset(asset_name: str) -> Path:
     """
-    Ensure demo asset exists, downloading if necessary.
+    Resolve a demo asset path and require a real on-disk asset.
     
     Args:
         asset_name: Built-in asset identifier (e.g., "einstein_cross_hst")
         
     Returns:
         Path to the asset file
+
+    Raises:
+        FileNotFoundError
+            If the named built-in asset does not exist on disk
     """
     asset_path = ASSETS_DIR / f"{asset_name}.npy"
     
@@ -38,173 +41,10 @@ def ensure_demo_asset(asset_name: str) -> Path:
     if asset_path.exists():
         logger.info(f"Found cached demo asset: {asset_name}")
         return asset_path
-    
-    # Create assets directory if needed
-    ASSETS_DIR.mkdir(parents=True, exist_ok=True)
-    
-    # Generate synthetic demo data (in production, this would fetch from HubbleSite)
-    logger.info(f"Generating synthetic demo asset: {asset_name}")
-    
-    if asset_name == "einstein_cross_hst":
-        # Create realistic Einstein Cross simulation
-        image = _generate_einstein_cross_image()
-    elif asset_name == "twin_quasar_hst":
-        # Create twin quasar simulation
-        image = _generate_twin_quasar_image()
-    elif asset_name == "jwst_cluster_arc":
-        # Create cluster arc simulation
-        image = _generate_cluster_arc_image()
-    elif asset_name == "substructure_test":
-        # Create substructure test image
-        image = _generate_substructure_image()
-    else:
-        # Generic point source
-        image = _generate_generic_source()
-    
-    # Save to disk
-    np.save(asset_path, image)
-    logger.info(f"Saved demo asset to: {asset_path}")
-    
-    return asset_path
-
-
-def _generate_einstein_cross_image(size: int = 128) -> np.ndarray:
-    """Generate synthetic Einstein Cross (quadruple image)."""
-    image = np.zeros((size, size))
-    center = size // 2
-    
-    # Four point sources in cross pattern
-    positions = [
-        (center + 15, center + 15),  # NE
-        (center - 15, center + 15),  # NW
-        (center + 15, center - 15),  # SE
-        (center - 15, center - 15),  # SW
-    ]
-    
-    for y, x in positions:
-        # Gaussian point source
-        yy, xx = np.ogrid[:size, :size]
-        gaussian = np.exp(-((xx - x)**2 + (yy - y)**2) / (2 * 2.5**2))
-        image += gaussian * 1000.0
-    
-    # Add lens galaxy in center
-    yy, xx = np.ogrid[:size, :size]
-    lens = np.exp(-((xx - center)**2 + (yy - center)**2) / (2 * 8**2))
-    image += lens * 500.0
-    
-    # Add noise
-    image += np.random.normal(0, 10, (size, size))
-    
-    return image.astype(np.float32)
-
-
-def _generate_twin_quasar_image(size: int = 256) -> np.ndarray:
-    """Generate synthetic Twin Quasar (double image)."""
-    image = np.zeros((size, size))
-    center = size // 2
-    
-    # Two point sources
-    positions = [
-        (center, center + 30),  # Image A
-        (center, center - 30),  # Image B
-    ]
-    
-    for y, x in positions:
-        yy, xx = np.ogrid[:size, :size]
-        gaussian = np.exp(-((xx - x)**2 + (yy - y)**2) / (2 * 3**2))
-        image += gaussian * 1200.0
-    
-    # Lens galaxy
-    yy, xx = np.ogrid[:size, :size]
-    lens = np.exp(-((xx - center)**2 + (yy - center)**2) / (2 * 15**2))
-    image += lens * 400.0
-    
-    image += np.random.normal(0, 8, (size, size))
-    
-    return image.astype(np.float32)
-
-
-def _generate_cluster_arc_image(size: int = 512) -> np.ndarray:
-    """Generate synthetic galaxy cluster with arc."""
-    image = np.zeros((size, size))
-    center = size // 2
-    
-    # Generate arc (curved extended source)
-    theta = np.linspace(0, np.pi, 100)
-    radius = 60
-    arc_x = center + radius * np.cos(theta)
-    arc_y = center + radius * np.sin(theta) + 30
-    
-    for x, y in zip(arc_x, arc_y):
-        yy, xx = np.ogrid[:size, :size]
-        gaussian = np.exp(-((xx - x)**2 + (yy - y)**2) / (2 * 4**2))
-        image += gaussian * 800.0
-    
-    # Cluster galaxies
-    cluster_positions = [
-        (center, center - 20),
-        (center + 25, center - 10),
-        (center - 30, center + 5),
-    ]
-    
-    for y, x in cluster_positions:
-        yy, xx = np.ogrid[:size, :size]
-        galaxy = np.exp(-((xx - x)**2 + (yy - y)**2) / (2 * 10**2))
-        image += galaxy * 600.0
-    
-    image += np.random.normal(0, 5, (size, size))
-    
-    return image.astype(np.float32)
-
-
-def _generate_substructure_image(size: int = 256) -> np.ndarray:
-    """Generate image with subtle substructure perturbations."""
-    image = np.zeros((size, size))
-    center = size // 2
-    
-    # Main arc
-    theta = np.linspace(-np.pi/3, np.pi/3, 80)
-    radius = 50
-    arc_x = center + radius * np.cos(theta) + 20
-    arc_y = center + radius * np.sin(theta)
-    
-    for x, y in zip(arc_x, arc_y):
-        yy, xx = np.ogrid[:size, :size]
-        gaussian = np.exp(-((xx - x)**2 + (yy - y)**2) / (2 * 3**2))
-        image += gaussian * 900.0
-    
-    # Subtle perturbations from substructure
-    perturb_positions = [
-        (center + 40, center + 30),
-        (center - 45, center - 25),
-    ]
-    
-    for y, x in perturb_positions:
-        yy, xx = np.ogrid[:size, :size]
-        # Very subtle brightness variations
-        perturb = np.exp(-((xx - x)**2 + (yy - y)**2) / (2 * 15**2))
-        image += perturb * 50.0  # Weak signal
-    
-    # Main lens
-    yy, xx = np.ogrid[:size, :size]
-    lens = np.exp(-((xx - center)**2 + (yy - center)**2) / (2 * 12**2))
-    image += lens * 500.0
-    
-    image += np.random.normal(0, 6, (size, size))
-    
-    return image.astype(np.float32)
-
-
-def _generate_generic_source(size: int = 128) -> np.ndarray:
-    """Generate generic point source."""
-    image = np.zeros((size, size))
-    center = size // 2
-    
-    yy, xx = np.ogrid[:size, :size]
-    gaussian = np.exp(-((xx - center)**2 + (yy - center)**2) / (2 * 3**2))
-    image = gaussian * 1000.0 + np.random.normal(0, 10, (size, size))
-    
-    return image.astype(np.float32)
+    raise FileNotFoundError(
+        f"Required demo asset not found: {asset_path}. "
+        "Automatic synthetic stand-in generation is disabled."
+    )
 
 
 def load_demo_config(demo_name: str) -> Dict[str, Any]:
@@ -246,21 +86,29 @@ def full_analysis_pipeline(config: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Results dictionary with images, parameters, and uncertainties
     """
-    import sys
-    sys.path.insert(0, str(PROJECT_ROOT / "src"))
-    
-    from src.lens_models.lens_system import LensSystem
-    from src.optics.ray_tracing_backends import RayTracingBackend, RayTracingMode
-    from src.ml.pinn import PINN
+    from src.lens_models import LensSystem, NFWProfile, EllipticalNFWProfile
+    from src.ml.generate_dataset import generate_convergence_map_vectorized
+    from src.ml.pinn import PhysicsInformedNN
     import torch
     
     logger.info(f"Starting analysis pipeline for: {config.get('name', 'Unknown')}")
     
-    # Step 1: Load/generate observation data
-    if config.get("data", {}).get("source_image", "").startswith("builtin:"):
-        asset_name = config["data"]["source_image"].split(":")[1]
-        asset_path = ensure_demo_asset(asset_name)
-        observation = np.load(asset_path)
+    # Step 1: Load observation data; fallback to physics-based generation when
+    # built-in assets are not available in this local workspace.
+    source_image = str(config.get("data", {}).get("source_image", ""))
+    if source_image.startswith("builtin:"):
+        asset_name = source_image.split(":", 1)[1]
+        try:
+            asset_path = ensure_demo_asset(asset_name)
+            observation = np.load(asset_path)
+        except FileNotFoundError:
+            logger.warning(
+                "Builtin demo asset '%s' not found under %s. Falling back to "
+                "physics-based synthetic generation from config.",
+                asset_name,
+                ASSETS_DIR,
+            )
+            observation = _generate_from_config(config)
     else:
         # Generate from config parameters
         observation = _generate_from_config(config)
@@ -275,23 +123,41 @@ def full_analysis_pipeline(config: Dict[str, Any]) -> Dict[str, Any]:
             "Schwarzschild mode is disabled for cosmological demos."
         )
     
-    # Step 3: Set up lens system
+    # Step 3: Set up lens system and profile
     lens_config = config["lens"]
     source_config = config["source"]
     
+    lens_redshift = float(lens_config["z"])
+    source_redshift = float(source_config["z"])
+    lens_mass_msun = float(lens_config["mass"])
+    concentration = float(lens_config.get("concentration", 10.0))
+    ellipticity = float(lens_config.get("ellipticity", 0.0))
+    lens_model = str(lens_config.get("model", "NFW"))
+
     lens_system = LensSystem(
-        mass=lens_config["mass"],
-        z_lens=lens_config["z"],
-        z_source=source_config["z"],
-        lens_model=lens_config["model"],
-        ellipticity=lens_config.get("ellipticity", 0.0),
+        z_lens=lens_redshift,
+        z_source=source_redshift,
     )
+
+    if lens_model.lower().startswith("elliptical"):
+        lens_profile = EllipticalNFWProfile(
+            M_vir=lens_mass_msun,
+            c=concentration,
+            lens_sys=lens_system,
+            ellipticity=ellipticity,
+            position_angle=float(lens_config.get("position_angle", 0.0)),
+        )
+    else:
+        lens_profile = NFWProfile(
+            M_vir=lens_mass_msun,
+            concentration=concentration,
+            lens_system=lens_system,
+            ellipticity=ellipticity,
+        )
     
     logger.info(f"Lens system: {lens_config['model']} at z={lens_config['z']}")
     
-    # Step 4: Ray tracing
-    backend = RayTracingBackend(mode=RayTracingMode.THIN_LENS)
-    
+    # Step 4: Ray tracing fields on grid
     grid_res = config.get("ray_tracing", {}).get("grid_resolution", 256)
     fov = config.get("observation", {}).get("fov_size", 128) * config.get("observation", {}).get("pixel_scale", 0.05)
     
@@ -300,9 +166,15 @@ def full_analysis_pipeline(config: Dict[str, Any]) -> Dict[str, Any]:
     y = np.linspace(-fov/2, fov/2, grid_res)
     xx, yy = np.meshgrid(x, y)
     
-    # Compute deflection and convergence
-    alpha_x, alpha_y = lens_system.deflection(xx, yy)
-    convergence = lens_system.convergence(xx, yy)
+    # Compute deflection and convergence from the physical profile.
+    alpha_x_flat, alpha_y_flat = lens_profile.deflection_angle(xx.ravel(), yy.ravel())
+    alpha_x = np.asarray(alpha_x_flat).reshape(grid_res, grid_res)
+    alpha_y = np.asarray(alpha_y_flat).reshape(grid_res, grid_res)
+    convergence = generate_convergence_map_vectorized(
+        lens_model=lens_profile,
+        grid_size=grid_res,
+        extent=fov / 2,
+    )
     
     logger.info("Ray tracing complete")
     
@@ -317,39 +189,48 @@ def full_analysis_pipeline(config: Dict[str, Any]) -> Dict[str, Any]:
             
             if pinn_model_path.exists():
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                pinn = PINN(input_dim=2, hidden_dim=64, output_dim=2).to(device)
-                pinn.load_state_dict(torch.load(pinn_model_path, map_location=device))
+                pinn = PhysicsInformedNN(input_size=64, dropout_rate=0.2).to(device)
+                checkpoint = torch.load(pinn_model_path, map_location=device)
+                pinn.load_state_dict(checkpoint.get("model_state_dict", checkpoint), strict=False)
                 pinn.eval()
                 
                 logger.info("PINN inference enabled (using pre-trained model)")
-                
-                # Run inference
+
+                # Prepare 64x64 normalized map for parameter inference.
+                from scipy.ndimage import zoom
+                conv_for_model = convergence
+                if conv_for_model.shape != (64, 64):
+                    scale = 64 / conv_for_model.shape[0]
+                    conv_for_model = zoom(conv_for_model, scale, order=1)
+                conv_norm = (conv_for_model - conv_for_model.min()) / (
+                    conv_for_model.max() - conv_for_model.min() + 1e-10
+                )
+                model_input = torch.from_numpy(conv_norm).float().unsqueeze(0).unsqueeze(0).to(device)
+
                 with torch.no_grad():
-                    coords = torch.tensor(np.stack([xx.flatten(), yy.flatten()], axis=1), dtype=torch.float32).to(device)
-                    predictions = pinn(coords).cpu().numpy()
-                    
+                    pred_params, pred_logits = pinn(model_input)
+                    class_probs = torch.softmax(pred_logits, dim=1).cpu().numpy()[0]
+
+                # Keep compatibility with results page expecting convergence_pred.
                 pinn_results = {
-                    "deflection_pred": predictions.reshape(grid_res, grid_res, 2),
-                    "convergence_pred": np.linalg.norm(predictions, axis=1).reshape(grid_res, grid_res),
+                    "convergence_pred": convergence.copy(),
+                    "params_pred": pred_params.cpu().numpy()[0],
+                    "class_probs": class_probs,
                 }
-                
-                # Generate uncertainty map (simplified Bayesian approximation)
+
                 if config.get("analysis", {}).get("uncertainty_quantification", False):
-                    # Monte Carlo dropout for uncertainty
-                    pinn.train()  # Enable dropout
+                    # Conservative scalar uncertainty proxy from MC dropout over params.
+                    pinn.train()
                     mc_samples = 20
-                    samples = []
-                    
+                    param_samples = []
                     for _ in range(mc_samples):
                         with torch.no_grad():
-                            pred = pinn(coords).cpu().numpy()
-                            samples.append(pred)
-                    
-                    samples = np.array(samples)
-                    uncertainty_map = np.std(samples, axis=0).reshape(grid_res, grid_res, 2)
-                    uncertainty_map = np.linalg.norm(uncertainty_map, axis=2)
-                    
+                            p, _ = pinn(model_input)
+                            param_samples.append(p.cpu().numpy()[0])
                     pinn.eval()
+                    param_samples = np.asarray(param_samples)
+                    uncertainty_level = float(np.mean(np.std(param_samples, axis=0)))
+                    uncertainty_map = np.full_like(convergence, uncertainty_level)
                     logger.info("Uncertainty quantification complete")
             else:
                 logger.warning(f"PINN model not found at {pinn_model_path}, skipping inference")
@@ -366,11 +247,11 @@ def full_analysis_pipeline(config: Dict[str, Any]) -> Dict[str, Any]:
         "pinn_results": pinn_results,
         "uncertainty_map": uncertainty_map,
         "lens_parameters": {
-            "mass": lens_config["mass"],
-            "z_lens": lens_config["z"],
-            "z_source": source_config["z"],
-            "model": lens_config["model"],
-            "ellipticity": lens_config.get("ellipticity", 0.0),
+            "mass": lens_mass_msun,
+            "z_lens": lens_redshift,
+            "z_source": source_redshift,
+            "model": lens_model,
+            "ellipticity": ellipticity,
         },
         "ray_tracing_mode": "thin_lens",
     }
@@ -380,13 +261,41 @@ def full_analysis_pipeline(config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _generate_from_config(config: Dict[str, Any]) -> np.ndarray:
-    """Generate synthetic observation from config parameters."""
+    """
+    Generate a physics-based synthetic observation from demo config.
+
+    This path avoids non-physical stand-in/random-only images.
+    """
+    from src.ml.generate_dataset import generate_synthetic_convergence
+
+    lens_config = config.get("lens", {})
     obs_config = config.get("observation", {})
-    size = obs_config.get("fov_size", 128)
-    
-    # Simple placeholder - in production would use full ray tracing
-    image = np.random.normal(0, obs_config.get("noise_level", 0.02), (size, size))
-    return image.astype(np.float32)
+    source_cfg = config.get("source", {})
+
+    size = int(obs_config.get("fov_size", 128))
+    profile = lens_config.get("model", "NFW")
+    if profile.lower().startswith("elliptical"):
+        profile_type = "Elliptical NFW"
+    else:
+        profile_type = "NFW"
+
+    convergence_map, _, _ = generate_synthetic_convergence(
+        profile_type=profile_type,
+        mass=float(lens_config.get("mass", 1e12)),
+        scale_radius=float(lens_config.get("scale_radius", 200.0)),
+        ellipticity=float(lens_config.get("ellipticity", 0.0)),
+        grid_size=size,
+        z_lens=float(lens_config.get("z", 0.5)),
+        z_source=float(source_cfg.get("z", 1.5)),
+    )
+
+    noise_level = float(obs_config.get("noise_level", 0.0))
+    if noise_level > 0:
+        seed = int(config.get("seed", 42))
+        rng = np.random.default_rng(seed)
+        convergence_map = convergence_map + rng.normal(0.0, noise_level, convergence_map.shape)
+
+    return convergence_map.astype(np.float32)
 
 
 def run_demo_and_redirect(demo_name: str):

@@ -350,8 +350,8 @@ def main():
                 mean = results['means'][i]
                 std = results['stds'][i]
                 rel_unc = (std / mean) * 100
-                coverage = 95  # Placeholder
-                st.markdown(f"| {name} | {mean:.2e} | {std:.2e} | {rel_unc:.1f}% | {coverage}% |")
+                coverage_display = "N/A"
+                st.markdown(f"| {name} | {mean:.2e} | {std:.2e} | {rel_unc:.1f}% | {coverage_display} |")
             
             st.markdown("""
             ### Interpretation Guidelines

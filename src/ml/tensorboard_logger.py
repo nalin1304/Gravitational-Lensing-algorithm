@@ -299,8 +299,8 @@ class PINNLogger:
             Input tensor size
         """
         try:
-            dummy_input = torch.randn(input_size)
-            self.writer.add_graph(model, dummy_input)
+            sample_input = torch.randn(input_size)
+            self.writer.add_graph(model, sample_input)
             print("✓ Model graph logged to TensorBoard")
         except Exception as e:
             print(f"Warning: Could not log model graph: {e}")
@@ -387,7 +387,7 @@ if __name__ == '__main__':
     # Test logger
     logger = PINNLogger(log_dir='./test_runs', experiment_name='test')
     
-    # Log some dummy data
+    # Log some synthetic training traces
     for epoch in range(10):
         train_losses = {
             'total': np.random.rand(),

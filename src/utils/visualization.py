@@ -354,7 +354,7 @@ def plot_magnification_map(lens_model,
     >>> halo = NFWProfile(1e12, 5, lens_sys)
     >>> plot_magnification_map(halo)
     """
-    from optics.ray_tracing import compute_magnification
+    from src.optics.ray_tracing import compute_magnification
     
     setup_dark_style()
     fig, ax = plt.subplots(1, 1, figsize=figsize)

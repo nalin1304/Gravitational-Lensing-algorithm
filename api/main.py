@@ -16,9 +16,9 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, D
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import numpy as np
@@ -28,8 +28,8 @@ import base64
 import logging
 from datetime import datetime
 import uuid
-import asyncio
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 from src.utils.common import (
     load_pretrained_model,
@@ -57,23 +57,71 @@ try:
 except ImportError as e:
     logger.warning(f"Phase 12 features not available: {e}")
     PHASE_12_ENABLED = False
-    # Fallback placeholder to satisfy type annotations when DB is unavailable
+    # Minimal compatibility type for endpoint annotations when DB layer is unavailable.
     class Session:  # type: ignore
         pass
 
 # Initialize FastAPI app
+@asynccontextmanager
+async def app_lifespan(_: FastAPI):
+    """Application lifespan hooks (startup/shutdown)."""
+    logger.info("Starting Gravitational Lensing API...")
+    logger.info(f"GPU Available: {torch.cuda.is_available()}")
+
+    # Initialize database if Phase 12 enabled
+    if PHASE_12_ENABLED:
+        logger.info("Initializing database...")
+        try:
+            init_db()
+            db_info = get_db_info()
+            logger.info(f"Database connected: {db_info['type']} at {db_info['host']}")
+            logger.info("Phase 12 features: Authentication, User Management, Database Persistence")
+        except Exception as e:
+            logger.error(f"Database initialization failed: {e}")
+            logger.warning("Continuing without database features")
+
+    logger.info("API ready to accept requests")
+    try:
+        yield
+    finally:
+        logger.info("Shutting down Gravitational Lensing API...")
+        MODEL_CACHE.clear()
+        logger.info("Shutdown complete")
+
+
 app = FastAPI(
     title="Gravitational Lensing API",
     description="REST API for gravitational lensing analysis using Physics-Informed Neural Networks",
     version="2.0.0",  # Phase 12
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=app_lifespan,
 )
 
 # P1 SECURITY FIX: Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+async def rate_limit_exception_handler(request, exc):
+    """Return rate-limit responses with both error/detail keys for compatibility."""
+    raw_detail = str(getattr(exc, "detail", "rate limit exceeded"))
+    detail = (
+        raw_detail
+        if "rate limit" in raw_detail.lower()
+        else f"Rate limit exceeded: {raw_detail}"
+    )
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": detail,
+            "detail": detail,
+            "timestamp": get_current_timestamp(),
+        },
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
 # Include Phase 12 routers
 if PHASE_12_ENABLED:
@@ -120,13 +168,15 @@ class SyntheticRequest(BaseModel):
     ellipticity: float = Field(0.0, ge=0.0, le=0.5, description="Ellipticity parameter")
     grid_size: int = Field(64, description="Grid size (32, 64, or 128)")
     
-    @validator('profile_type')
+    @field_validator('profile_type')
+    @classmethod
     def validate_profile_type(cls, v):
         if v not in ["NFW", "Elliptical NFW"]:
             raise ValueError("profile_type must be 'NFW' or 'Elliptical NFW'")
         return v
     
-    @validator('grid_size')
+    @field_validator('grid_size')
+    @classmethod
     def validate_grid_size(cls, v):
         if v not in [32, 64, 128]:
             raise ValueError("grid_size must be 32, 64, or 128")
@@ -213,15 +263,19 @@ def decode_base64_to_array(b64_string: str) -> np.ndarray:
 
 
 def load_model_cached():
-    """Load model with caching"""
-    if 'model' not in MODEL_CACHE:
+    """Load model with caching and require a real trained checkpoint."""
+    model = MODEL_CACHE.get('model')
+    if model is None:
         logger.info("Loading PINN model into cache...")
-        MODEL_CACHE['model'] = load_pretrained_model()
-        if MODEL_CACHE['model'] is None:
-            logger.warning("No pretrained model found; inference will run in fallback mode.")
-        else:
-            logger.info("Model loaded successfully")
-    return MODEL_CACHE['model']
+        model = load_pretrained_model()
+        if model is None:
+            raise RuntimeError(
+                "No pretrained PINN model available. "
+                "Deploy a trained checkpoint before requesting inference."
+            )
+        MODEL_CACHE['model'] = model
+        logger.info("Model loaded successfully")
+    return model
 
 
 # ============================================================================
@@ -292,6 +346,11 @@ async def generate_synthetic(
     """
     job_id = generate_job_id()
     logger.info(f"Job {job_id}: Generating synthetic convergence map")
+    JOBS[job_id] = {
+        "status": "running",
+        "job_type": "synthetic",
+        "progress": 0.0,
+    }
     
     try:
         # Generate convergence map
@@ -324,11 +383,23 @@ async def generate_synthetic(
             },
             timestamp=get_current_timestamp()
         )
+        JOBS[job_id] = {
+            "status": "completed",
+            "job_type": "synthetic",
+            "progress": 100.0,
+            "result": response.model_dump(),
+        }
         
         logger.info(f"Job {job_id}: Successfully generated convergence map")
         return response
         
     except Exception as e:
+        JOBS[job_id] = {
+            "status": "failed",
+            "job_type": "synthetic",
+            "progress": 100.0,
+            "error": str(e),
+        }
         logger.error(f"Job {job_id}: Error generating convergence map: {str(e)}")
         raise HTTPException(
             status_code=500,
@@ -359,45 +430,26 @@ async def run_inference(
     """
     job_id = generate_job_id()
     logger.info(f"Job {job_id}: Running model inference")
+    JOBS[job_id] = {
+        "status": "running",
+        "job_type": "inference",
+        "progress": 0.0,
+    }
     
     try:
-        # Load model (may be None in fallback mode)
+        # Load model (strictly required)
         model = load_model_cached()
         
         # Prepare input (NumPy) always available
         convergence_map = np.array(request.convergence_map)
+        # Prepare tensor input
+        input_tensor = prepare_model_input(convergence_map, target_size=request.target_size)
+        # Move to GPU if available
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model = model.to(device)
+        input_tensor = input_tensor.to(device)
         
-        if model is not None:
-            # Prepare tensor input
-            input_tensor = prepare_model_input(convergence_map, target_size=request.target_size)
-            # Move to GPU if available
-            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-            model = model.to(device)
-            input_tensor = input_tensor.to(device)
-        
-        if model is None:
-            # Fallback: produce deterministic stats-based outputs for testing
-            predictions = np.array([
-                float(convergence_map.mean() * 1e12),  # M_vir proxy
-                float(convergence_map.std() * 100.0 + 50.0),  # r_s proxy
-                0.0,
-                0.0,
-                70.0,
-            ])
-            classification = np.array([0.34, 0.33, 0.33])
-            response = InferenceResponse(
-                job_id=job_id,
-                predictions={
-                    "M_vir": float(predictions[0]),
-                    "r_s": float(predictions[1]),
-                    "ellipticity": 0.0,
-                },
-                classification={f"class_{i}": float(classification[i]) for i in range(3)},
-                entropy=float(compute_classification_entropy(classification)),
-                timestamp=get_current_timestamp(),
-            )
-            logger.info(f"Job {job_id}: Inference completed in fallback mode")
-        elif request.mc_samples == 1:
+        if request.mc_samples == 1:
             # Single forward pass
             with torch.no_grad():
                 predictions, classification = model(input_tensor)
@@ -468,10 +520,35 @@ async def run_inference(
                 timestamp=get_current_timestamp()
             )
         
+        JOBS[job_id] = {
+            "status": "completed",
+            "job_type": "inference",
+            "progress": 100.0,
+            "result": response.model_dump(),
+        }
+        
         logger.info(f"Job {job_id}: Inference completed successfully")
         return response
         
+    except RuntimeError as e:
+        JOBS[job_id] = {
+            "status": "failed",
+            "job_type": "inference",
+            "progress": 100.0,
+            "error": str(e),
+        }
+        logger.error(f"Job {job_id}: Inference unavailable: {str(e)}")
+        raise HTTPException(
+            status_code=503,
+            detail=str(e)
+        )
     except Exception as e:
+        JOBS[job_id] = {
+            "status": "failed",
+            "job_type": "inference",
+            "progress": 100.0,
+            "error": str(e),
+        }
         logger.error(f"Job {job_id}: Error during inference: {str(e)}")
         raise HTTPException(
             status_code=500,
@@ -591,16 +668,51 @@ async def process_batch(batch_id: str, job_ids: List[str]):
     JOBS[batch_id]["status"] = "running"
     
     try:
+        results = []
+        missing = []
+        failed = 0
+
         for i, job_id in enumerate(job_ids):
-            # Simulate processing (replace with actual logic)
-            await asyncio.sleep(0.1)
-            
+            if job_id not in JOBS:
+                item = {
+                    "job_id": job_id,
+                    "status": "not_found",
+                    "error": "Referenced job ID not found",
+                }
+                missing.append(job_id)
+            else:
+                source = JOBS[job_id]
+                item = {
+                    "job_id": job_id,
+                    "status": source.get("status", "unknown"),
+                }
+                if "result" in source:
+                    item["result"] = source["result"]
+                if "error" in source:
+                    item["error"] = source["error"]
+                if source.get("status") == "failed":
+                    failed += 1
+
+            results.append(item)
             JOBS[batch_id]["completed"] = i + 1
-            JOBS[batch_id]["progress"] = (i + 1) / len(job_ids) * 100
-        
-        JOBS[batch_id]["status"] = "completed"
-        logger.info(f"Batch {batch_id}: Completed successfully")
-        
+            JOBS[batch_id]["progress"] = (i + 1) / max(len(job_ids), 1) * 100.0
+
+        JOBS[batch_id]["results"] = results
+
+        if missing or failed > 0:
+            # Keep status vocabulary compatible with API contract/tests.
+            JOBS[batch_id]["status"] = "failed"
+            JOBS[batch_id]["error"] = (
+                f"{len(missing)} missing jobs, {failed} failed jobs in batch aggregation"
+            )
+            logger.warning(
+                f"Batch {batch_id}: completed with errors "
+                f"(missing={len(missing)}, failed={failed})"
+            )
+        else:
+            JOBS[batch_id]["status"] = "completed"
+            logger.info(f"Batch {batch_id}: Completed successfully")
+
     except Exception as e:
         JOBS[batch_id]["status"] = "failed"
         JOBS[batch_id]["error"] = str(e)
@@ -618,6 +730,7 @@ async def http_exception_handler(request, exc):
         status_code=exc.status_code,
         content={
             "error": exc.detail,
+            "detail": exc.detail,
             "timestamp": get_current_timestamp()
         }
     )
@@ -635,42 +748,6 @@ async def general_exception_handler(request, exc):
             "timestamp": get_current_timestamp()
         }
     )
-
-
-# ============================================================================
-# Startup/Shutdown Events
-# ============================================================================
-
-@app.on_event("startup")
-async def startup_event():
-    """Actions to perform on startup"""
-    logger.info("Starting Gravitational Lensing API...")
-    logger.info(f"GPU Available: {torch.cuda.is_available()}")
-    
-    # Initialize database if Phase 12 enabled
-    if PHASE_12_ENABLED:
-        logger.info("Initializing database...")
-        try:
-            init_db()
-            db_info = get_db_info()
-            logger.info(f"Database connected: {db_info['type']} at {db_info['host']}")
-            logger.info("Phase 12 features: Authentication, User Management, Database Persistence")
-        except Exception as e:
-            logger.error(f"Database initialization failed: {e}")
-            logger.warning("Continuing without database features")
-    
-    logger.info("API ready to accept requests")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Actions to perform on shutdown"""
-    logger.info("Shutting down Gravitational Lensing API...")
-    
-    # Clear model cache
-    MODEL_CACHE.clear()
-    
-    logger.info("Shutdown complete")
 
 
 if __name__ == "__main__":

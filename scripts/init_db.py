@@ -6,7 +6,7 @@ Creates all tables and optionally creates an admin user
 Usage:
     python scripts/init_db.py
     python scripts/init_db.py --create-admin
-    python scripts/init_db.py --admin-email admin@example.com --admin-password securepass
+    python scripts/init_db.py --admin-email admin@lensing-lab.org --admin-password securepass
 
 Author: Phase 12 Implementation
 Date: October 2025

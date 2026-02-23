@@ -29,7 +29,7 @@ References
 import numpy as np
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
-import warnings
+from pathlib import Path
 
 @dataclass
 class HSTTarget:
@@ -168,82 +168,66 @@ class HSTValidation:
         
         Notes
         -----
-        This is a placeholder implementation. In production, this would use:
-        - astroquery.mast for MAST archive queries
-        - astropy.io.fits for FITS file reading
-        - Image preprocessing (flat-fielding, cosmic ray removal)
+        This method intentionally avoids synthetic surrogates. It loads
+        real local assets (Numpy/FITS) and fails fast if unavailable.
         """
         target = self.get_target(target_name)
         
         # Check cache
         if not force_download and target_name in self.downloaded_data:
             return self.downloaded_data[target_name]
-        
-        # Placeholder: In real implementation, use astroquery
-        warnings.warn(
-            f"HST data download not implemented. "
-            f"Would download {target.dataset_id} from MAST archive. "
-            f"Using simulated data instead."
+
+        cache_dir = Path(self.cache_dir)
+        candidate_dirs = [
+            cache_dir,
+            Path("./data/hst"),
+            Path("./assets/hst"),
+        ]
+        candidate_names = [
+            target_name,
+            target.dataset_id,
+            target.dataset_id.upper(),
+        ]
+
+        # Try NumPy assets first
+        for base in candidate_dirs:
+            for name in candidate_names:
+                npy_path = base / f"{name}.npy"
+                if npy_path.exists():
+                    image = np.load(npy_path)
+                    self.downloaded_data[target_name] = image
+                    return image
+
+        # Try FITS assets
+        for base in candidate_dirs:
+            for name in candidate_names:
+                fits_path = base / f"{name}.fits"
+                if fits_path.exists():
+                    try:
+                        from astropy.io import fits
+                    except ImportError as e:
+                        raise ImportError(
+                            "astropy is required to load FITS assets. "
+                            "Install astropy or provide .npy HST data."
+                        ) from e
+
+                    with fits.open(fits_path) as hdul:
+                        image_hdu = None
+                        for hdu in hdul:
+                            if getattr(hdu, "data", None) is not None and np.ndim(hdu.data) >= 2:
+                                image_hdu = hdu.data
+                                break
+                        if image_hdu is None:
+                            raise ValueError(f"No image data found in FITS file: {fits_path}")
+                        image = np.asarray(image_hdu, dtype=float)
+                    self.downloaded_data[target_name] = image
+                    return image
+
+        raise FileNotFoundError(
+            f"No real HST asset found for target '{target_name}' (dataset_id={target.dataset_id}). "
+            f"Expected local files in {candidate_dirs}: "
+            f"{[name + ext for name in candidate_names for ext in ['.npy', '.fits']]}"
         )
-        
-        # Generate placeholder image (512x512)
-        image = self._generate_placeholder_data(target)
-        
-        # Cache result
-        self.downloaded_data[target_name] = image
-        
-        return image
-    
-    def _generate_placeholder_data(self, target: HSTTarget) -> np.ndarray:
-        """
-        Generate placeholder HST-like data for testing.
-        
-        Parameters
-        ----------
-        target : HSTTarget
-            Target information
-        
-        Returns
-        -------
-        image : np.ndarray
-            Synthetic HST-like image
-        """
-        # Create 512x512 image
-        size = 512
-        image = np.zeros((size, size))
-        
-        # Add Gaussian noise (sky background)
-        image += np.random.normal(100, 10, image.shape)
-        
-        # Add point sources or Einstein ring depending on type
-        center = size // 2
-        
-        if target.lens_type == 'galaxy':
-            # Add Einstein ring or quad
-            radius = 20  # pixels
-            for angle in np.linspace(0, 2*np.pi, 4, endpoint=False):
-                x = center + int(radius * np.cos(angle))
-                y = center + int(radius * np.sin(angle))
-                # Add Gaussian PSF
-                xx, yy = np.ogrid[:size, :size]
-                psf = 1000 * np.exp(-((xx-x)**2 + (yy-y)**2) / (2 * 2**2))
-                image += psf
-        
-        elif target.lens_type == 'cluster':
-            # Add multiple arcs
-            for i in range(5):
-                angle = np.random.uniform(0, 2*np.pi)
-                radius = np.random.uniform(40, 80)
-                x = center + int(radius * np.cos(angle))
-                y = center + int(radius * np.sin(angle))
-                xx, yy = np.ogrid[:size, :size]
-                psf = 500 * np.exp(-((xx-x)**2 + (yy-y)**2) / (2 * 3**2))
-                image += psf
-        
-        # Add Poisson noise
-        image = np.random.poisson(np.maximum(image, 0))
-        
-        return image.astype(float)
     
     def compare_with_hst(
         self,
@@ -423,9 +407,16 @@ def validate_against_all_targets(
     for target_name in validation.list_available_targets():
         print(f"\nValidating against {target_name}...")
         
-        # Simulate image (placeholder - would call model.render())
-        sim_image = validation.download_hst_data(target_name)
-        sim_image *= 0.9  # Add slight mismatch for testing
+        # Render model prediction for this target without synthetic stand-ins.
+        if hasattr(model, "render_target"):
+            sim_image = model.render_target(validation.get_target(target_name))
+        elif hasattr(model, "render"):
+            sim_image = model.render(validation.get_target(target_name))
+        else:
+            raise AttributeError(
+                "Model must implement render_target(target) or render(target) "
+                "for HST validation."
+            )
         
         # Compare
         results = validation.compare_with_hst(sim_image, target_name)

@@ -249,10 +249,9 @@ class TestProfiler:
     def test_profile_block(self):
         """Test profile_block context manager"""
         with profile_block("test operation"):
-            _ = sum(range(10000))
+            total = sum(range(10000))
         
-        # Should complete without error
-        assert True
+        assert total == 49_995_000
     
     def test_performance_benchmark(self):
         """Test PerformanceBenchmark class"""

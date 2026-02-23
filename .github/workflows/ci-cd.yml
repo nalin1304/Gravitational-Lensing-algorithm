@@ -248,7 +248,7 @@ jobs:
     if: github.event_name == 'release'
     environment:
       name: production
-      url: https://api.lensing.example.com
+      url: ${{ vars.PRODUCTION_API_URL }}
     
     steps:
     - uses: actions/checkout@v4
@@ -269,9 +269,11 @@ jobs:
           --force-new-deployment
     
     - name: Verify deployment
+      env:
+        PRODUCTION_API_URL: ${{ vars.PRODUCTION_API_URL }}
       run: |
         sleep 30
-        curl -f https://api.lensing.example.com/health || exit 1
+        curl -f "${PRODUCTION_API_URL}/health" || exit 1
     
     - name: Notify Slack
       if: success()

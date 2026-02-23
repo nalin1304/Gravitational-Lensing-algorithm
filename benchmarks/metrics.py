@@ -11,7 +11,6 @@ import numpy as np
 from typing import Tuple, Dict, Optional
 from scipy import stats
 from skimage.metrics import structural_similarity as ssim
-from skimage.metrics import peak_signal_noise_ratio as psnr
 
 
 def calculate_relative_error(
@@ -52,12 +51,15 @@ def calculate_chi_squared(
     """
     if uncertainty is None:
         uncertainty = np.sqrt(np.abs(observed) + 1e-10)
-    
+
+    uncertainty = np.asarray(uncertainty, dtype=float)
+    uncertainty = np.where(np.abs(uncertainty) < 1e-12, 1e-12, uncertainty)
+
     chi2 = np.sum(((observed - predicted) / uncertainty) ** 2)
-    dof = len(observed.flatten()) - 1
+    dof = max(int(observed.size) - 1, 1)
     p_value = 1 - stats.chi2.cdf(chi2, dof)
-    
-    return chi2, p_value
+
+    return float(chi2), float(p_value)
 
 
 def calculate_rmse(
@@ -113,9 +115,12 @@ def calculate_structural_similarity(
         float: SSIM score (0 to 1, higher is better)
     """
     if data_range is None:
-        data_range = ground_truth.max() - ground_truth.min()
-    
-    return ssim(ground_truth, predicted, data_range=data_range)
+        data_range = float(np.max(ground_truth) - np.min(ground_truth))
+
+    if data_range <= 0.0:
+        return 1.0 if np.allclose(ground_truth, predicted) else 0.0
+
+    return float(ssim(ground_truth, predicted, data_range=data_range))
 
 
 def calculate_peak_signal_noise_ratio(
@@ -135,9 +140,15 @@ def calculate_peak_signal_noise_ratio(
         float: PSNR in dB (higher is better)
     """
     if data_range is None:
-        data_range = ground_truth.max() - ground_truth.min()
-    
-    return psnr(ground_truth, predicted, data_range=data_range)
+        data_range = float(np.max(ground_truth) - np.min(ground_truth))
+    if data_range <= 0.0:
+        data_range = 1.0
+
+    mse = float(np.mean((predicted - ground_truth) ** 2))
+    if np.isclose(mse, 0.0):
+        return float("inf")
+
+    return float(10.0 * np.log10((data_range ** 2) / mse))
 
 
 def calculate_pearson_correlation(
@@ -155,7 +166,7 @@ def calculate_pearson_correlation(
         tuple: (correlation, p_value)
     """
     correlation, p_value = stats.pearsonr(predicted.flatten(), ground_truth.flatten())
-    return correlation, p_value
+    return float(correlation), float(p_value)
 
 
 def calculate_fractional_bias(
@@ -172,7 +183,10 @@ def calculate_fractional_bias(
     Returns:
         float: Fractional bias
     """
-    return 2 * np.mean(predicted - ground_truth) / (np.mean(predicted) + np.mean(ground_truth))
+    denominator = float(np.mean(predicted) + np.mean(ground_truth))
+    if np.isclose(denominator, 0.0):
+        return 0.0
+    return float(2 * np.mean(predicted - ground_truth) / denominator)
 
 
 def calculate_residuals(
@@ -217,11 +231,15 @@ def calculate_confidence_interval(
     Returns:
         tuple: (lower_bound, upper_bound)
     """
-    mean = np.mean(data)
+    data = np.asarray(data)
+    mean = float(np.mean(data))
+    if data.size < 2:
+        return mean, mean
+
     sem = stats.sem(data)
     interval = sem * stats.t.ppf((1 + confidence) / 2, len(data) - 1)
-    
-    return mean - interval, mean + interval
+
+    return float(mean - interval), float(mean + interval)
 
 
 def calculate_normalized_cross_correlation(
@@ -238,10 +256,16 @@ def calculate_normalized_cross_correlation(
     Returns:
         float: Normalized cross-correlation (-1 to 1)
     """
-    pred_norm = (predicted - np.mean(predicted)) / np.std(predicted)
-    truth_norm = (ground_truth - np.mean(ground_truth)) / np.std(ground_truth)
-    
-    return np.mean(pred_norm * truth_norm)
+    pred_std = float(np.std(predicted))
+    truth_std = float(np.std(ground_truth))
+
+    if pred_std < 1e-12 or truth_std < 1e-12:
+        return 1.0 if np.allclose(predicted, ground_truth) else 0.0
+
+    pred_norm = (predicted - np.mean(predicted)) / pred_std
+    truth_norm = (ground_truth - np.mean(ground_truth)) / truth_std
+
+    return float(np.mean(pred_norm * truth_norm))
 
 
 def calculate_all_metrics(

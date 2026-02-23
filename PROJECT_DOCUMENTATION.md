@@ -1021,7 +1021,7 @@ echo "✅ Backup complete"
 curl -X POST http://localhost:8000/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "user@example.com",
+    "email": "observer@lensing-lab.org",
     "username": "user",
     "password": "SecurePassword123!"
   }'

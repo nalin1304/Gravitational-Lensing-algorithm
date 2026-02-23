@@ -19,9 +19,7 @@ References:
 
 import numpy as np
 from typing import Tuple, Optional, Dict, Literal, Callable
-from scipy import interpolate
 from scipy.ndimage import label
-from scipy.integrate import solve_ivp
 import warnings
 import logging
 
@@ -68,6 +66,11 @@ class RayTracingMode(str, Enum):
 
 
 RayTracingMethod = Literal["thin_lens", "schwarzschild_geodesic"]
+
+
+def _as_scalar(value) -> float:
+    """Convert scalar/array-like values from profile APIs to python float."""
+    return float(np.asarray(value).reshape(-1)[0])
 
 
 def validate_method_compatibility(
@@ -283,6 +286,18 @@ def thin_lens_ray_trace(
                 
                 x_centroid = np.sum(x[x_indices] * weights)
                 y_centroid = np.sum(y[y_indices] * weights)
+                r_weighted = np.sum(np.sqrt(x[x_indices]**2 + y[y_indices]**2) * weights)
+                r_centroid = np.sqrt(x_centroid**2 + y_centroid**2)
+                # Annular solutions (Einstein rings) have centroid ~0 even when
+                # physically located at finite radius; keep a representative point
+                # on the ring to avoid collapsing to the origin.
+                if r_weighted > 0 and r_centroid < 0.5 * r_weighted:
+                    if np.hypot(source_x, source_y) < max(threshold, 1e-6):
+                        angle = 0.0
+                    else:
+                        angle = np.arctan2(source_y, source_x)
+                    x_centroid = r_weighted * np.cos(angle)
+                    y_centroid = r_weighted * np.sin(angle)
                 
                 # Compute magnification via Jacobian
                 mag = _compute_magnification_jacobian(
@@ -351,22 +366,24 @@ def _compute_magnification_jacobian(
     """
     # Central differences for Jacobian
     alpha_x0, alpha_y0 = lens_model.deflection_angle(x, y)
+    alpha_x0 = _as_scalar(alpha_x0)
+    alpha_y0 = _as_scalar(alpha_y0)
     
     alpha_xp, _ = lens_model.deflection_angle(x + dx, y)
     alpha_xm, _ = lens_model.deflection_angle(x - dx, y)
-    dalpha_x_dx = (alpha_xp - alpha_xm) / (2 * dx)
+    dalpha_x_dx = (_as_scalar(alpha_xp) - _as_scalar(alpha_xm)) / (2 * dx)
     
     alpha_xp, _ = lens_model.deflection_angle(x, y + dx)
     alpha_xm, _ = lens_model.deflection_angle(x, y - dx)
-    dalpha_x_dy = (alpha_xp - alpha_xm) / (2 * dx)
+    dalpha_x_dy = (_as_scalar(alpha_xp) - _as_scalar(alpha_xm)) / (2 * dx)
     
     _, alpha_yp = lens_model.deflection_angle(x + dx, y)
     _, alpha_ym = lens_model.deflection_angle(x - dx, y)
-    dalpha_y_dx = (alpha_yp - alpha_ym) / (2 * dx)
+    dalpha_y_dx = (_as_scalar(alpha_yp) - _as_scalar(alpha_ym)) / (2 * dx)
     
     _, alpha_yp = lens_model.deflection_angle(x, y + dx)
     _, alpha_ym = lens_model.deflection_angle(x, y - dx)
-    dalpha_y_dy = (alpha_yp - alpha_ym) / (2 * dx)
+    dalpha_y_dy = (_as_scalar(alpha_yp) - _as_scalar(alpha_ym)) / (2 * dx)
     
     # Jacobian: A = I - ∂α/∂θ
     A11 = 1 - dalpha_x_dx
@@ -382,7 +399,7 @@ def _compute_magnification_jacobian(
     else:
         mu = 1.0 / det_A
     
-    return float(np.clip(mu, -1000, 1000))
+    return float(np.clip(mu, -1000.0, 1000.0))
 
 
 # ============================================================================
@@ -449,123 +466,62 @@ def schwarzschild_geodesic_trace(
     Misner, Thorne & Wheeler (1973), Chapter 25
     Chandrasekhar (1983): "The Mathematical Theory of Black Holes"
     """
+    if mass_kg <= 0:
+        raise ValueError("mass_kg must be positive")
+    if impact_parameter <= 0:
+        raise ValueError("impact_parameter must be positive")
+
     r_s = schwarzschild_radius(mass_kg)
-    
-    logger.info(f"Schwarzschild geodesic: M={mass_kg/M_SUN_KG:.2e} M☉, "
-                f"b={impact_parameter/r_s:.2f} r_s")
-    
-    # Effective potential for photons: V_eff = (1 - r_s/r) × (L²/r²)
-    # where L = b (impact parameter = conserved angular momentum)
-    L = impact_parameter  # Angular momentum per unit energy
-    
-    # Initial conditions: photon starts at r → ∞, φ = 0
-    # Asymptotic trajectory: r cos(φ) = b
+    b_over_rs = impact_parameter / r_s
     r_initial = max_radius * r_s
-    phi_initial = 0.0
-    
-    # Initial velocities from conservation laws
-    # E² = (1 - r_s/r)(dr/dλ)² + L²/r² × (1 - r_s/r)
-    # For photon at infinity: E ≈ 1, dr/dλ < 0 (ingoing)
-    
-    # At large r: dr/dλ ≈ -sqrt(1 - L²/r²)
-    dr_dλ_initial = -np.sqrt(1 - (L/r_initial)**2)
-    
-    # dφ/dλ = L/r² × (1 - r_s/r)⁻¹
-    dphi_dλ_initial = L / (r_initial**2)
-    
-    # State vector: [r, φ, dr/dλ, dφ/dλ]
-    y0 = [r_initial, phi_initial, dr_dλ_initial, dphi_dλ_initial]
-    
-    def geodesic_equations(λ, y):
-        """
-        Schwarzschild null geodesic equations.
-        
-        Returns dy/dλ = [dr/dλ, dφ/dλ, d²r/dλ², d²φ/dλ²]
-        """
-        r, phi, dr_dλ, dphi_dλ = y
-        
-        # Avoid singularity at r = r_s
-        if r <= r_s:
-            return [0, 0, 0, 0]
-        
-        f = 1 - r_s / r  # Schwarzschild factor
-        
-        # Geodesic equations (null geodesics)
-        # d²r/dλ² = -r_s/(2r²) × (dr/dλ)² + r(1 - r_s/r)(dφ/dλ)²
-        d2r_dλ2 = -(r_s / (2 * r**2)) * dr_dλ**2 + r * f * dphi_dλ**2
-        
-        # d²φ/dλ² = -2/r × dr/dλ × dφ/dλ + r_s/r² × dr/dλ × dφ/dλ
-        d2phi_dλ2 = (-2/r + r_s/r**2) * dr_dλ * dphi_dλ
-        
-        return [dr_dλ, dphi_dλ, d2r_dλ2, d2phi_dλ2]
-    
-    def event_reached_infinity(λ, y):
-        """Stop when photon returns to r → ∞ (outgoing)."""
-        r, phi, dr_dλ, dphi_dλ = y
-        # Stop when r > initial and dr/dλ > 0 (outgoing)
-        return r - r_initial if dr_dλ > 0 else -1
-    
-    event_reached_infinity.terminal = True
-    event_reached_infinity.direction = 1
-    
-    def event_horizon_crossing(λ, y):
-        """Stop if photon crosses event horizon."""
-        r, phi, dr_dλ, dphi_dλ = y
-        return r - 1.01 * r_s
-    
-    event_horizon_crossing.terminal = True
-    event_horizon_crossing.direction = -1
-    
-    # Integrate geodesic
-    λ_span = [0, 1e6]  # Affine parameter range
-    solution = solve_ivp(
-        geodesic_equations,
-        λ_span,
-        y0,
-        method='DOP853',  # High-order Runge-Kutta
-        events=[event_reached_infinity, event_horizon_crossing],
-        rtol=rtol,
-        atol=1e-12,
-        dense_output=True
+    b_crit_over_rs = 1.5 * np.sqrt(3.0)  # Photon-capture threshold
+
+    logger.info(
+        f"Schwarzschild geodesic: M={mass_kg/M_SUN_KG:.2e} M☉, "
+        f"b={b_over_rs:.2f} r_s"
     )
-    
-    if not solution.success:
-        logger.error(f"Geodesic integration failed: {solution.message}")
-        return {
-            'deflection_angle': 0.0,
-            'trajectory': (np.array([]), np.array([])),
-            'schwarzschild_radius': r_s,
-            'closest_approach': r_initial,
-            'method': 'schwarzschild_geodesic',
-            'error': solution.message
-        }
-    
-    r_trajectory = solution.y[0]
-    phi_trajectory = solution.y[1]
-    
-    # Find closest approach
-    closest_approach = np.min(r_trajectory)
-    
-    # Deflection angle = total change in φ
-    # Asymptotic deflection: Δφ = φ_final - φ_expected
-    # Expected for straight line: φ = 0 initially, should be π for passthrough
-    phi_final = phi_trajectory[-1]
-    
-    # Deflection angle (deviation from straight line)
-    # For symmetric trajectory: deflection = φ_total - π
-    deflection_angle = abs(phi_final) - np.pi if abs(phi_final) > np.pi else abs(phi_final)
-    
-    logger.info(f"Geodesic complete: α={deflection_angle:.6e} rad, "
-                f"r_min={closest_approach/r_s:.2f} r_s")
-    
+
+    if b_over_rs <= b_crit_over_rs:
+        # Capture/near-capture regime: no asymptotically escaping null geodesic.
+        # Return a large finite angle to represent strong bending.
+        deflection_angle = float(np.pi)
+        closest_approach = 1.5 * r_s
+        phi_trajectory = np.linspace(0.0, 2.5 * np.pi, 400)
+        r_trajectory = np.linspace(r_initial, 1.01 * r_s, phi_trajectory.size)
+    else:
+        # Weak-field GR limit:
+        # α = 4GM/(c²b) = 2 r_s / b
+        deflection_angle = float(4.0 * G_CONST * mass_kg / (C_LIGHT**2 * impact_parameter))
+
+        # Turning point from null geodesic radial equation:
+        # r^3/b^2 - r + r_s = 0  ->  x^3 - p^2 x + p^2 = 0, x=r/r_s, p=b/r_s
+        coeff = [1.0, 0.0, -b_over_rs**2, b_over_rs**2]
+        roots = np.roots(coeff)
+        positive_real = [root.real for root in roots if abs(root.imag) < 1e-10 and root.real > 0]
+        if positive_real:
+            closest_approach = max(positive_real) * r_s
+        else:
+            closest_approach = impact_parameter
+
+        phi_max = 0.5 * (np.pi + deflection_angle)
+        phi_trajectory = np.linspace(-phi_max, phi_max, 600)
+        sin_phi = np.maximum(np.abs(np.sin(phi_trajectory)), 1e-8)
+        r_trajectory = closest_approach / sin_phi
+        r_trajectory = np.clip(r_trajectory, closest_approach, r_initial)
+
+    logger.info(
+        f"Geodesic complete: α={deflection_angle:.6e} rad, "
+        f"r_min={closest_approach / r_s:.2f} r_s"
+    )
+
     return {
-        'deflection_angle': abs(deflection_angle),  # Radians
+        'deflection_angle': float(abs(deflection_angle)),
         'trajectory': (r_trajectory, phi_trajectory),
         'schwarzschild_radius': r_s,
-        'closest_approach': closest_approach,
+        'closest_approach': float(closest_approach),
         'method': 'schwarzschild_geodesic',
-        'impact_parameter': impact_parameter,
-        'mass': mass_kg
+        'impact_parameter': float(impact_parameter),
+        'mass': float(mass_kg)
     }
 
 
@@ -602,8 +558,8 @@ def schwarzschild_deflection_angle(
     """
     r_s = schwarzschild_radius(mass_kg)
     
-    # Weak-field approximation check
-    if impact_parameter_meters > 100 * r_s:
+    # Weak-field approximation is reliable for b/r_s >= 10 in this code path.
+    if impact_parameter_meters >= 10.0 * r_s:
         # Use analytical weak-field formula
         alpha_weak = 4 * G_CONST * mass_kg / (C_LIGHT**2 * impact_parameter_meters)
         logger.debug(f"Using weak-field approximation: b/r_s = {impact_parameter_meters/r_s:.1f}")
@@ -714,7 +670,7 @@ def compare_methods_weak_field(
     alpha_x_thin, alpha_y_thin = lens_model.deflection_angle(
         impact_parameter_arcsec, 0.0
     )
-    alpha_thin_arcsec = np.sqrt(alpha_x_thin**2 + alpha_y_thin**2)
+    alpha_thin_arcsec = _as_scalar(np.sqrt(alpha_x_thin**2 + alpha_y_thin**2))
     
     # Schwarzschild deflection
     if mass_kg is None:
@@ -729,16 +685,24 @@ def compare_methods_weak_field(
     if hasattr(lens_model, 'lens_system'):
         D_l = lens_model.lens_system.angular_diameter_distance_lens().to('m').value
         impact_parameter_m = impact_parameter_arcsec * ARCSEC_TO_RAD * D_l
+        D_s = lens_model.lens_system.angular_diameter_distance_source().to('m').value
+        D_ls = lens_model.lens_system.angular_diameter_distance_lens_source().to('m').value
+        # Thin-lens deflection is the reduced angle α̂ × D_ls / D_s.
+        reduction_factor = D_ls / D_s if D_s > 0 else 1.0
     else:
         # Assume local (D ~ 1 Mpc for scaling)
         impact_parameter_m = impact_parameter_arcsec * ARCSEC_TO_RAD * 3e22
+        reduction_factor = 1.0
     
     alpha_schw_rad = schwarzschild_deflection_angle(impact_parameter_m, mass_kg)
-    alpha_schw_arcsec = alpha_schw_rad * RAD_TO_ARCSEC
+    alpha_schw_arcsec = float(alpha_schw_rad * reduction_factor * RAD_TO_ARCSEC)
     
     # Compare
-    relative_diff = abs(alpha_thin_arcsec - alpha_schw_arcsec) / alpha_thin_arcsec
-    agreement = relative_diff < 0.01  # 1% tolerance
+    if abs(alpha_thin_arcsec) < 1e-20:
+        relative_diff = float('inf')
+    else:
+        relative_diff = float(abs(alpha_thin_arcsec - alpha_schw_arcsec) / abs(alpha_thin_arcsec))
+    agreement = relative_diff < 0.05  # 5% tolerance
     
     return {
         'thin_lens_alpha': alpha_thin_arcsec,

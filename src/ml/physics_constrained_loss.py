@@ -221,17 +221,62 @@ class PhysicsConstrainedPINNLoss(nn.Module):
         This is faster than autograd but less accurate for training.
         Use for validation and testing, not training loss.
         """
-        kernel = torch.tensor([
-            [0, 1, 0],
-            [1, -4, 1],
-            [0, 1, 0]
-        ], dtype=psi.dtype, device=psi.device).view(1, 1, 3, 3)
-        
-        # Pad to maintain size
-        psi_padded = F.pad(psi, (1, 1, 1, 1), mode='replicate')
-        laplacian = F.conv2d(psi_padded, kernel, padding=0)
-        
-        return laplacian
+        if psi.ndim != 4 or psi.shape[1] != 1:
+            raise ValueError(f"Expected psi shape [B, 1, H, W], got {tuple(psi.shape)}")
+
+        _, _, h, w = psi.shape
+        # Coordinate grids in this project are normalized to [-1, 1].
+        # Finite differences must be scaled by the physical spacing.
+        hx = 2.0 / max(w - 1, 1)
+        hy = 2.0 / max(h - 1, 1)
+
+        d2psi_dx2 = torch.zeros_like(psi)
+        d2psi_dy2 = torch.zeros_like(psi)
+
+        if w >= 3:
+            d2psi_dx2[:, :, :, 1:-1] = (
+                psi[:, :, :, 2:] - 2.0 * psi[:, :, :, 1:-1] + psi[:, :, :, :-2]
+            ) / (hx * hx)
+            if w >= 4:
+                # 2nd-order one-sided stencils at boundaries.
+                d2psi_dx2[:, :, :, 0:1] = (
+                    2.0 * psi[:, :, :, 0:1]
+                    - 5.0 * psi[:, :, :, 1:2]
+                    + 4.0 * psi[:, :, :, 2:3]
+                    - psi[:, :, :, 3:4]
+                ) / (hx * hx)
+                d2psi_dx2[:, :, :, -1:] = (
+                    2.0 * psi[:, :, :, -1:]
+                    - 5.0 * psi[:, :, :, -2:-1]
+                    + 4.0 * psi[:, :, :, -3:-2]
+                    - psi[:, :, :, -4:-3]
+                ) / (hx * hx)
+            else:
+                d2psi_dx2[:, :, :, 0:1] = d2psi_dx2[:, :, :, 1:2]
+                d2psi_dx2[:, :, :, -1:] = d2psi_dx2[:, :, :, -2:-1]
+
+        if h >= 3:
+            d2psi_dy2[:, :, 1:-1, :] = (
+                psi[:, :, 2:, :] - 2.0 * psi[:, :, 1:-1, :] + psi[:, :, :-2, :]
+            ) / (hy * hy)
+            if h >= 4:
+                d2psi_dy2[:, :, 0:1, :] = (
+                    2.0 * psi[:, :, 0:1, :]
+                    - 5.0 * psi[:, :, 1:2, :]
+                    + 4.0 * psi[:, :, 2:3, :]
+                    - psi[:, :, 3:4, :]
+                ) / (hy * hy)
+                d2psi_dy2[:, :, -1:, :] = (
+                    2.0 * psi[:, :, -1:, :]
+                    - 5.0 * psi[:, :, -2:-1, :]
+                    + 4.0 * psi[:, :, -3:-2, :]
+                    - psi[:, :, -4:-3, :]
+                ) / (hy * hy)
+            else:
+                d2psi_dy2[:, :, 0:1, :] = d2psi_dy2[:, :, 1:2, :]
+                d2psi_dy2[:, :, -1:, :] = d2psi_dy2[:, :, -2:-1, :]
+
+        return d2psi_dx2 + d2psi_dy2
     
     def compute_gradient_autograd(
         self,
@@ -378,27 +423,33 @@ class PhysicsConstrainedPINNLoss(nn.Module):
         gradient : torch.Tensor
             [B, 2, H, W] where [:, 0] = ∂ψ/∂x, [:, 1] = ∂ψ/∂y
         """
-        # Sobel operator for gradients
-        sobel_x = torch.tensor([
-            [-1, 0, 1],
-            [-2, 0, 2],
-            [-1, 0, 1]
-        ], dtype=psi.dtype, device=psi.device).view(1, 1, 3, 3) / 8.0
-        
-        sobel_y = torch.tensor([
-            [-1, -2, -1],
-            [0, 0, 0],
-            [1, 2, 1]
-        ], dtype=psi.dtype, device=psi.device).view(1, 1, 3, 3) / 8.0
-        
-        psi_padded = F.pad(psi, (1, 1, 1, 1), mode='replicate')
-        
-        dpsi_dx = F.conv2d(psi_padded, sobel_x, padding=0)
-        dpsi_dy = F.conv2d(psi_padded, sobel_y, padding=0)
-        
-        gradient = torch.cat([dpsi_dx, dpsi_dy], dim=1)
-        
-        return gradient
+        if psi.ndim != 4 or psi.shape[1] != 1:
+            raise ValueError(f"Expected psi shape [B, 1, H, W], got {tuple(psi.shape)}")
+
+        _, _, h, w = psi.shape
+        hx = 2.0 / max(w - 1, 1)
+        hy = 2.0 / max(h - 1, 1)
+
+        dpsi_dx = torch.zeros_like(psi)
+        dpsi_dy = torch.zeros_like(psi)
+
+        if w >= 3:
+            dpsi_dx[:, :, :, 1:-1] = (psi[:, :, :, 2:] - psi[:, :, :, :-2]) / (2.0 * hx)
+            dpsi_dx[:, :, :, 0:1] = (-3.0 * psi[:, :, :, 0:1] + 4.0 * psi[:, :, :, 1:2] - psi[:, :, :, 2:3]) / (2.0 * hx)
+            dpsi_dx[:, :, :, -1:] = (3.0 * psi[:, :, :, -1:] - 4.0 * psi[:, :, :, -2:-1] + psi[:, :, :, -3:-2]) / (2.0 * hx)
+        elif w == 2:
+            dpsi_dx[:, :, :, 0:1] = (psi[:, :, :, 1:2] - psi[:, :, :, 0:1]) / hx
+            dpsi_dx[:, :, :, -1:] = dpsi_dx[:, :, :, 0:1]
+
+        if h >= 3:
+            dpsi_dy[:, :, 1:-1, :] = (psi[:, :, 2:, :] - psi[:, :, :-2, :]) / (2.0 * hy)
+            dpsi_dy[:, :, 0:1, :] = (-3.0 * psi[:, :, 0:1, :] + 4.0 * psi[:, :, 1:2, :] - psi[:, :, 2:3, :]) / (2.0 * hy)
+            dpsi_dy[:, :, -1:, :] = (3.0 * psi[:, :, -1:, :] - 4.0 * psi[:, :, -2:-1, :] + psi[:, :, -3:-2, :]) / (2.0 * hy)
+        elif h == 2:
+            dpsi_dy[:, :, 0:1, :] = (psi[:, :, 1:2, :] - psi[:, :, 0:1, :]) / hy
+            dpsi_dy[:, :, -1:, :] = dpsi_dy[:, :, 0:1, :]
+
+        return torch.cat([dpsi_dx, dpsi_dy], dim=1)
     
     def mass_conservation_loss(self, kappa: torch.Tensor) -> torch.Tensor:
         """
@@ -617,7 +668,7 @@ def create_coordinate_grid(
     grid = grid.unsqueeze(0).repeat(batch_size, 1, 1, 1)  # [B, 2, H, W]
     
     # Enable gradients
-    grid.requires_grad = requires_grad
+    grid.requires_grad_(requires_grad)
     
     return grid
 

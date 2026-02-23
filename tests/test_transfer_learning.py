@@ -109,7 +109,7 @@ class TestGradientReversalLayer:
         # Forward
         output = GradientReversalLayer.apply(x, lambda_param)
         
-        # Backward with dummy loss
+        # Backward with synthetic loss
         loss = output.sum()
         loss.backward()
         

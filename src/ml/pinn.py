@@ -12,6 +12,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from typing import Dict, Tuple, Optional
+from functools import lru_cache
+
+from astropy.cosmology import FlatLambdaCDM
+from astropy import units as u
+
+
+@lru_cache(maxsize=64)
+def _angular_diameter_distances_kpc(
+    z_l: float,
+    z_s: float,
+    H0: float,
+    Omega_m: float
+) -> Tuple[float, float, float]:
+    """Compute FLRW angular-diameter distances (kpc) for fixed cosmology."""
+    cosmo = FlatLambdaCDM(H0=H0, Om0=Omega_m)
+    D_l = cosmo.angular_diameter_distance(z_l).to(u.kpc).value
+    D_s = cosmo.angular_diameter_distance(z_s).to(u.kpc).value
+    D_ls = cosmo.angular_diameter_distance_z1z2(z_l, z_s).to(u.kpc).value
+    return float(D_l), float(D_s), float(D_ls)
 
 
 class PhysicsInformedNN(nn.Module):
@@ -296,13 +315,11 @@ def compute_nfw_deflection(
     # Convert to proper units
     M_vir_solar = M_vir * 1e12  # Convert to solar masses
     
-    # Compute angular diameter distances (simplified flat ΛCDM)
-    # D_l ≈ c/H0 * z_l (for small z)
-    # D_s ≈ c/H0 * z_s
-    # D_ls ≈ c/H0 * (z_s - z_l)
-    D_l = (c / H0) * z_l * 1000  # kpc (multiply by 1000 for Mpc to kpc)
-    D_s = (c / H0) * z_s * 1000  # kpc
-    D_ls = (c / H0) * (z_s - z_l) * 1000  # kpc
+    # Compute angular diameter distances using flat ΛCDM (not small-z approximation).
+    D_l_val, D_s_val, D_ls_val = _angular_diameter_distances_kpc(z_l, z_s, H0, Omega_m)
+    D_l = torch.tensor(D_l_val, device=theta_x.device, dtype=theta_x.dtype)
+    D_s = torch.tensor(D_s_val, device=theta_x.device, dtype=theta_x.dtype)
+    D_ls = torch.tensor(D_ls_val, device=theta_x.device, dtype=theta_x.dtype)
     
     # Distance ratio
     D_ratio = D_ls / D_s  # Dimensionless
@@ -490,7 +507,7 @@ def physics_informed_loss(
     residual_x = theta_x - beta_x - alpha_x
     residual_y = theta_y - beta_y - alpha_y
     
-    physics_residual = torch.mean(residual_x**2 + residual_y**2)
+    raw_physics_residual = torch.mean(residual_x**2 + residual_y**2)
     
     # Parameter regularization: Penalize physically unrealistic values
     # M_vir should be in range [1e11, 1e15] M_sun (i.e., [0.1, 1000] in units of 10^12)
@@ -510,7 +527,7 @@ def physics_informed_loss(
     regularization = regularization + torch.mean(r_s_penalty**2)
     
     # Combined physics loss
-    physics_loss = physics_residual + regularization
+    physics_loss = raw_physics_residual + regularization
     
     # Total loss
     total_loss = mse_params + ce_class + lambda_physics * physics_loss
@@ -519,8 +536,11 @@ def physics_informed_loss(
         'total': total_loss,
         'mse_params': mse_params,
         'ce_class': ce_class,
-        'physics_residual': physics_residual,
-        'regularization': regularization
+        # Keep `physics_residual` as the weighted physics term used in total loss.
+        'physics_residual': physics_loss,
+        'raw_physics_residual': raw_physics_residual,
+        'regularization': regularization,
+        'physics_total': physics_loss,
     }
 
 

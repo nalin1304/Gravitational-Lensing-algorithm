@@ -38,8 +38,8 @@ K_BOLTZMANN = 1.380649e-23  # J K⁻¹
 # ============================================================================
 
 #: Solar mass [kg]
-#: Reference: IAU 2015 nominal solar mass
-M_SUN_KG = 1.98847e30  # kg
+#: Reference: IAU 2015 nominal solar mass (Astropy constant value)
+M_SUN_KG = 1.988409870698051e30  # kg
 
 #: Solar mass [10¹² M☉] - convenient for galaxy cluster calculations
 M_SUN_1E12 = M_SUN_KG / 1e12  # kg (for expressing masses in 10¹² M☉)

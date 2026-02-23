@@ -7,6 +7,7 @@ Tests cosmological distance calculations and unit conversions.
 import pytest
 import numpy as np
 from src.lens_models.lens_system import LensSystem
+from src.utils.constants import H0_PLANCK, OMEGA_M_PLANCK
 
 
 class TestLensSystem:
@@ -22,8 +23,8 @@ class TestLensSystem:
         """Test that lens system initializes correctly."""
         assert self.lens_sys.z_l == self.z_lens
         assert self.lens_sys.z_s == self.z_source
-        assert self.lens_sys.cosmology.H0.value == 70.0
-        assert self.lens_sys.cosmology.Om0 == 0.3
+        assert self.lens_sys.cosmology.H0.value == H0_PLANCK
+        assert self.lens_sys.cosmology.Om0 == OMEGA_M_PLANCK
     
     def test_invalid_redshifts(self):
         """Test that invalid redshifts raise errors."""
@@ -123,7 +124,7 @@ class TestLensSystem:
         assert 'LensSystem' in repr_str
         assert '0.500' in repr_str  # z_lens
         assert '1.500' in repr_str  # z_source
-        assert '70.0' in repr_str   # H0
+        assert f'{H0_PLANCK:.1f}' in repr_str   # H0
 
 
 class TestLensSystemDifferentRedshifts:

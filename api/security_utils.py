@@ -11,8 +11,6 @@ from fastapi import HTTPException, UploadFile, status
 from typing import Optional, Dict, Any
 import bleach
 import os
-import magic
-from pathlib import Path
 
 # File upload configuration
 ALLOWED_FITS_EXTENSIONS = {".fits", ".fit", ".fts", ".fits.gz"}
@@ -52,11 +50,11 @@ def validate_fits_file(
         )
     
     # Check file extension
-    file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in ALLOWED_FITS_EXTENSIONS:
+    file_name = (file.filename or "").lower()
+    if not any(file_name.endswith(ext) for ext in ALLOWED_FITS_EXTENSIONS):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file extension. Allowed: {', '.join(ALLOWED_FITS_EXTENSIONS)}"
+            detail=f"Invalid file extension. Allowed: {', '.join(sorted(ALLOWED_FITS_EXTENSIONS))}"
         )
     
     # Check file size (if available in headers)
@@ -64,7 +62,7 @@ def validate_fits_file(
     if hasattr(file, 'size') and file.size:
         if file.size > max_size:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail=f"File too large. Maximum size: {max_size_mb or MAX_FILE_SIZE_MB}MB"
             )
 
@@ -162,7 +160,7 @@ async def read_file_in_chunks(
         total_size += len(chunk)
         if total_size > max_bytes:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail=f"File too large. Maximum size: {max_bytes / 1024 / 1024:.1f}MB"
             )
         

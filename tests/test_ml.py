@@ -43,7 +43,7 @@ class TestPhysicsInformedNN:
         model = PhysicsInformedNN(input_size=64, dropout_rate=0.2)
         batch_size = 8
         
-        # Create dummy input
+        # Create synthetic input
         x = torch.randn(batch_size, 1, 64, 64)
         
         # Forward pass

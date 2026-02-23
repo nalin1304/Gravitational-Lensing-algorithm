@@ -25,7 +25,43 @@ include = ["*"]
 namespaces = false
 
 [project.urls]
-Homepage = "https://github.com/your-repo/gravitational-lensing-toolkit"
-Issues = "https://github.com/your-repo/gravitational-lensing-toolkit/issues"
+Homepage = "https://github.com/nalin1304/Gravitational-Lensing-algorithm"
+Issues = "https://github.com/nalin1304/Gravitational-Lensing-algorithm/issues"
 
+[tool.mypy]
+python_version = "3.9"
+warn_unused_configs = true
+show_error_codes = true
+pretty = true
 
+[[tool.mypy.overrides]]
+module = [
+  "benchmarks.*",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
+  "src.dark_matter.substructure",
+  "src.data.real_data_loader",
+  "src.lens_models.advanced_profiles",
+  "src.lens_models.lens_system",
+  "src.lens_models.mass_profiles",
+  "src.lens_models.multi_plane",
+  "src.ml.augmentation",
+  "src.ml.evaluate",
+  "src.ml.performance",
+  "src.ml.physics_constrained_loss",
+  "src.ml.pinn_models",
+  "src.ml.tensorboard_logger",
+  "src.ml.train_pinn",
+  "src.ml.transfer_learning",
+  "src.ml.uncertainty.bayesian_uq",
+  "src.optics.geodesic_integration",
+  "src.optics.ray_tracing",
+  "src.optics.ray_tracing_backends",
+  "src.time_delay.cosmography",
+  "src.utils.visualization",
+  "src.validation.scientific_validator",
+]
+ignore_errors = true

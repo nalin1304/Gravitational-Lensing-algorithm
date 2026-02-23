@@ -23,6 +23,10 @@ from typing import Dict, Tuple, Optional, Union, List
 from pathlib import Path
 from dataclasses import dataclass
 import warnings
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 # Optional dependencies - graceful fallback
 try:
@@ -288,10 +292,10 @@ class FITSDataLoader:
         elif 'MIRI' in instrument:
             return 0.11  # JWST MIRI: ~0.11 arcsec/pixel
         
-        # Default fallback
-        warnings.warn(
-            "Could not determine pixel scale from header. Using default 0.05 arcsec/pixel",
-            UserWarning
+        # Default fallback for sparse headers lacking WCS/instrument metadata.
+        logger.info(
+            "Could not determine pixel scale from FITS header. "
+            "Using default 0.05 arcsec/pixel."
         )
         return 0.05
     

@@ -357,3 +357,32 @@ def compute_time_delay(theta_x: float, theta_y: float,
     time_delay_days = time_delay_s / (24 * 3600)
     
     return float(time_delay_days)
+
+
+class RayTracer:
+    """
+    Backward-compatible wrapper around :func:`ray_trace`.
+
+    Older notebooks reference a ``RayTracer`` class with a ``trace_rays``
+    method. This wrapper preserves that interface while delegating to the
+    maintained functional API.
+    """
+
+    def __init__(self, lens_model):
+        self.lens_model = lens_model
+
+    def trace_rays(
+        self,
+        source_position: Tuple[float, float],
+        grid_extent: float = 3.0,
+        grid_resolution: int = 300,
+        threshold: float = 0.05
+    ) -> Dict:
+        return ray_trace(
+            source_position=source_position,
+            lens_model=self.lens_model,
+            grid_extent=grid_extent,
+            grid_resolution=grid_resolution,
+            threshold=threshold,
+            return_maps=True,
+        )

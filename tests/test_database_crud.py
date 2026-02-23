@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from datetime import datetime, timedelta
 import sys
 from pathlib import Path
@@ -45,8 +46,9 @@ from api.main import app
 def test_db():
     """Create in-memory SQLite database for testing"""
     engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False}
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
@@ -79,7 +81,7 @@ def test_user(test_db):
     """Create a test user"""
     user = create_user(
         db=test_db,
-        email="test@example.com",
+        email="test@lensing-lab.org",
         username="testuser",
         password="testpass123",
         full_name="Test User",
@@ -93,7 +95,7 @@ def test_admin(test_db):
     """Create a test admin user"""
     admin = create_user(
         db=test_db,
-        email="admin@example.com",
+        email="admin@lensing-lab.org",
         username="admin",
         password="adminpass123",
         full_name="Admin User",
@@ -131,14 +133,14 @@ class TestDatabaseModels:
         """Test creating a user"""
         user = create_user(
             db=test_db,
-            email="newuser@example.com",
+            email="newuser@lensing-lab.org",
             username="newuser",
             password="password123",
             full_name="New User"
         )
         
         assert user.id is not None
-        assert user.email == "newuser@example.com"
+        assert user.email == "newuser@lensing-lab.org"
         assert user.username == "newuser"
         assert user.role == UserRole.USER
         assert user.is_active is True
@@ -159,7 +161,7 @@ class TestDatabaseModels:
         with pytest.raises(Exception):
             create_user(
                 db=test_db,
-                email="different@example.com",
+                email="different@lensing-lab.org",
                 username=test_user.username,
                 password="pass123"
             )
@@ -212,7 +214,7 @@ class TestAuthentication:
     
     def test_authenticate_with_email(self, test_db, test_user):
         """Test authentication with email"""
-        user = authenticate_user(test_db, "test@example.com", "testpass123")
+        user = authenticate_user(test_db, "test@lensing-lab.org", "testpass123")
         assert user is not None
         assert user.id == test_user.id
     
@@ -264,7 +266,7 @@ class TestAuthEndpoints:
         response = client.post(
             "/api/v1/auth/register",
             json={
-                "email": "newapi@example.com",
+                "email": "newapi@lensing-lab.org",
                 "username": "newapi",
                 "password": "securepass123",
                 "full_name": "New API User"
@@ -273,7 +275,7 @@ class TestAuthEndpoints:
         
         assert response.status_code == 201
         data = response.json()
-        assert data["email"] == "newapi@example.com"
+        assert data["email"] == "newapi@lensing-lab.org"
         assert data["username"] == "newapi"
         assert data["role"] == "user"
     
@@ -329,7 +331,7 @@ class TestAuthEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["username"] == "testuser"
-        assert data["email"] == "test@example.com"
+        assert data["email"] == "test@lensing-lab.org"
     
     def test_get_current_user_unauthorized(self, client):
         """Test getting current user without auth"""

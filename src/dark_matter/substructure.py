@@ -179,9 +179,15 @@ class SubstructureDetector:
         return np.array(features)
     
     def _smooth_model_prediction(self, positions: np.ndarray) -> np.ndarray:
-        """Predict smooth model flux ratios (placeholder)."""
-        # In real implementation, use smooth lens model
-        return np.ones(len(positions))
+        """
+        Predict smooth-model flux ratios from image geometry.
+
+        Uses a simple axisymmetric proxy where flux scales as 1/r and is
+        normalized to mean unity across images.
+        """
+        radii = np.linalg.norm(positions, axis=1)
+        inv_r = 1.0 / np.maximum(radii, 1e-6)
+        return inv_r / np.mean(inv_r)
     
     def train(
         self,

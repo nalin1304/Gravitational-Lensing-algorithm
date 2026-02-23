@@ -9,6 +9,7 @@ import numpy as np
 from astropy.cosmology import FlatLambdaCDM
 from astropy import units as u
 from astropy import constants as const
+from src.utils.constants import H0_PLANCK, OMEGA_M_PLANCK
 
 
 class LensSystem:
@@ -25,9 +26,9 @@ class LensSystem:
     z_source : float
         Redshift of the background source (must be > z_lens)
     H0 : float, optional
-        Hubble constant in km/s/Mpc (default: 70)
+        Hubble constant in km/s/Mpc (default: Planck 2018 value 67.4)
     Om0 : float, optional
-        Matter density parameter (default: 0.3)
+        Matter density parameter (default: Planck 2018 value 0.315)
         
     Attributes
     ----------
@@ -45,7 +46,13 @@ class LensSystem:
     >>> print(f"Critical surface density: {sigma_cr:.2e} Msun/pc²")
     """
     
-    def __init__(self, z_lens: float, z_source: float, H0: float = 70.0, Om0: float = 0.3):
+    def __init__(
+        self,
+        z_lens: float,
+        z_source: float,
+        H0: float = H0_PLANCK,
+        Om0: float = OMEGA_M_PLANCK,
+    ):
         """Initialize the lens system with redshifts and cosmology."""
         if z_lens <= 0:
             raise ValueError("Lens redshift must be positive")

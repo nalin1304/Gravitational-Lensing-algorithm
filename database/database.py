@@ -7,7 +7,7 @@ Author: Phase 12 Implementation
 Date: October 2025
 """
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 from typing import Generator
@@ -128,7 +128,7 @@ def check_db_connection() -> bool:
     """
     try:
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         return True
     except Exception as e:
         print(f"Database connection failed: {e}")

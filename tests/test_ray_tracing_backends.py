@@ -13,11 +13,7 @@ import warnings
 from typing import Tuple
 
 # Import modules to test
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-from optics.ray_tracing_backends import (
+from src.optics.ray_tracing_backends import (
     thin_lens_ray_trace,
     schwarzschild_geodesic_trace,
     schwarzschild_deflection_angle,
@@ -26,11 +22,11 @@ from optics.ray_tracing_backends import (
     schwarzschild_radius,
     ray_trace
 )
-from utils.constants import (
+from src.utils.constants import (
     M_SUN_KG, G_CONST, C_LIGHT, ARCSEC_TO_RAD, RAD_TO_ARCSEC
 )
-from lens_models.lens_system import LensSystem
-from lens_models.mass_profiles import PointMassProfile, NFWProfile
+from src.lens_models.lens_system import LensSystem
+from src.lens_models.mass_profiles import PointMassProfile, NFWProfile
 
 
 # ============================================================================
@@ -69,13 +65,10 @@ def solar_mass_lens(lens_system_local):
 class TestMethodValidation:
     """Test that method validation catches inappropriate usage."""
     
-    def test_schwarzschild_warns_high_redshift(self):
-        """Schwarzschild method should warn for z > 0.1."""
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+    def test_schwarzschild_rejects_high_redshift(self):
+        """Schwarzschild method must reject cosmological redshifts."""
+        with pytest.raises(ValueError, match="z_lens ≤ 0.05"):
             validate_method_compatibility("schwarzschild_geodesic", 0.5, 1.5)
-            assert len(w) == 1
-            assert "flat, static spacetime" in str(w[0].message)
     
     def test_schwarzschild_no_warn_low_redshift(self):
         """No warning for z << 0.1."""
@@ -91,8 +84,8 @@ class TestMethodValidation:
             warnings.simplefilter("always")
             validate_method_compatibility("thin_lens", 0.5, 1.5)
             validate_method_compatibility("thin_lens", 2.0, 3.0)
-            # No errors should occur
-            assert True
+            # No warnings expected for standard cosmological thin-lens use.
+            assert len(w) == 0
 
 
 # ============================================================================

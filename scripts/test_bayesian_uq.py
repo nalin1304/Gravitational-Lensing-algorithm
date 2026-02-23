@@ -62,7 +62,7 @@ def test_forward_pass():
     
     model = BayesianPINN()
     
-    # Create dummy input
+    # Create synthetic input
     x = torch.randn(100, 5)
     
     # Forward pass

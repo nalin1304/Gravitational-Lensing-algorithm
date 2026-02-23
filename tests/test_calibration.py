@@ -126,7 +126,7 @@ class TestSyntheticDataCalibrator:
         """Test applying calibration to synthetic maps."""
         calibrator = SyntheticDataCalibrator()
         
-        # Create dummy synthetic maps
+        # Create synthetic synthetic maps
         synthetic_maps = np.random.rand(10, 128, 128)
         calibration_factor = 1.05
         

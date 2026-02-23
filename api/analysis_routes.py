@@ -8,7 +8,7 @@ Date: October 2025
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -72,12 +72,10 @@ class AnalysisResponse(BaseModel):
     progress: float
     is_public: bool
     tags: List[str]
-    created_at: str
-    updated_at: Optional[str]
-    completed_at: Optional[str]
-    
-    class Config:
-        from_attributes = True
+    created_at: datetime
+    updated_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AnalysisUpdate(BaseModel):
@@ -96,13 +94,11 @@ class JobResponse(BaseModel):
     status: str
     progress: float
     error_message: Optional[str]
-    created_at: str
-    started_at: Optional[str]
-    completed_at: Optional[str]
+    created_at: datetime
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
     duration_seconds: Optional[float]
-    
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ResultResponse(BaseModel):
@@ -113,10 +109,8 @@ class ResultResponse(BaseModel):
     data: Dict[str, Any]
     result_metadata: Dict[str, Any]
     confidence_score: Optional[float]
-    created_at: str
-    
-    class Config:
-        from_attributes = True
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserStatsResponse(BaseModel):
@@ -495,7 +489,7 @@ async def list_results(
 # Statistics Endpoints
 # ============================================================================
 
-@router.get("/stats", response_model=UserStatsResponse)
+@router.get("/user-stats", response_model=UserStatsResponse)
 async def get_stats(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)

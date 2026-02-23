@@ -6,12 +6,10 @@ with real-time progress monitoring and hyperparameter tuning.
 """
 
 import streamlit as st
-import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from pathlib import Path
 import sys
-import time
 
 # Configure page FIRST
 st.set_page_config(
@@ -38,8 +36,7 @@ inject_custom_css()
 TRAINING_AVAILABLE = False
 import_error = None
 try:
-    from src.ml.pinn import PhysicsInformedNN
-    from src.ml.generate_dataset import generate_convergence_map_vectorized
+    from src.ml.train_pinn import train_pinn
     TRAINING_AVAILABLE = True
 except ImportError as e:
     import_error = str(e)
@@ -48,10 +45,11 @@ except ImportError as e:
 def plot_training_curves(history):
     """Plot training and validation loss curves."""
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    train_loss = history.get('train_loss', history.get('loss', []))
     
     # Total loss
     ax = axes[0]
-    ax.plot(history['train_loss'], label='Training', linewidth=2)
+    ax.plot(train_loss, label='Training', linewidth=2)
     if 'val_loss' in history and len(history['val_loss']) > 0:
         ax.plot(history['val_loss'], label='Validation', linewidth=2)
     ax.set_xlabel('Epoch', fontsize=11)
@@ -228,81 +226,62 @@ def main():
     
     if st.button("▶️ Start Training", type="primary", use_container_width=True):
         
-        # Create placeholders for live updates
+        # Create UI containers for live updates
         progress_bar = st.progress(0)
         status_text = st.empty()
         metrics_cols = st.columns(4)
-        chart_placeholder = st.empty()
+        chart_slot = st.empty()
         
         try:
             # Initialize model
-            status_text.text("Initializing model...")
-            model = PhysicsInformedNN(
-                input_size=64,
-                dropout_rate=0.2
-            ).to(device)
-            
-            # Generate dataset
-            status_text.text("Generating training dataset...")
-            show_info(f"Generating {n_samples} synthetic convergence maps...")
-            
-            # Simulate dataset generation (in real implementation, call generate_training_dataset)
-            time.sleep(1)
-            
-            # Initialize training history
-            history = {
-                'train_loss': [],
-                'val_loss': [],
-                'param_loss': [],
-                'class_loss': [],
-                'physics_loss': []
-            }
-            
-            # Training loop
-            for epoch in range(num_epochs):
-                # Simulate training
-                epoch_loss = 1.0 / (epoch + 1) * np.random.uniform(0.8, 1.2)
-                param_loss = epoch_loss * 0.4 * np.random.uniform(0.9, 1.1)
-                class_loss = epoch_loss * 0.3 * np.random.uniform(0.9, 1.1)
-                physics_loss = epoch_loss * 0.3 * np.random.uniform(0.9, 1.1)
-                val_loss = epoch_loss * np.random.uniform(1.0, 1.2)
-                
-                # Update history
-                history['train_loss'].append(epoch_loss)
-                history['val_loss'].append(val_loss)
-                history['param_loss'].append(param_loss)
-                history['class_loss'].append(class_loss)
-                history['physics_loss'].append(physics_loss)
-                
-                # Update UI
-                progress = (epoch + 1) / num_epochs
-                progress_bar.progress(progress)
-                status_text.text(f"Epoch {epoch + 1}/{num_epochs}")
-                
-                metrics_cols[0].metric("Train Loss", f"{epoch_loss:.4f}")
-                metrics_cols[1].metric("Val Loss", f"{val_loss:.4f}")
-                metrics_cols[2].metric("Param Loss", f"{param_loss:.4f}")
-                metrics_cols[3].metric("Physics Loss", f"{physics_loss:.4f}")
-                
-                # Update chart every 5 epochs
-                if (epoch + 1) % 5 == 0 or epoch == num_epochs - 1:
-                    with chart_placeholder:
-                        fig = plot_training_curves(history)
-                        st.pyplot(fig)
-                        plt.close()
-                
-                time.sleep(0.1)  # Simulate computation
-            
+            status_text.text("Starting real PINN training...")
+            show_info(f"Generating and training on {n_samples} physical synthetic samples.")
+            show_warning(
+                "Current backend trainer optimizes primary regression loss; "
+                "UI loss-weight sliders are informational until full multi-term trainer wiring is added."
+            )
+
             # Save model
-            status_text.text("Saving model...")
             results_dir = project_root / "results"
             results_dir.mkdir(exist_ok=True)
             model_path = results_dir / "pinn_model_best.pth"
-            
-            # Simulate save
+
+            progress_bar.progress(0.05)
+            model, raw_history = train_pinn(
+                model_type='nfw',
+                n_epochs=int(num_epochs),
+                learning_rate=float(learning_rate),
+                batch_size=int(batch_size * grid_size),
+                n_samples=int(n_samples),
+                device=device,
+                save_path=model_path,
+            )
+            progress_bar.progress(0.9)
+
+            history = {
+                'train_loss': raw_history.get('loss', []),
+                'val_loss': raw_history.get('val_loss', []),
+                'param_loss': raw_history.get('param_loss', []),
+                'class_loss': raw_history.get('class_loss', []),
+                'physics_loss': raw_history.get('physics_loss', []),
+                'loss': raw_history.get('loss', []),
+            }
+
+            if history['train_loss']:
+                metrics_cols[0].metric("Train Loss", f"{history['train_loss'][-1]:.4f}")
+            metrics_cols[1].metric("Val Loss", "N/A")
+            metrics_cols[2].metric("Param Loss", "N/A")
+            metrics_cols[3].metric("Physics Loss", "N/A")
+
+            with chart_slot:
+                fig = plot_training_curves(history)
+                st.pyplot(fig)
+                plt.close()
+
             st.session_state['trained_model'] = model
             st.session_state['training_history'] = history
-            
+            progress_bar.progress(1.0)
+            status_text.text("Training complete")
             show_success(f"Training complete! Model saved to {model_path.name}")
             
         except Exception as e:

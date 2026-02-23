@@ -14,13 +14,16 @@ import numpy as np
 import h5py
 from typing import Tuple, Dict, Optional, List
 from pathlib import Path
-import sys
 import warnings
-sys.path.append('..')
 
-from ..lens_models import LensSystem, NFWProfile, PointMassProfile
-from ..lens_models.mass_profiles import WarmDarkMatterProfile, SIDMProfile
-from ..optics import WaveOpticsEngine
+from src.lens_models import (
+    LensSystem,
+    NFWProfile,
+    PointMassProfile,
+    EllipticalNFWProfile,
+)
+from src.lens_models.mass_profiles import WarmDarkMatterProfile, SIDMProfile
+from src.optics import WaveOpticsEngine
 
 
 def generate_convergence_map_vectorized(
@@ -115,6 +118,81 @@ def generate_convergence_map(
     
     # Delegate to vectorized version
     return generate_convergence_map_vectorized(lens_model, grid_size, extent)
+
+
+def generate_synthetic_convergence(
+    profile_type: str,
+    mass: float,
+    scale_radius: float,
+    ellipticity: float,
+    grid_size: int,
+    z_lens: float = 0.5,
+    z_source: float = 1.5
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Generate a synthetic convergence map for API/UI workflows.
+
+    Parameters
+    ----------
+    profile_type : str
+        Either ``"NFW"`` or ``"Elliptical NFW"``.
+    mass : float
+        Virial mass in solar masses.
+    scale_radius : float
+        Scale radius in kpc. Retained for API compatibility; the current
+        profile constructors derive scale from mass/concentration.
+    ellipticity : float
+        Ellipticity for the elliptical profile.
+    grid_size : int
+        Output map resolution.
+    z_lens : float, optional
+        Lens redshift.
+    z_source : float, optional
+        Source redshift.
+
+    Returns
+    -------
+    convergence_map : np.ndarray
+        Convergence map with shape ``(grid_size, grid_size)``.
+    X : np.ndarray
+        X-coordinate grid in arcseconds.
+    Y : np.ndarray
+        Y-coordinate grid in arcseconds.
+    """
+    # Keep concentration fixed and deterministic for reproducible synthetic maps.
+    concentration = 10.0
+    lens_sys = LensSystem(z_lens=z_lens, z_source=z_source)
+
+    if profile_type == "NFW":
+        lens = NFWProfile(
+            M_vir=mass,
+            concentration=concentration,
+            lens_system=lens_sys,
+        )
+    elif profile_type == "Elliptical NFW":
+        lens = EllipticalNFWProfile(
+            M_vir=mass,
+            c=concentration,
+            lens_sys=lens_sys,
+            ellipticity=ellipticity,
+            position_angle=45.0,
+        )
+    else:
+        raise ValueError(f"Unknown profile type: {profile_type}")
+
+    # Use a physically sensible, deterministic FoV in arcsec.
+    extent = 2.0
+    x = np.linspace(-extent, extent, grid_size)
+    y = np.linspace(-extent, extent, grid_size)
+    X, Y = np.meshgrid(x, y)
+
+    convergence_map = generate_convergence_map_vectorized(
+        lens_model=lens,
+        grid_size=grid_size,
+        extent=extent
+    )
+
+    return convergence_map, X, Y
 
 
 def add_noise(

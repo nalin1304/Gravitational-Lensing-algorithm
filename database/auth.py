@@ -95,6 +95,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         str: Encoded JWT token
     """
     to_encode = data.copy()
+    if "sub" in to_encode:
+        # JWT subject is required to be a string by the JOSE spec.
+        to_encode["sub"] = str(to_encode["sub"])
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
@@ -116,6 +119,8 @@ def create_refresh_token(data: dict) -> str:
         str: Encoded JWT refresh token
     """
     to_encode = data.copy()
+    if "sub" in to_encode:
+        to_encode["sub"] = str(to_encode["sub"])
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -213,12 +218,28 @@ async def get_current_user(
     
     # Decode token
     payload = decode_token(token)
-    user_id: int = payload.get("sub")
-    
-    if user_id is None:
+    token_type = payload.get("type")
+    if token_type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id_claim = payload.get("sub")
+    if user_id_claim is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        user_id = int(user_id_claim)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid subject in authentication token",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -259,16 +280,21 @@ async def get_user_from_api_key(api_key: str, db: Session) -> User:
     Raises:
         HTTPException: If API key is invalid
     """
-    # Hash the API key
-    key_hash = hash_password(api_key)
-    
-    # Find API key in database
-    api_key_obj = db.query(ApiKey).filter(
-        ApiKey.key_hash == key_hash,
+    # bcrypt uses per-hash salts, so equality lookup on hash is invalid.
+    # Narrow candidate set by prefix, then verify hash.
+    key_prefix = api_key[:8]
+    candidates = db.query(ApiKey).filter(
+        ApiKey.key_prefix == key_prefix,
         ApiKey.is_active == True
-    ).first()
-    
-    if not api_key_obj:
+    ).all()
+
+    api_key_obj = None
+    for candidate in candidates:
+        if verify_password(api_key, candidate.key_hash):
+            api_key_obj = candidate
+            break
+
+    if api_key_obj is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key"

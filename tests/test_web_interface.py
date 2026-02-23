@@ -251,7 +251,7 @@ class TestModelLoading:
         model = load_pretrained_model()
         model.eval()
         
-        # Create dummy input
+        # Create synthetic input
         x = torch.randn(1, 1, 64, 64)
         
         with torch.no_grad():

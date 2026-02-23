@@ -6,10 +6,10 @@
 # ============================================================================
 # 1. Set database password:
 #    - Option A: Create .env file with: DB_PASSWORD=your_secure_password
-#    - Option B: Replace ${DB_PASSWORD:-changeme} below with actual password
+#    - Option B: Replace ${DB_PASSWORD:-lensing_password_dev_only} below with actual password
 # 
 # 2. For production deployment:
-#    - Change DB_PASSWORD from 'changeme'
+#    - Change DB_PASSWORD from 'lensing_password_dev_only'
 #    - Set ENVIRONMENT=production in api service
 #    - Configure resource limits as needed
 #
@@ -30,7 +30,7 @@ services:
     environment:
       POSTGRES_USER: lensing
       # 🔴 CHANGE THIS: Set secure password in .env as DB_PASSWORD
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}  
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-lensing_password_dev_only}  
       POSTGRES_DB: lensing_db
     # P2 SECURITY FIX: Enable SSL/TLS encryption
     command: >
@@ -85,7 +85,7 @@ services:
       - .env  # Load environment variables from .env file
     environment:
       # 🔴 CHANGE THIS: Must match POSTGRES_PASSWORD above
-      - DATABASE_URL=postgresql://lensing:${DB_PASSWORD:-changeme}@postgres:5432/lensing_db
+      - DATABASE_URL=postgresql://lensing:${DB_PASSWORD:-lensing_password_dev_only}@postgres:5432/lensing_db
       - REDIS_URL=redis://redis:6379
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - LOG_LEVEL=${LOG_LEVEL:-info}

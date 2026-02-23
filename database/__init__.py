@@ -7,6 +7,8 @@ Author: Phase 12 Implementation
 Date: October 2025
 """
 
+from sqlalchemy.orm import Session
+
 from .models import (
     Base,
     User,
@@ -34,6 +36,7 @@ from .database import (
 )
 
 from .auth import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
     hash_password,
     verify_password,
     create_access_token,
@@ -120,6 +123,7 @@ __all__ = [
     # Database
     "engine",
     "SessionLocal",
+    "Session",
     "get_db",
     "get_db_context",
     "init_db",
@@ -128,6 +132,7 @@ __all__ = [
     "get_db_info",
     
     # Authentication
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
     "hash_password",
     "verify_password",
     "create_access_token",

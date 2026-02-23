@@ -135,8 +135,10 @@ class TestRayTracingNFW:
         images = results['image_positions']
         
         # Should find at least 1 image (may find fewer than point mass due to extended distribution)
-        # NFW deflection is weaker, so we use a more lenient threshold
-        assert len(images) >= 0  # At minimum, should not crash
+        # NFW deflection is weaker, so this check focuses on numerical validity.
+        assert images is not None
+        if len(images) > 0:
+            assert np.isfinite(np.asarray(images)).all()
     
     def test_nfw_runs_without_errors(self):
         """Test that NFW ray tracing completes without errors."""
@@ -282,7 +284,9 @@ class TestRayTracingEdgeCases:
         
         # May find 0-2 images (weak lensing regime)
         images = results['image_positions']
-        assert len(images) >= 0
+        assert images is not None
+        if len(images) > 0:
+            assert np.isfinite(np.asarray(images)).all()
     
     def test_small_grid_extent(self):
         """Test with small grid extent."""

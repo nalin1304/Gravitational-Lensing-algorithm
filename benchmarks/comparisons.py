@@ -25,6 +25,35 @@ from benchmarks.metrics import calculate_all_metrics, print_metrics_report
 logger = logging.getLogger(__name__)
 
 
+def _unpack_synthetic_output(output: Tuple) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+    """
+    Normalize synthetic generator outputs to ``(map, {'x': X, 'y': Y})``.
+
+    Supports both legacy return shapes:
+    - (map, coords_dict)
+    - (map, X, Y)
+    """
+    if len(output) == 2:
+        convergence_map, coords = output
+        if isinstance(coords, dict) and "x" in coords and "y" in coords:
+            return convergence_map, coords
+        if isinstance(coords, dict):
+            # Backward-compatible fallback used in some tests/mocks where
+            # coordinates are omitted.
+            h, w = convergence_map.shape[:2]
+            x = np.linspace(-1.0, 1.0, w)
+            y = np.linspace(-1.0, 1.0, h)
+            X, Y = np.meshgrid(x, y)
+            return convergence_map, {"x": X, "y": Y}
+        raise ValueError("Expected coords dict or (map, X, Y) tuple")
+
+    if len(output) == 3:
+        convergence_map, X, Y = output
+        return convergence_map, {"x": X, "y": Y}
+
+    raise ValueError(f"Unexpected synthetic output arity: {len(output)}")
+
+
 def analytic_nfw_convergence(
     x: np.ndarray,
     y: np.ndarray,
@@ -45,24 +74,36 @@ def analytic_nfw_convergence(
         np.ndarray: Convergence map
     """
     r = np.sqrt(x**2 + y**2)
-    
-    # NFW parameters
-    rho_0 = mass / (4 * np.pi * scale_radius**3 * (np.log(1 + concentration) - concentration/(1 + concentration)))
+
+    # NFW scale normalization (dimensionless benchmark scaling).
+    rho_0 = mass / (4 * np.pi * scale_radius**3 * (np.log(1 + concentration) - concentration / (1 + concentration)))
     kappa_s = rho_0 * scale_radius
-    
-    # Scaled radius
-    x_scaled = r / scale_radius
-    
-    # Convergence (simplified for benchmark)
-    kappa = np.zeros_like(r)
-    mask = x_scaled > 0
-    
-    # NFW convergence formula
-    kappa[mask] = 2 * kappa_s / (x_scaled[mask]**2 - 1) * (
-        1 - 2 / np.sqrt(1 - x_scaled[mask]**2) * np.arctanh(np.sqrt((1 - x_scaled[mask])/(1 + x_scaled[mask])))
-    )
-    
-    # Normalize
+
+    x_scaled = np.maximum(r / scale_radius, 1e-8)
+    kappa = np.zeros_like(r, dtype=float)
+
+    # Bartelmann/Wright-Brainerd projected NFW convergence kernel.
+    mask_lt = x_scaled < 1.0 - 1e-8
+    if np.any(mask_lt):
+        x1 = x_scaled[mask_lt]
+        f1 = (1.0 / (x1**2 - 1.0)) * (
+            1.0 - (2.0 / np.sqrt(1.0 - x1**2)) * np.arctanh(np.sqrt((1.0 - x1) / (1.0 + x1)))
+        )
+        kappa[mask_lt] = 2.0 * kappa_s * f1
+
+    mask_gt = x_scaled > 1.0 + 1e-8
+    if np.any(mask_gt):
+        x2 = x_scaled[mask_gt]
+        f2 = (1.0 / (x2**2 - 1.0)) * (
+            1.0 - (2.0 / np.sqrt(x2**2 - 1.0)) * np.arctan(np.sqrt((x2 - 1.0) / (x2 + 1.0)))
+        )
+        kappa[mask_gt] = 2.0 * kappa_s * f2
+
+    mask_eq = ~(mask_lt | mask_gt)
+    if np.any(mask_eq):
+        kappa[mask_eq] = 2.0 * kappa_s / 3.0
+
+    # Normalize for benchmark comparability.
     kappa = kappa / np.max(np.abs(kappa)) if np.max(np.abs(kappa)) > 0 else kappa
     
     return kappa
@@ -88,13 +129,14 @@ def compare_with_analytic(
     
     # Generate synthetic map using our method
     start_time = time.time()
-    our_map, coords = generate_synthetic_convergence(
+    synthetic_output = generate_synthetic_convergence(
         profile_type="NFW",
         mass=mass,
         scale_radius=scale_radius,
         ellipticity=0.0,
         grid_size=grid_size
     )
+    our_map, coords = _unpack_synthetic_output(synthetic_output)
     our_time = time.time() - start_time
     
     # Generate analytic solution
@@ -142,9 +184,10 @@ def compare_with_lenstool(
         dict: Comparison metrics
     """
     if lenstool_output is None:
-        logger.warning("Lenstool output not provided, using mock data")
-        # Mock Lenstool output for demonstration
-        lenstool_output = convergence_map + np.random.normal(0, 0.01, convergence_map.shape)
+        raise ValueError(
+            "Lenstool output is required for comparison. "
+            "Refusing to generate synthetic/mock reference data."
+        )
     
     metrics = calculate_all_metrics(convergence_map, lenstool_output)
     
@@ -169,9 +212,10 @@ def compare_with_glafic(
         dict: Comparison metrics
     """
     if glafic_output is None:
-        logger.warning("GLAFIC output not provided, using mock data")
-        # Mock GLAFIC output for demonstration
-        glafic_output = convergence_map + np.random.normal(0, 0.015, convergence_map.shape)
+        raise ValueError(
+            "GLAFIC output is required for comparison. "
+            "Refusing to generate synthetic/mock reference data."
+        )
     
     metrics = calculate_all_metrics(convergence_map, glafic_output)
     
@@ -284,13 +328,14 @@ def benchmark_inference_speed(
     model = load_pretrained_model()
     
     # Generate test data
-    test_map, _ = generate_synthetic_convergence(
+    synthetic_output = generate_synthetic_convergence(
         profile_type="NFW",
         mass=1e12,
         scale_radius=200.0,
         ellipticity=0.0,
         grid_size=grid_size
     )
+    test_map, _ = _unpack_synthetic_output(synthetic_output)
     
     # Warm-up run
     model_input = prepare_model_input(test_map, target_size=grid_size)

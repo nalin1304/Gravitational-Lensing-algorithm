@@ -199,21 +199,35 @@ python -m pytest tests/test_mass_profiles.py -v
 python test_imports.py
 ```
 
-**Current Test Status**: ✅ 61/61 tests passing (100%)
+**Current Test Status**: ✅ 551 passed, 22 skipped (`python -m pytest tests/ -q`, run on February 23, 2026)
+
+## ✅ Publication Readiness
+
+- Full reproducibility and validation record: `JOURNAL_PUBLICATION_READINESS.md`
+- Latest release gate summary:
+  - `551 passed, 22 skipped` (full test suite)
+  - `mypy src/` clean
+  - Python compile sanity clean
+  - Placeholder/dummy marker scan clean
 
 ## 📊 Project Structure
 
 ```
 gravitational-lensing-algorithm/
-├── app/                           # Streamlit web interface (refactored multi-page)
-│   ├── main.py                   # Entry point and config
-│   ├── pages/                    # Multi-page architecture
-│   │   └── 01_Home.py           # Home page
+├── app/                           # Streamlit web interface
+│   ├── Home.py                   # Streamlit root page
+│   ├── main.py                   # Shared app entry/config helpers
+│   ├── pages/                    # Multipage UI modules
+│   │   ├── 02_Simple_Lensing.py
+│   │   ├── 03_PINN_Inference.py
+│   │   ├── 03_Results.py
+│   │   ├── 04_Multi_Plane.py
+│   │   ├── 05_Real_Data.py
+│   │   ├── 06_Training.py
+│   │   ├── 07_Validation.py
+│   │   ├── 08_Bayesian_UQ.py
+│   │   └── 09_Settings.py
 │   └── utils/                    # Shared app utilities
-│       ├── session_state.py     # State management
-│       ├── plotting.py          # Visualization functions
-│       ├── ui.py                # UI components
-│       └── helpers.py           # Validation, logging
 ├── api/                          # FastAPI REST backend
 │   ├── main.py                  # API server with JWT auth
 │   ├── auth_routes.py           # Authentication endpoints
@@ -274,7 +288,7 @@ gravitational-lensing-algorithm/
 4. **Authentication Security**
    - Real JWT authentication with `python-jose`
    - Secure password hashing with `bcrypt`
-   - No dummy tokens or auth bypasses
+   - No hardcoded fallback tokens or auth bypasses
    - Proper token verification in all protected endpoints
 
 5. **App Architecture**
@@ -300,7 +314,7 @@ gravitational-lensing-algorithm/
 ## 📊 Project Statistics
 
 - **Lines of Code**: 15,000+ (Python)
-- **Test Coverage**: 96%+ (52/54 physics tests passing)
+- **Automated Tests**: 551 passed, 22 skipped in latest full `tests/` run
 - **Documentation**: 30+ comprehensive guides
 - **CI/CD**: Automated testing, linting, and deployment
 - **Performance**: PINN inference at 134.6 img/s on CPU (134× above target)
@@ -344,7 +358,7 @@ This project was developed for Intel ISEF 2025. For judges and presenters:
 - Combines ML with physics constraints (not pure black-box)
 - Full GR implementation (not just Born approximation)
 - Research-grade accuracy on known systems
-- Production-ready with 61 passing tests
+- Production-ready with a 551-test passing baseline
 
 ## 🤝 Contributing
 
@@ -379,9 +393,9 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ## 📞 Contact
 
-- **Project Lead**: [Your Name]
-- **Email**: your.email@example.com
-- **GitHub Issues**: [Report bugs or request features](https://github.com/yourusername/gravitational-lensing-algorithm/issues)
+- **Project Lead**: Nalin
+- **Contact**: Use GitHub Issues for project communication
+- **GitHub Issues**: [Report bugs or request features](https://github.com/nalin1304/Gravitational-Lensing-algorithm/issues)
 
 ## 🌟 Star History
 

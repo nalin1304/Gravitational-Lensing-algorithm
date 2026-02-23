@@ -347,6 +347,11 @@ class NFWProfile(MassProfile):
                  ellipticity: float = 0.0, ellipticity_angle: float = 0.0,
                  include_subhalos: bool = False, subhalo_fraction: float = 0.05):
         """Initialize NFW profile."""
+        if not np.isfinite(M_vir) or M_vir <= 0:
+            raise ValueError(f"M_vir must be positive and finite, got {M_vir}")
+        if not np.isfinite(concentration) or concentration <= 0:
+            raise ValueError(f"concentration must be positive and finite, got {concentration}")
+
         self.M_vir = M_vir
         self.c = concentration
         self.lens_system = lens_system
@@ -514,7 +519,11 @@ class NFWProfile(MassProfile):
         
     def _f_nfw(self, x: np.ndarray) -> np.ndarray:
         """
-        Helper function for NFW deflection angle calculation.
+        NFW projected-density kernel for convergence.
+
+        Implements the standard kernel in:
+        Bartelmann (1996), A&A 313, 697 and Wright & Brainerd (2000),
+        where κ(x) = 2 κ_s f(x), x = r / r_s.
         
         Parameters
         ----------
@@ -532,14 +541,12 @@ class NFWProfile(MassProfile):
         mask1 = x < 1
         if np.any(mask1):
             x1 = x[mask1]
-            arg = (1 - np.sqrt(1 - x1**2)) / (1 + np.sqrt(1 - x1**2))
             f[mask1] = (1 / (x1**2 - 1)) * (1 - (2 / np.sqrt(1 - x1**2)) * np.arctanh(np.sqrt((1 - x1) / (1 + x1))))
         
         # Case x > 1
         mask2 = x > 1
         if np.any(mask2):
             x2 = x[mask2]
-            arg = (np.sqrt(x2**2 - 1) - 1) / (np.sqrt(x2**2 - 1) + 1)
             f[mask2] = (1 / (x2**2 - 1)) * (1 - (2 / np.sqrt(x2**2 - 1)) * np.arctan(np.sqrt((x2 - 1) / (x2 + 1))))
         
         # Case x = 1
@@ -549,9 +556,44 @@ class NFWProfile(MassProfile):
         
         return f
     
+    def _h_nfw(self, x: np.ndarray) -> np.ndarray:
+        """
+        NFW deflection kernel.
+
+        Deflection for circular NFW:
+            α(x) = 4 κ_s r_s h(x) / x
+        with h(x) piecewise defined in Bartelmann (1996), Eq. 13.
+        """
+        h = np.zeros_like(x, dtype=float)
+
+        # x < 1
+        mask1 = x < 1
+        if np.any(mask1):
+            x1 = x[mask1]
+            h[mask1] = (
+                np.log(x1 / 2.0)
+                + (2.0 / np.sqrt(1.0 - x1**2)) * np.arctanh(np.sqrt((1.0 - x1) / (1.0 + x1)))
+            )
+
+        # x > 1
+        mask2 = x > 1
+        if np.any(mask2):
+            x2 = x[mask2]
+            h[mask2] = (
+                np.log(x2 / 2.0)
+                + (2.0 / np.sqrt(x2**2 - 1.0)) * np.arctan(np.sqrt((x2 - 1.0) / (x2 + 1.0)))
+            )
+
+        # x = 1
+        mask3 = np.abs(x - 1.0) < 1e-6
+        if np.any(mask3):
+            h[mask3] = 1.0 + np.log(0.5)
+
+        return h
+
     def _g_nfw(self, x: np.ndarray) -> np.ndarray:
         """
-        Helper function for NFW convergence calculation.
+        Legacy helper retained for backward compatibility.
         
         Parameters
         ----------
@@ -625,13 +667,13 @@ class NFWProfile(MassProfile):
         # Scaled radius x = r/r_s (dimensionless)
         x_scaled = r / self.r_s
         
-        # Calculate f(x) from Wright & Brainerd (2000)
-        f_vals = self._f_nfw(x_scaled)
+        # Deflection kernel from Bartelmann (1996)
+        h_vals = self._h_nfw(x_scaled)
         
         # Deflection angle magnitude: α(r) = 4 κ_s r_s × f(x) / x
         # where x = r/r_s, so this becomes: α(r) = 4 κ_s r_s × f(r/r_s) / (r/r_s)
         # The self.kappa_s was pre-computed in _compute_nfw_parameters()
-        alpha_magnitude = 4.0 * self.kappa_s * self.r_s * f_vals / x_scaled
+        alpha_magnitude = 4.0 * self.kappa_s * self.r_s * h_vals / x_scaled
         
         # For elliptical halos, direction is along elliptical radius
         if self.ellipticity > 0:
@@ -707,10 +749,9 @@ class NFWProfile(MassProfile):
         # Scaled radius x = r/r_s
         x_scaled = r / self.r_s
         
-        # κ(r) = 2 κ_s × g(r/r_s)
-        # where κ_s was pre-computed in initialization
-        g_vals = self._g_nfw(x_scaled)
-        kappa = 2.0 * self.kappa_s * g_vals
+        # κ(r) = 2 κ_s f(r/r_s), where f is the standard projected NFW kernel.
+        f_vals = self._f_nfw(x_scaled)
+        kappa = 2.0 * self.kappa_s * f_vals
         
         # Add subhalo contributions
         if self.include_subhalos and len(self.subhalos) > 0:
@@ -1249,7 +1290,7 @@ class DarkMatterFactory:
         
         # Trapezoidal integration
         integrand = 2 * np.pi * sigma * r_grid
-        M_integrated = np.trapezoid(integrand, r_grid)  # Msun
+        M_integrated = np.trapz(integrand, r_grid)  # Msun
         
         # Expected mass depends on profile type
         if hasattr(halo, 'enclosed_mass'):

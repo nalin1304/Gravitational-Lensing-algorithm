@@ -21,11 +21,7 @@ from typing import Tuple
 from astropy.cosmology import FlatLambdaCDM
 from astropy import units as u
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from lens_models.multi_plane_recursive import (
+from src.lens_models.multi_plane_recursive import (
     multi_plane_trace,
     multi_plane_deflection_forward,
     validate_multi_plane_consistency,

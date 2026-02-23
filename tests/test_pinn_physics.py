@@ -182,7 +182,7 @@ class TestPhysicsInformedLoss:
         """Test that all loss components are computed correctly."""
         batch_size = 8
         
-        # Create dummy data
+        # Create synthetic data
         pred_params = torch.randn(batch_size, 5)
         true_params = torch.randn(batch_size, 5)
         pred_classes = torch.randn(batch_size, 3)
@@ -221,7 +221,7 @@ class TestPhysicsInformedLoss:
         # Predict same parameters (perfect prediction)
         pred_params = true_params.clone()
         
-        # Dummy classification data
+        # Synthetic classification data
         pred_classes = torch.randn(batch_size, 3)
         true_classes = torch.randint(0, 3, (batch_size,))
         images = torch.randn(batch_size, 1, 64, 64)
@@ -271,7 +271,7 @@ class TestPINNModel:
         model = PhysicsInformedNN(input_size=64)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         
-        # Create dummy data
+        # Create synthetic data
         images = torch.randn(8, 1, 64, 64)
         true_params = torch.randn(8, 5)
         true_classes = torch.randint(0, 3, (8,))

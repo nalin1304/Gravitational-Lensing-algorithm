@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import sys
 import tempfile
+from typing import Optional
 
 # Configure page FIRST
 st.set_page_config(
@@ -89,7 +90,7 @@ def display_fits_header(header):
     if header_dict:
         st.markdown("**Observation Metadata:**")
         for key, value in header_dict.items():
-            st.text(f"{key}: {value}")
+            st.markdown(f"- `{key}`: `{value}`")
     else:
         st.info("No standard metadata found in FITS header.")
 
@@ -135,7 +136,6 @@ def main():
     - Hubble Space Telescope (HST) imaging
     - James Webb Space Telescope (JWST) imaging
     - Ground-based adaptive optics data
-    - Simulated FITS files for testing
     """)
     
     # File upload
@@ -149,21 +149,22 @@ def main():
     
     if uploaded_file is not None:
         with st.spinner("Loading FITS file..."):
+            tmp_path: Optional[Path] = None
             try:
                 # Save uploaded file to temporary location
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.fits') as tmp_file:
                     tmp_file.write(uploaded_file.getvalue())
-                    tmp_path = tmp_file.name
+                    tmp_path = Path(tmp_file.name)
                 
                 # Open FITS file
                 with fits.open(tmp_path) as hdul:
                     # Display file structure
                     with st.expander("📋 FITS File Structure"):
-                        st.text(f"Number of HDUs: {len(hdul)}")
+                        st.markdown(f"**Number of HDUs:** `{len(hdul)}`")
                         for i, hdu in enumerate(hdul):
-                            st.text(f"HDU {i}: {hdu.name} - {type(hdu).__name__}")
+                            st.markdown(f"- **HDU {i}**: `{hdu.name}` ({type(hdu).__name__})")
                             if hasattr(hdu, 'shape'):
-                                st.text(f"  Shape: {hdu.shape}")
+                                st.markdown(f"  - Shape: `{hdu.shape}`")
                     
                     # Get primary image
                     primary_hdu = None
@@ -201,6 +202,9 @@ def main():
                 with st.expander("🔍 Error Details"):
                     st.code(traceback.format_exc())
                 return
+            finally:
+                if tmp_path is not None:
+                    tmp_path.unlink(missing_ok=True)
     
     # Display loaded data
     if 'fits_data' in st.session_state and 'fits_header' in st.session_state:
@@ -217,14 +221,14 @@ def main():
             # Display image
             fig = plot_fits_image(data, title=f"FITS Image: {filename}")
             st.pyplot(fig)
-            plt.close()
+            plt.close(fig)
         
         with col2:
             # Metadata
             st.markdown("**File Information:**")
-            st.text(f"Filename: {filename}")
-            st.text(f"Shape: {data.shape}")
-            st.text(f"Data type: {data.dtype}")
+            st.markdown(f"- Filename: `{filename}`")
+            st.markdown(f"- Shape: `{data.shape}`")
+            st.markdown(f"- Data type: `{data.dtype}`")
             
             # Statistics
             st.markdown("---")
@@ -297,7 +301,7 @@ def main():
                     # Display processed image
                     fig = plot_fits_image(processed, title="Processed Image")
                     st.pyplot(fig)
-                    plt.close()
+                    plt.close(fig)
                     
                 except Exception as e:
                     show_error(f"Preprocessing error: {e}")

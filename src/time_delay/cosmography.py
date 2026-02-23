@@ -23,7 +23,57 @@ from astropy.cosmology import FlatLambdaCDM
 import scipy.optimize as optimize
 from scipy.interpolate import interp1d
 
-from ..lens_models import LensSystem, MassProfile
+from ..lens_models import (
+    LensSystem,
+    MassProfile,
+    NFWProfile,
+    WarmDarkMatterProfile,
+    SIDMProfile,
+    PointMassProfile,
+)
+
+
+def _clone_lens_model_with_cosmology(
+    lens_model: MassProfile,
+    lens_system: LensSystem
+) -> MassProfile:
+    """
+    Clone a supported lens model onto a new cosmology-aware lens system.
+
+    This avoids mutating profile-specific parameters after construction,
+    which can silently desynchronize derived quantities.
+    """
+    if isinstance(lens_model, WarmDarkMatterProfile):
+        return WarmDarkMatterProfile(
+            lens_model.M_vir,
+            lens_model.c_cdm,
+            lens_system,
+            m_wdm=lens_model.m_wdm,
+        )
+
+    if isinstance(lens_model, SIDMProfile):
+        return SIDMProfile(
+            lens_model.M_vir,
+            lens_model.c,
+            lens_system,
+            sigma_SIDM=lens_model.sigma_SIDM,
+        )
+
+    if isinstance(lens_model, NFWProfile):
+        return NFWProfile(
+            lens_model.M_vir,
+            lens_model.c,
+            lens_system,
+            ellipticity=getattr(lens_model, "ellipticity", 0.0),
+            ellipticity_angle=np.degrees(getattr(lens_model, "ellipticity_angle", 0.0)),
+            include_subhalos=getattr(lens_model, "include_subhalos", False),
+            subhalo_fraction=getattr(lens_model, "subhalo_fraction", 0.05),
+        )
+
+    if isinstance(lens_model, PointMassProfile):
+        return PointMassProfile(lens_model.M, lens_system)
+
+    raise ValueError(f"Unsupported lens model type: {type(lens_model).__name__}")
 
 
 def calculate_time_delays(
@@ -255,33 +305,10 @@ def infer_h0(
         # Create cosmology with this H0
         cosmo_test = FlatLambdaCDM(H0=h0_test, Om0=Om0)
         
-        # Calculate predicted delays with this H0
-        # We need to update the lens system's cosmology
-        # Create a temporary lens system with new H0
-        from ..lens_models import LensSystem
+        # Build a temporary lens system with this H0 and clone lens model
+        # onto it so all derived profile parameters remain self-consistent.
         temp_lens_sys = LensSystem(z_l, z_s, H0=h0_test, Om0=Om0)
-        
-        # Create temporary lens model with updated cosmology
-        # Copy lens model parameters
-        if hasattr(lens_model, 'M_vir'):
-            # NFW-like profile
-            from ..lens_models import NFWProfile
-            temp_lens = type(lens_model)(
-                lens_model.M_vir,
-                lens_model.c,
-                temp_lens_sys
-            )
-            # Copy additional parameters if present
-            if hasattr(lens_model, 'm_wdm'):
-                temp_lens.m_wdm = lens_model.m_wdm
-            if hasattr(lens_model, 'sigma_SIDM'):
-                temp_lens.sigma_SIDM = lens_model.sigma_SIDM
-        elif hasattr(lens_model, 'M'):
-            # Point mass
-            from ..lens_models import PointMassProfile
-            temp_lens = PointMassProfile(lens_model.M, temp_lens_sys)
-        else:
-            raise ValueError("Unsupported lens model type")
+        temp_lens = _clone_lens_model_with_cosmology(lens_model, temp_lens_sys)
         
         # Calculate predicted delays
         delay_result = calculate_time_delays(
@@ -327,7 +354,7 @@ def infer_h0(
                 popt, _ = curve_fit(parabola, h0_grid[mask], chi2_grid[mask],
                                    p0=[1.0, h0_best, chi2_min])
                 h0_uncertainty = 1.0 / np.sqrt(popt[0])
-            except:
+            except (RuntimeError, ValueError, FloatingPointError):
                 h0_uncertainty = (h0_range[1] - h0_range[0]) / 20.0
         else:
             h0_uncertainty = (h0_range[1] - h0_range[0]) / 20.0
@@ -335,7 +362,11 @@ def infer_h0(
     # Compute posterior (assume flat prior)
     # P(H0|data) ∝ exp(-χ²/2)
     posterior = np.exp(-0.5 * (chi2_grid - chi2_min))
-    posterior /= np.trapezoid(posterior, h0_grid)  # Normalize
+    norm = np.trapz(posterior, h0_grid)
+    if norm > 0:
+        posterior /= norm
+    else:
+        posterior = np.ones_like(h0_grid) / (h0_grid[-1] - h0_grid[0])
     
     # Degrees of freedom
     n_obs = len(observed_delays)
@@ -428,25 +459,43 @@ def monte_carlo_h0_uncertainty(
             c_sample = max(c_sample, 1.0)
             
             # Create perturbed lens model
-            from ..lens_models import LensSystem
             lens_sys = LensSystem(lens_model.lens_system.z_l,
                                  lens_model.lens_system.z_s,
                                  H0=h0_true, Om0=Om0)
-            
-            perturbed_lens = type(lens_model)(M_vir_sample, c_sample, lens_sys)
-            
-            # Copy additional parameters
-            if hasattr(lens_model, 'm_wdm'):
-                perturbed_lens.m_wdm = lens_model.m_wdm
-            if hasattr(lens_model, 'sigma_SIDM'):
-                perturbed_lens.sigma_SIDM = lens_model.sigma_SIDM
+            base_clone = _clone_lens_model_with_cosmology(lens_model, lens_sys)
+
+            if isinstance(base_clone, WarmDarkMatterProfile):
+                perturbed_lens = WarmDarkMatterProfile(
+                    M_vir_sample,
+                    base_clone.c_cdm,
+                    lens_sys,
+                    m_wdm=base_clone.m_wdm,
+                )
+            elif isinstance(base_clone, SIDMProfile):
+                perturbed_lens = SIDMProfile(
+                    M_vir_sample,
+                    c_sample,
+                    lens_sys,
+                    sigma_SIDM=base_clone.sigma_SIDM,
+                )
+            elif isinstance(base_clone, NFWProfile):
+                perturbed_lens = NFWProfile(
+                    M_vir_sample,
+                    c_sample,
+                    lens_sys,
+                    ellipticity=getattr(base_clone, "ellipticity", 0.0),
+                    ellipticity_angle=np.degrees(getattr(base_clone, "ellipticity_angle", 0.0)),
+                    include_subhalos=getattr(base_clone, "include_subhalos", False),
+                    subhalo_fraction=getattr(base_clone, "subhalo_fraction", 0.05),
+                )
+            else:
+                raise ValueError("Unsupported NFW-like lens model type")
                 
-        elif hasattr(lens_model, 'mass'):
+        elif hasattr(lens_model, 'M'):
             # Point mass
-            mass_sample = lens_model.mass + np.random.randn() * lens_uncertainties.get('mass', 0)
+            mass_sample = lens_model.M + np.random.randn() * lens_uncertainties.get('mass', 0)
             mass_sample = max(mass_sample, 1e10)
             
-            from ..lens_models import PointMassProfile, LensSystem
             lens_sys = LensSystem(lens_model.lens_system.z_l,
                                  lens_model.lens_system.z_s,
                                  H0=h0_true, Om0=Om0)
@@ -478,8 +527,14 @@ def monte_carlo_h0_uncertainty(
     # Remove outliers (> 3σ)
     h0_median = np.median(h0_samples)
     h0_std_robust = 1.4826 * np.median(np.abs(h0_samples - h0_median))
-    mask = np.abs(h0_samples - h0_median) < 3 * h0_std_robust
-    h0_samples_clean = h0_samples[mask]
+
+    if h0_std_robust <= 0 or not np.isfinite(h0_std_robust):
+        h0_samples_clean = h0_samples.copy()
+    else:
+        mask = np.abs(h0_samples - h0_median) <= 3 * h0_std_robust
+        h0_samples_clean = h0_samples[mask]
+        if h0_samples_clean.size == 0:
+            h0_samples_clean = h0_samples.copy()
     
     return {
         'h0_samples': h0_samples_clean,

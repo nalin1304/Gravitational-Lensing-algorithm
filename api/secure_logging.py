@@ -17,7 +17,11 @@ from functools import wraps
 PII_PATTERNS = {
     'email': re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
     'password': re.compile(r'(password|passwd|pwd)["\']?\s*[:=]\s*["\']?([^"\'\s,}]+)', re.IGNORECASE),
-    'token': re.compile(r'(token|jwt|bearer)["\']?\s*[:=]\s*["\']?([A-Za-z0-9._-]{20,})', re.IGNORECASE),
+    'token': re.compile(
+        r'((?:token|jwt|bearer)["\']?\s*[:=]\s*)(?:Bearer\s+)?([A-Za-z0-9._-]{20,})',
+        re.IGNORECASE,
+    ),
+    'bearer_token': re.compile(r'(Bearer)\s+([A-Za-z0-9._-]{20,})', re.IGNORECASE),
     'api_key': re.compile(r'(api[_-]?key|apikey)["\']?\s*[:=]\s*["\']?([A-Za-z0-9._-]{20,})', re.IGNORECASE),
     'credit_card': re.compile(r'\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b'),
     'ssn': re.compile(r'\b\d{3}-\d{2}-\d{4}\b'),
@@ -42,7 +46,7 @@ def redact_pii(text: str) -> str:
         Text with PII redacted
         
     Example:
-        >>> redact_pii("User email: john@example.com, token: abc123xyz...")
+        >>> redact_pii("User email: john@lensing-lab.org, token: abc123xyz...")
         "User email: [REDACTED_EMAIL], token: [REDACTED_TOKEN]"
     """
     if not text:
@@ -57,7 +61,8 @@ def redact_pii(text: str) -> str:
     redacted = PII_PATTERNS['password'].sub(r'\1: [REDACTED_PASSWORD]', redacted)
     
     # Redact tokens
-    redacted = PII_PATTERNS['token'].sub(r'\1: [REDACTED_TOKEN]', redacted)
+    redacted = PII_PATTERNS['token'].sub(r'\1[REDACTED_TOKEN]', redacted)
+    redacted = PII_PATTERNS['bearer_token'].sub(r'\1 [REDACTED_TOKEN]', redacted)
     
     # Redact API keys
     redacted = PII_PATTERNS['api_key'].sub(r'\1: [REDACTED_API_KEY]', redacted)
@@ -84,7 +89,7 @@ def redact_dict(data: Dict[str, Any]) -> Dict[str, Any]:
         Dictionary with PII redacted
         
     Example:
-        >>> redact_dict({"email": "john@example.com", "name": "John"})
+        >>> redact_dict({"email": "john@lensing-lab.org", "name": "John"})
         {"email": "[REDACTED_EMAIL]", "name": "John"}
     """
     if not isinstance(data, dict):
@@ -123,7 +128,7 @@ class SecureLogger:
     
     Usage:
         logger = SecureLogger(__name__)
-        logger.info("User registered: john@example.com")
+        logger.info("User registered: john@lensing-lab.org")
         # Output: "User registered: [REDACTED_EMAIL]"
     """
     
@@ -220,6 +225,6 @@ def get_secure_logger(name: str) -> SecureLogger:
     Example:
         from api.secure_logging import get_secure_logger
         logger = get_secure_logger(__name__)
-        logger.info("User data: email@example.com")
+        logger.info("User data: email@lensing-lab.org")
     """
     return SecureLogger(name)

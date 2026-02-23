@@ -33,7 +33,7 @@ def test_user(db_session):
     """Create a test user."""
     user = create_user(
         db=db_session,
-        email="test@example.com",
+        email="test@lensing-lab.org",
         username="testuser",
         password="TestPassword123!",
         role=UserRole.USER
@@ -56,7 +56,7 @@ def admin_user(db_session):
     """Create an admin user."""
     user = create_user(
         db=db_session,
-        email="admin@example.com",
+        email="admin@lensing-lab.org",
         username="admin",
         password="AdminPassword123!",
         role=UserRole.ADMIN
@@ -118,7 +118,7 @@ class TestAuthorization:
         # Create another user's analysis
         other_user = create_user(
             db=db_session,
-            email="other@example.com",
+            email="other@lensing-lab.org",
             username="otheruser",
             password="Password123!",
             role=UserRole.USER
@@ -172,7 +172,7 @@ class TestAuthorization:
         
         other_user = create_user(
             db=db_session,
-            email="other2@example.com",
+            email="other2@lensing-lab.org",
             username="otheruser2",
             password="Password123!",
             role=UserRole.USER
@@ -254,13 +254,13 @@ class TestFileUploadSecurity:
         from io import BytesIO
         
         # Mock upload file with wrong extension
-        fake_file = UploadFile(
+        invalid_file = UploadFile(
             filename="malicious.exe",
-            file=BytesIO(b"fake content")
+            file=BytesIO(b"invalid content")
         )
         
         with pytest.raises(Exception) as exc_info:
-            validate_fits_file(fake_file)
+            validate_fits_file(invalid_file)
         
         assert "invalid file extension" in str(exc_info.value).lower()
     
@@ -271,14 +271,14 @@ class TestFileUploadSecurity:
         from io import BytesIO
         
         # Mock upload file that's too large
-        fake_file = UploadFile(
+        invalid_file = UploadFile(
             filename="huge.fits",
             file=BytesIO(b"x" * (101 * 1024 * 1024))  # 101 MB
         )
-        fake_file.size = 101 * 1024 * 1024
+        invalid_file.size = 101 * 1024 * 1024
         
         with pytest.raises(Exception) as exc_info:
-            validate_fits_file(fake_file)
+            validate_fits_file(invalid_file)
         
         assert "too large" in str(exc_info.value).lower()
     
@@ -304,10 +304,10 @@ class TestPIIRedaction:
         """Test that emails are redacted from logs."""
         from api.secure_logging import redact_pii
         
-        text = "User email: john@example.com logged in"
+        text = "User email: john@lensing-lab.org logged in"
         redacted = redact_pii(text)
         
-        assert "john@example.com" not in redacted
+        assert "john@lensing-lab.org" not in redacted
         assert "[REDACTED_EMAIL]" in redacted
     
     def test_password_redaction(self):
@@ -337,7 +337,7 @@ class TestPIIRedaction:
         data = {
             "username": "john",
             "password": "secret",
-            "email": "john@example.com",
+            "email": "john@lensing-lab.org",
             "token": "abc123"
         }
         
@@ -383,20 +383,20 @@ class TestAPIFunctionality:
         """Test that model inference endpoint works."""
         import numpy as np
         
-        # Generate fake convergence map
-        fake_map = np.random.rand(64, 64).tolist()
+        # Generate a synthetic convergence map for inference input.
+        synthetic_map = np.random.rand(64, 64).tolist()
         
         response = client.post(
             "/api/v1/inference",
             json={
-                "convergence_map": fake_map,
+                "convergence_map": synthetic_map,
                 "target_size": 64,
                 "mc_samples": 1
             }
         )
         
-        # Should work (public endpoint)
-        assert response.status_code in [200, 500]  # 500 if model not loaded
+        # Should work when model is available; strict mode returns 503 otherwise.
+        assert response.status_code in [200, 503]
 
 
 # ============================================================================

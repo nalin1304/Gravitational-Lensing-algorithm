@@ -274,7 +274,7 @@ if __name__ == '__main__':
     # Test augmentations
     import matplotlib.pyplot as plt
     
-    # Create dummy image
+    # Create synthetic image
     test_image = np.random.rand(1, 64, 64)
     
     # Get transforms

@@ -10,10 +10,10 @@ SECURITY: P1 fixes applied November 2025 (rate limiting)
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from datetime import timedelta
+from datetime import timedelta, datetime
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -88,10 +88,8 @@ class UserResponse(BaseModel):
     role: str
     is_active: bool
     is_verified: bool
-    created_at: str
-    
-    class Config:
-        from_attributes = True
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserUpdate(BaseModel):
@@ -115,11 +113,9 @@ class ApiKeyResponse(BaseModel):
     name: str
     api_key: Optional[str] = None  # Only returned on creation
     scopes: List[str]
-    created_at: str
-    expires_at: Optional[str]
-    
-    class Config:
-        from_attributes = True
+    created_at: datetime
+    expires_at: Optional[datetime]
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -196,14 +192,14 @@ async def login(
     
     # Create tokens
     access_token = create_access_token(
-        data={"sub": user.id, "username": user.username, "role": user.role}
+        data={"sub": str(user.id), "username": user.username, "role": user.role}
     )
     refresh_token = create_refresh_token(
-        data={"sub": user.id}
+        data={"sub": str(user.id)}
     )
     
     # Update last login
-    update_user(db, user.id, last_login=user.last_login)
+    update_user(db, user.id, last_login=datetime.utcnow())
     
     # Create audit log
     create_audit_log(
@@ -244,6 +240,14 @@ async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
         )
+
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token subject"
+        )
     
     # Get user
     user = get_user(db, user_id)
@@ -255,10 +259,10 @@ async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     
     # Create new tokens
     new_access_token = create_access_token(
-        data={"sub": user.id, "username": user.username, "role": user.role}
+        data={"sub": str(user.id), "username": user.username, "role": user.role}
     )
     new_refresh_token = create_refresh_token(
-        data={"sub": user.id}
+        data={"sub": str(user.id)}
     )
     
     return {

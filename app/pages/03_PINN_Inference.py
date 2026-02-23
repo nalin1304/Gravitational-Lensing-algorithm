@@ -58,16 +58,6 @@ def load_pretrained_model(model_path=None):
         return None, f"Error loading model: {str(e)}"
 
 
-def create_demo_model():
-    """Create a demo PINN model with random weights for testing."""
-    model = PhysicsInformedNN(
-        input_size=64,
-        dropout_rate=0.2
-    )
-    model.eval()
-    return model
-
-
 def plot_classification_probs(class_names, probs, entropy):
     """Plot classification probabilities."""
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -126,7 +116,7 @@ def main():
     with col1:
         model_option = st.radio(
             "Model Type",
-            ["Pre-trained PINN", "Demo Model (Random Weights)", "Custom Model Path"],
+            ["Pre-trained PINN", "Custom Model Path"],
             help="Select the model to use for inference"
         )
     
@@ -146,59 +136,28 @@ def main():
     if st.button("📥 Load Model", type="primary"):
         with st.spinner("Loading model..."):
             try:
-                if model_option == "Demo Model (Random Weights)":
-                    # Create demo model
-                    model = create_demo_model()
+                # Load pre-trained model
+                if custom_path:
+                    model_path = Path(custom_path)
+                else:
+                    model_path = None
+
+                model, message = load_pretrained_model(model_path)
+
+                if model is None:
+                    show_error(message)
+                    st.info("Provide a valid trained checkpoint path and retry.")
+                else:
                     model = model.to(device)
                     st.session_state['pinn_model'] = model
                     st.session_state['model_device'] = device
-                    st.session_state['is_demo_model'] = True
-                    show_success(f"✅ Demo model created successfully on {device}!")
-                    show_warning("⚠️ This is a demo model with random weights. Predictions will not be accurate.")
-                else:
-                    # Load pre-trained model
-                    if custom_path:
-                        model_path = Path(custom_path)
-                    else:
-                        model_path = None
-                    
-                    model, message = load_pretrained_model(model_path)
-                    
-                    if model is None:
-                        show_error(message)
-                        st.info("💡 Try using 'Demo Model (Random Weights)' to test the interface.")
-                    else:
-                        model = model.to(device)
-                        st.session_state['pinn_model'] = model
-                        st.session_state['model_device'] = device
-                        st.session_state['is_demo_model'] = False
-                        show_success(f"✅ {message} on {device}!")
+                    show_success(f"✅ {message} on {device}!")
             except Exception as e:
                 show_error(f"Error loading model: {e}")
     
     # Display model info
     if 'pinn_model' in st.session_state:
         st.success(f"✅ Model ready on {st.session_state.get('model_device', 'cpu')}")
-        
-        # Option to save demo model
-        if st.session_state.get('is_demo_model', False):
-            with st.expander("💾 Save Demo Model as Pre-trained"):
-                st.markdown("Save the current demo model to use as a pre-trained model later.")
-                save_path = st.text_input("Save Path", "results/pinn_model_best.pth")
-                if st.button("Save Model"):
-                    try:
-                        save_path_obj = Path(save_path)
-                        save_path_obj.parent.mkdir(parents=True, exist_ok=True)
-                        torch.save({
-                            'model_state_dict': st.session_state['pinn_model'].state_dict(),
-                            'architecture': {
-                                'input_size': 64,
-                                'dropout_rate': 0.2
-                            }
-                        }, save_path_obj)
-                        show_success(f"Model saved to {save_path}!")
-                    except Exception as e:
-                        show_error(f"Error saving model: {e}")
     
     # Data input
     st.markdown("---")
@@ -206,7 +165,7 @@ def main():
     
     data_source = st.radio(
         "Data Source",
-        ["Use Session Data", "Upload .npy File", "Generate Random"],
+        ["Use Session Data", "Upload .npy File"],
         help="Select the source of convergence map data"
     )
     
@@ -231,17 +190,6 @@ def main():
                 show_success(f"Loaded: {input_data.shape}")
             except Exception as e:
                 show_error(f"Error loading file: {e}")
-    
-    elif data_source == "Generate Random":
-        col_gen1, col_gen2 = st.columns(2)
-        with col_gen1:
-            grid_size = st.select_slider("Grid Size", options=[32, 64, 128], value=64)
-        with col_gen2:
-            if st.button("² Generate Random Map"):
-                input_data = np.random.randn(grid_size, grid_size) * 0.1 + 0.5
-                input_data = np.clip(input_data, 0, 1)
-                st.session_state['inference_input'] = input_data
-                show_success("Generated random convergence map")
     
     # Display input data
     if input_data is not None:

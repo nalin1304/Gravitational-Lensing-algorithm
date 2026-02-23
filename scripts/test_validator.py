@@ -252,7 +252,7 @@ def test_with_existing_benchmarks():
     print("="*70)
     
     try:
-        from benchmarks.metrics import calculate_rmse, calculate_ssim
+        from benchmarks.metrics import calculate_rmse, calculate_structural_similarity
         print("✅ Existing benchmark metrics imported successfully")
         
         # Test that our validator uses them

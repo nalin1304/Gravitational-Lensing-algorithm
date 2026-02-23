@@ -117,7 +117,8 @@ def create_analysis(
     type: AnalysisType,
     config: dict,
     description: Optional[str] = None,
-    tags: Optional[list] = None
+    tags: Optional[list] = None,
+    is_public: bool = False,
 ) -> Analysis:
     """Create a new analysis"""
     analysis = Analysis(
@@ -126,7 +127,8 @@ def create_analysis(
         type=type,
         config=config,
         description=description,
-        tags=tags or []
+        tags=tags or [],
+        is_public=is_public,
     )
     db.add(analysis)
     db.commit()

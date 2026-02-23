@@ -16,11 +16,7 @@ import torch.nn as nn
 import numpy as np
 from typing import Tuple
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from ml.physics_constrained_loss import (
+from src.ml.physics_constrained_loss import (
     PhysicsConstrainedPINNLoss,
     create_coordinate_grid,
     validate_poisson_equation,
@@ -301,7 +297,7 @@ class TestCombinedLoss:
         """All loss components should be computed."""
         h, w = grid_size
         
-        # Create dummy inputs
+        # Create synthetic inputs
         params_pred = torch.randn(batch_size, 5, device=device)
         params_true = torch.randn(batch_size, 5, device=device)
         classes_pred = torch.randn(batch_size, 3, device=device)
@@ -350,8 +346,9 @@ class TestCombinedLoss:
             0.01 * loss_dict['regularization']
         )
         
-        # Allow some numerical error
-        assert abs(loss_dict['total'] - expected_total) < 0.1, \
+        # Allow small absolute/relative numerical differences from float casting.
+        tolerance = max(0.1, 1e-6 * abs(expected_total))
+        assert abs(loss_dict['total'] - expected_total) < tolerance, \
             "Total loss should equal weighted sum of components"
     
     def test_loss_backpropagates(self, grid_size, batch_size, device):
@@ -417,7 +414,6 @@ class TestValidationUtilities:
         
         # ψ = 0.5(x² + y²), so ∇²ψ = 2, κ = 1
         psi = 0.5 * (x**2 + y**2)
-        psi.requires_grad = True
         
         kappa = torch.ones_like(psi)
         
@@ -431,7 +427,6 @@ class TestValidationUtilities:
         y = coordinate_grid[:, 1:2]
         
         psi = x**2 + y**2
-        psi.requires_grad = True
         
         alpha = torch.cat([2.0 * x, 2.0 * y], dim=1)
         

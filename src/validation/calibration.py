@@ -38,6 +38,8 @@ import logging
 from dataclasses import dataclass
 import json
 
+from src.utils.constants import H0_PLANCK, OMEGA_M_PLANCK
+
 logger = logging.getLogger(__name__)
 
 # Known literature values for famous lensing systems
@@ -56,7 +58,9 @@ LITERATURE_VALUES = {
         "z_lens": 0.355,
         "z_source": 1.414,
         "einstein_radius_arcsec": 1.40,  # Falco et al. (1997)
-        "lens_mass_msun": 3.0e12,  # Cluster-scale
+        # Enclosed mass within Einstein radius (not total halo mass).
+        # Consistent with SIS relation M(<theta_E) = pi (D_L theta_E)^2 Sigma_crit.
+        "lens_mass_msun": 3.8e11,
         "separation_arcsec": 6.1,  # Double image separation
         "time_delay_days": 417,  # ± 3 days (Kundic et al. 1997)
         "reference": "Kundic et al. (1997), ApJ 482, 75",
@@ -270,15 +274,28 @@ class SyntheticDataCalibrator:
             Lens mass in solar masses
         """
         # Find Einstein radius (where κ = 1)
-        # For SIS: θ_E is where convergence drops to ~1
+        # For SIS: κ(r) = θ_E / (2r), so κ=0.5 occurs at r=θ_E.
+        # The synthetic analogs generated in this module are SIS-like,
+        # so we solve for κ(r)=0.5 using radial interpolation.
         
         center_idx = convergence.shape[0] // 2
         radial_profile = convergence[center_idx, center_idx:]
         
-        # Find radius where κ crosses 1.0
+        # Find radius where κ crosses 0.5
         try:
-            crossing_idx = np.where(radial_profile < 1.0)[0][0]
-            theta_e_pixels = crossing_idx
+            target_kappa = 0.5
+            crossing_idx = np.where(radial_profile < target_kappa)[0][0]
+            if crossing_idx == 0:
+                theta_e_pixels = float(crossing_idx)
+            else:
+                # Linear interpolation improves sub-pixel estimate.
+                k1 = radial_profile[crossing_idx - 1]
+                k2 = radial_profile[crossing_idx]
+                if np.isclose(k1, k2):
+                    frac = 0.0
+                else:
+                    frac = (target_kappa - k1) / (k2 - k1)
+                theta_e_pixels = (crossing_idx - 1) + np.clip(frac, 0.0, 1.0)
             theta_e_arcsec = theta_e_pixels * pixel_scale
         except IndexError:
             # If no crossing, use half-max as proxy
@@ -296,7 +313,7 @@ class SyntheticDataCalibrator:
         # Approximation: M ∝ θ_E² for fixed cosmology
         
         from astropy.cosmology import FlatLambdaCDM
-        cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
+        cosmo = FlatLambdaCDM(H0=H0_PLANCK, Om0=OMEGA_M_PLANCK)
         
         D_L = cosmo.angular_diameter_distance(z_lens).value  # Mpc
         D_S = cosmo.angular_diameter_distance(z_source).value
@@ -309,13 +326,12 @@ class SyntheticDataCalibrator:
         sigma_crit = (c.to(u.km/u.s)**2 / (4 * np.pi * G)) * (D_S / (D_L * D_LS)) / u.Mpc
         sigma_crit = sigma_crit.to(u.Msun / u.pc**2).value
         
-        # Enclosed mass within Einstein radius
-        area_sq_arcsec = np.pi * theta_e_arcsec**2
-        area_sq_pc = area_sq_arcsec * (D_L * 1e6 * np.pi / 180 / 3600)**2
-        
-        # Mass = Σ_crit * Area * <κ>
-        mean_kappa = np.mean(convergence[convergence > 0.1])  # Average in central region
-        mass_msun = sigma_crit * area_sq_pc * mean_kappa
+        # Enclosed mass within Einstein radius.
+        # For axisymmetric lenses at the Einstein radius, <κ>(<θ_E) ≈ 1, so:
+        # M(<θ_E) = π (D_L θ_E)^2 Σ_crit
+        theta_e_rad = theta_e_arcsec * np.pi / (180.0 * 3600.0)
+        r_e_pc = D_L * 1e6 * theta_e_rad  # D_L in Mpc -> pc
+        mass_msun = np.pi * (r_e_pc**2) * sigma_crit
         
         return theta_e_arcsec, mass_msun
     
