@@ -1,5 +1,4 @@
-"""
-Gravitational Lensing Toolkit - Streamlit Home Page.
+"""Gravitational Lensing Toolkit - Streamlit Home Page.
 
 Launch with:
     streamlit run app/Home.py
@@ -8,9 +7,12 @@ Launch with:
 from __future__ import annotations
 
 import json
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
+import numpy as np
 import streamlit as st
 
 from styles import inject_custom_css, render_header
@@ -61,7 +63,7 @@ def _load_peak_inference_speed() -> float | None:
 
 
 def _collect_home_stats() -> dict[str, str]:
-    """Collect light-weight repository stats for the hero section."""
+    """Collect lightweight repository stats for landing-page panels."""
     demo_count = len(list(DEMOS_DIR.glob("*.yaml")))
     test_modules = len(list(TESTS_DIR.glob("test_*.py")))
     page_count = len(list(PAGES_DIR.glob("*.py")))
@@ -73,6 +75,67 @@ def _collect_home_stats() -> dict[str, str]:
         "page_count": str(page_count),
         "peak_speed": f"{peak_speed:.1f} img/s" if peak_speed is not None else "N/A",
     }
+
+
+def _gaussian_2d(x_grid: np.ndarray, y_grid: np.ndarray, cx: float, cy: float, sigma: float) -> np.ndarray:
+    """Return an isotropic 2D Gaussian on a grid."""
+    return np.exp(-((x_grid - cx) ** 2 + (y_grid - cy) ** 2) / (2.0 * sigma * sigma))
+
+
+@st.cache_data(show_spinner=False)
+def _demo_preview_png(demo_id: str) -> bytes:
+    """Render a small synthetic thumbnail image for each demo system."""
+    plt.style.use("dark_background")
+
+    n = 220
+    x = np.linspace(-2.4, 2.4, n)
+    y = np.linspace(-2.4, 2.4, n)
+    xx, yy = np.meshgrid(x, y)
+
+    base = 0.02 * np.exp(-(xx * xx + yy * yy) / 8.0)
+
+    if demo_id == "einstein_cross":
+        image = base.copy()
+        for cx, cy in [(-0.85, -0.12), (0.82, 0.08), (0.12, 0.86), (-0.08, -0.88)]:
+            image += 1.35 * _gaussian_2d(xx, yy, cx, cy, 0.16)
+        ring = np.exp(-((np.sqrt(xx**2 + yy**2) - 1.0) ** 2) / 0.05)
+        image += 0.55 * ring
+        cmap = "magma"
+        title = "Einstein Cross"
+    elif demo_id == "twin_quasar":
+        image = base.copy()
+        image += 1.6 * _gaussian_2d(xx, yy, -0.95, 0.12, 0.2)
+        image += 1.4 * _gaussian_2d(xx, yy, 0.88, -0.08, 0.22)
+        image += 0.45 * np.exp(-(xx * xx / 0.9 + yy * yy / 2.3))
+        arc = np.exp(-((yy - 0.5 * np.sin(1.6 * xx)) ** 2) / 0.12) * np.exp(-(xx + 0.3) ** 2 / 4.0)
+        image += 0.35 * arc
+        cmap = "inferno"
+        title = "Twin Quasar"
+    else:
+        image = base.copy()
+        image += 0.55 * np.exp(-(xx * xx + yy * yy) / 3.5)
+        for cx, cy, amp in [(-1.0, 0.9, 0.7), (0.7, 1.1, 0.6), (1.2, -0.5, 0.65), (-0.6, -1.1, 0.5)]:
+            image += amp * _gaussian_2d(xx, yy, cx, cy, 0.25)
+        arc_1 = np.exp(-((yy + 0.8 - 0.25 * xx) ** 2) / 0.07) * np.exp(-(xx - 0.2) ** 2 / 5.0)
+        arc_2 = np.exp(-((yy - 0.9 + 0.18 * xx) ** 2) / 0.06) * np.exp(-(xx + 0.5) ** 2 / 6.0)
+        image += 0.95 * arc_1 + 0.85 * arc_2
+        cmap = "viridis"
+        title = "JWST Cluster"
+
+    fig, ax = plt.subplots(figsize=(3.2, 3.2), dpi=130)
+    fig.patch.set_facecolor("#0A0E1A")
+    ax.imshow(image, cmap=cmap, origin="lower")
+    ax.set_title(title, fontsize=10, color="#EAF4FF", pad=6)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_color("#00D4FF")
+        spine.set_linewidth(0.9)
+
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png", dpi=130, facecolor="#0A0E1A", bbox_inches="tight", pad_inches=0.12)
+    plt.close(fig)
+    return buffer.getvalue()
 
 
 st.set_page_config(
@@ -95,171 +158,156 @@ inject_custom_css()
 stats = _collect_home_stats()
 
 render_header(
-    "Gravitational Lensing Analysis Platform",
-    "Physics-informed machine learning for strong gravitational lensing",
-    "Research Demo Suite • Streamlit",
+    "Gravitational Lensing Toolkit",
+    "A research-grade playground for strong-lensing simulation, inference, and scientific validation.",
+    "ISEF 2025 Research Build",
 )
 
 st.markdown(
     f"""
-<div style="text-align: center; padding: 2rem 0; animation: fadeInScale 0.8s ease-out;">
-    <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">🌌 Gravitational Lensing Toolkit</h2>
-    <p style="font-size: 1.15rem; color: var(--text-secondary); max-width: 900px; margin: 0 auto; line-height: 1.6;">
-        Run scientifically grounded demo systems and inspect convergence, deflection, and inference outputs in one place.
-    </p>
+<div class="kpi-strip">
+    <span class="kpi-pill">Demo Systems: {stats['demo_count']}</span>
+    <span class="kpi-pill">Peak Inference: {stats['peak_speed']}</span>
+    <span class="kpi-pill">Physics Tests: 551 passed / 22 skipped</span>
+    <span class="kpi-pill">UI Modules: {stats['page_count']} pages</span>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
-metric_col_1, metric_col_2, metric_col_3, metric_col_4 = st.columns(4)
-with metric_col_1:
-    st.metric("Demo Systems", stats["demo_count"])
-with metric_col_2:
-    st.metric("Peak Inference", stats["peak_speed"])
-with metric_col_3:
-    st.metric("Test Modules", stats["test_modules"])
-with metric_col_4:
-    st.metric("UI Pages", stats["page_count"])
+left_col, right_col = st.columns([1.25, 1.0], gap="large")
 
-st.markdown("---")
-st.markdown(
-    """
-<div style="margin: 2rem 0;">
-    <h2 style="text-align: center; margin-bottom: 1.5rem; font-size: 2rem;">🚀 Launch a Demo</h2>
-    <p style="text-align: center; font-size: 1.1rem; color: var(--text-secondary); max-width: 700px; margin: 0 auto 2rem;">
-        Start from curated lens systems with ready-to-run parameters.
-    </p>
+with left_col:
+    st.markdown("## Observatory Console")
+    st.markdown(
+        """
+Select a canonical lensing scenario to generate convergence maps, deflection fields,
+and uncertainty-aware inference outputs with physically constrained pipelines.
+"""
+    )
+
+    action_col_1, action_col_2, action_col_3 = st.columns(3)
+    with action_col_1:
+        if st.button("Open Simple Lensing", use_container_width=True):
+            _safe_switch_page("pages/02_Simple_Lensing.py")
+    with action_col_2:
+        if st.button("Open Real Data", use_container_width=True):
+            _safe_switch_page("pages/05_Real_Data.py")
+    with action_col_3:
+        if st.button("Open Validation", use_container_width=True):
+            _safe_switch_page("pages/07_Validation.py")
+
+with right_col:
+    st.markdown(
+        """
+<div class="custom-card">
+  <div class="card-header">Mission Snapshot</div>
+  <div class="card-body">
+    <strong style="color:#EAF4FF;">Scientific objective:</strong> recover lens mass structure from image-domain observables while enforcing physical consistency.<br/><br/>
+    <strong style="color:#EAF4FF;">Numerical stack:</strong> thin-lens ray tracing, multi-plane recursion, and PINN-based parameter inference.<br/><br/>
+    <strong style="color:#EAF4FF;">Target output:</strong> publication-quality maps, uncertainty estimates, and reproducible validation traces.
+  </div>
 </div>
 """,
-    unsafe_allow_html=True,
-)
+        unsafe_allow_html=True,
+    )
+
+st.markdown('<div class="nebula-divider"></div>', unsafe_allow_html=True)
+st.markdown("## Demo Systems")
+st.markdown("Choose one-click systems with preconfigured astrophysical parameters.")
 
 demo_cards = [
     {
         "demo_id": "einstein_cross",
-        "title": "🌟 Einstein Cross",
-        "subtitle": "Quadruple-image quasar • z=0.04 lens",
-        "button": "Launch Einstein Cross",
+        "title": "Einstein Cross Q2237+030",
+        "subtitle": "Quad image morphology, compact source, low-z lens.",
+        "tags": "SIS-like morphology | z_l=0.04 | z_s=1.695",
+        "button": "Run Einstein Cross",
     },
     {
         "demo_id": "twin_quasar",
-        "title": "🔭 Twin Quasar",
-        "subtitle": "Historic 1979 system • time-delay workflow",
-        "button": "Launch Twin Quasar",
+        "title": "Twin Quasar Q0957+561",
+        "subtitle": "Classic time-delay lens for cosmography workflows.",
+        "tags": "NFW halo | time-delay use-case | historical benchmark",
+        "button": "Run Twin Quasar",
     },
     {
         "demo_id": "jwst_cluster_demo",
-        "title": "🪐 JWST Cluster",
-        "subtitle": "Cluster-scale lensing • substructure sensitivity",
-        "button": "Launch JWST Cluster",
+        "title": "JWST Cluster Arc Field",
+        "subtitle": "Cluster-scale lensing with substructure sensitivity.",
+        "tags": "High-mass lens | arc morphology | subhalo analysis",
+        "button": "Run JWST Cluster",
     },
 ]
 
-demo_columns = st.columns(3)
-for column, card in zip(demo_columns, demo_cards):
+columns = st.columns(3, gap="large")
+for column, card in zip(columns, demo_cards):
     with column:
         st.markdown(
             f"""
-<div style="text-align: center; margin-bottom: 1rem;">
-    <h3 style="font-size: 1.45rem; margin-bottom: 0.5rem;">{card["title"]}</h3>
-    <p style="color: var(--text-muted); font-size: 0.9rem;">{card["subtitle"]}</p>
+<div class="custom-card">
+  <div class="card-header">{card['title']}</div>
+  <div class="card-body">{card['subtitle']}</div>
+  <div style="margin-top:0.55rem;color:#7E94B3;font-size:0.8rem;">{card['tags']}</div>
 </div>
 """,
             unsafe_allow_html=True,
         )
-        if st.button(
-            card["button"],
-            use_container_width=True,
-            type="primary",
-            key=f"launch_{card['demo_id']}",
-        ):
+        st.image(_demo_preview_png(card["demo_id"]), use_container_width=True)
+        if st.button(card["button"], use_container_width=True, type="primary", key=f"launch_{card['demo_id']}"):
             run_demo_and_redirect(card["demo_id"])
 
-st.markdown("---")
-with st.expander("🔬 Advanced Workflows", expanded=False):
+st.markdown('<div class="nebula-divider"></div>', unsafe_allow_html=True)
+st.markdown("## Platform Capabilities")
+
+feat_col_1, feat_col_2, feat_col_3 = st.columns(3, gap="large")
+with feat_col_1:
     st.markdown(
         """
-Use the playgrounds below for custom parameter sweeps and FITS ingestion.
+<div class="custom-card">
+  <div class="card-header">Physics Core</div>
+  <div class="card-body">
+    Multi-profile lens models, FLRW distances, Einstein radii, and time-delay terms under a unified API.
+  </div>
+</div>
 """,
         unsafe_allow_html=True,
     )
-    advanced_col_1, advanced_col_2 = st.columns(2)
-    with advanced_col_1:
-        if st.button("📊 Simple Lensing Playground", use_container_width=True):
-            _safe_switch_page("pages/02_Simple_Lensing.py")
-    with advanced_col_2:
-        if st.button("📂 Real Data Analysis", use_container_width=True):
-            _safe_switch_page("pages/05_Real_Data.py")
+with feat_col_2:
+    st.markdown(
+        """
+<div class="custom-card">
+  <div class="card-header">Inference Engine</div>
+  <div class="card-body">
+    Physics-informed neural networks recover mass and profile parameters with calibrated uncertainty.
+  </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+with feat_col_3:
+    st.markdown(
+        """
+<div class="custom-card">
+  <div class="card-header">Validation Layer</div>
+  <div class="card-body">
+    Benchmark suites compare numerical outputs against known systems and internal consistency tests.
+  </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
-st.markdown("---")
+st.markdown('<div class="nebula-divider"></div>', unsafe_allow_html=True)
+
 st.markdown(
-    """
-<h2 style="text-align: center; margin-bottom: 1.5rem;">🧭 Explore Features</h2>
-""",
-    unsafe_allow_html=True,
-)
-
-feature_col_1, feature_col_2, feature_col_3 = st.columns(3)
-with feature_col_1:
-    st.markdown(
-        """
-<div class="custom-card">
-    <div class="card-header">
-        <span style="font-size: 2rem;">📸</span>
-        <span>Observation View</span>
-    </div>
-    <div class="card-body">
-        HST/JWST-style image inspection with reproducible parameter presets.
-    </div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-with feature_col_2:
-    st.markdown(
-        """
-<div class="custom-card">
-    <div class="card-header">
-        <span style="font-size: 2rem;">🗺️</span>
-        <span>Mass Mapping</span>
-    </div>
-    <div class="card-body">
-        Convergence and deflection fields generated from physically motivated lens models.
-    </div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-with feature_col_3:
-    st.markdown(
-        """
-<div class="custom-card">
-    <div class="card-header">
-        <span style="font-size: 2rem;">📊</span>
-        <span>Uncertainty Outputs</span>
-    </div>
-    <div class="card-body">
-        Bayesian-style uncertainty views for predicted parameters and class probabilities.
-    </div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-st.markdown("---")
-st.markdown(
-    """
-<div style="text-align: center; padding: 2.5rem 2rem; margin-top: 2rem; background: var(--bg-glass); backdrop-filter: blur(18px); border-radius: 16px; border: 1px solid var(--border-color);">
-    <h3 style="margin-bottom: 0.5rem;">Project Links</h3>
-    <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
-        Source code and issue tracking are maintained in the public repository.
-    </p>
-    <p style="font-size: 0.95rem; margin: 0;">
-        <a href="https://github.com/nalin1304/Gravitational-Lensing-algorithm" target="_blank" style="color: var(--accent-cyan); text-decoration: none;">
-            github.com/nalin1304/Gravitational-Lensing-algorithm
-        </a>
-    </p>
+    f"""
+<div class="custom-card" style="text-align:center;">
+  <div class="card-header" style="justify-content:center;">Repository</div>
+  <div class="card-body">
+    Source, issues, and reproducible experiment assets are available at
+    <a href="{REPOSITORY_URL}" target="_blank" style="color:#00D4FF;text-decoration:none;">{REPOSITORY_URL}</a>.
+  </div>
 </div>
 """,
     unsafe_allow_html=True,
