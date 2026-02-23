@@ -1,294 +1,229 @@
 # AGENTS.md
 
-This file is the operational context for humans/agents working in this repository.
-Use this as source-of-truth for architecture, runtime, validation workflow, and known caveats.
+Operational context for humans and coding agents working in this repository.
+Use this as the working source-of-truth for architecture, validation workflow,
+and current branch/release state.
 
-Last updated: 2026-02-23 (local workspace snapshot)
+Last updated: 2026-02-23
 
 ---
 
 ## 1) Project Identity
 
 - Project: **Gravitational Lensing Toolkit (ISEF 2025)**
-- Primary repo URL: `https://github.com/nalin1304/Gravitational-Lensing-algorithm`
-- Local workspace path:
+- Upstream repo: `https://github.com/nalin1304/Gravitational-Lensing-algorithm`
+- Local workspace:
   - `/Users/nalinaggarwal/Downloads/Gravitational-Lensing-algorithm-master`
-- Runtime observed in this workspace:
-  - `Python 3.9.6`
 
-Important workspace note:
-- This local copy currently has **no `.git` metadata** (commands like `git status` fail). Treat it as a filesystem working copy unless re-cloned as a git repo.
-
----
-
-## 2) Top-Level Architecture
-
-### Core scientific library
-- `src/lens_models/`
-  - Cosmology/lens geometry, mass profiles (PointMass/NFW/etc), multi-plane lensing.
-- `src/optics/`
-  - Ray tracing, geodesic integration, wave optics.
-- `src/time_delay/`
-  - Fermat potential + time-delay cosmography workflows.
-- `src/ml/`
-  - PINN models, physics-constrained losses, synthetic dataset generation, uncertainty tools.
-- `src/data/`
-  - FITS/real-data loading and preprocessing support.
-- `src/validation/`
-  - Scientific validation, calibration, known-system checks.
-- `src/utils/`
-  - Constants and shared scientific utilities.
-- `src/api_utils/`
-  - Shared API/auth helper logic.
-
-### Web UI (Streamlit)
-- Entry: `app/Home.py`
-- Pages: `app/pages/*.py`
-- Shared UI/helpers/state:
-  - `app/utils/ui.py`
-  - `app/utils/plotting.py`
-  - `app/utils/helpers.py`
-  - `app/utils/session_state.py`
-  - `app/utils/demo_helpers.py`
-
-### REST API (FastAPI)
-- Entry: `api/main.py`
-- Additional routers:
-  - `api/auth_routes.py`
-  - `api/analysis_routes.py`
-- Monitoring/security helper modules in `api/`.
-
-### Persistence / infra
-- `database/`: models, CRUD, auth, DB session logic.
-- `migrations/` + `alembic.ini`: Alembic migration setup.
-- `docker-compose.yml`: local stack orchestration.
-
-### Tests / Benchmarks / Scripts
-- `tests/`: broad scientific + API + UI/backend utility coverage.
-- `benchmarks/`: performance baselines and reporting (incl. `benchmarks/pinn_results.json`).
-- `scripts/`: db init, checks, quick demos, validator/integration scripts.
-- `notebooks/`: phase demos and exploratory notebooks.
+Current VCS state in this workspace:
+- Git repo initialized and connected to `origin`
+- Active branch: `codex/publication-ready-r2`
+- Head commit: `a040d40`
+- Open PR: `https://github.com/nalin1304/Gravitational-Lensing-algorithm/pull/3`
 
 ---
 
-## 3) Canonical Entry Points
+## 2) Runtime + Verified Baseline
 
-### Streamlit UI
-```bash
-streamlit run app/Home.py
-```
+Observed local runtime:
+- Python: `3.9.6`
 
-Notes:
-- `app/main.py` is a deprecated entrypoint stub. Use `app/Home.py`.
-- Current page set includes:
-  - `app/pages/02_Simple_Lensing.py`
-  - `app/pages/03_PINN_Inference.py`
-  - `app/pages/03_Results.py`
-  - `app/pages/04_Multi_Plane.py`
-  - `app/pages/05_Real_Data.py`
-  - `app/pages/06_Training.py`
-  - `app/pages/07_Validation.py`
-  - `app/pages/08_Bayesian_UQ.py`
-  - `app/pages/09_Settings.py`
-
-### FastAPI
-```bash
-uvicorn api.main:app --reload
-```
-
-Primary endpoints in `api/main.py`:
-- `GET /`
-- `GET /health`
-- `POST /api/v1/synthetic`
-- `POST /api/v1/inference`
-- `POST /api/v1/batch`
-- `GET /api/v1/batch/{batch_id}/status`
-- `GET /api/v1/models`
-- `GET /api/v1/stats`
-
-Additional routers:
-- Auth: `/api/v1/auth/*` in `api/auth_routes.py`
-- Analysis/job CRUD: `/api/v1/*` in `api/analysis_routes.py`
-
-### Docker stack
-```bash
-docker-compose up -d
-```
-
----
-
-## 4) Scientific Contracts Implemented in Code
-
-These are the key physics contracts currently encoded in core modules and tests.
-
-### Cosmology + distances
-- `LensSystem` in `src/lens_models/lens_system.py` uses `astropy.cosmology.FlatLambdaCDM`.
-- Distances are computed via:
-  - `angular_diameter_distance(z_l)`
-  - `angular_diameter_distance(z_s)`
-  - `angular_diameter_distance_z1z2(z_l, z_s)` for `D_ls`.
-- Critical surface density:
-  - `Sigma_crit = c^2/(4*pi*G) * D_s/(D_l*D_ls)` (implemented in `critical_surface_density()`).
-
-### Einstein radius
-- Point-mass Einstein scale in `LensSystem.einstein_radius_scale()`:
-  - `theta_E = sqrt((4GM/c^2) * D_ls/(D_l*D_s))`.
-
-### NFW + related profiles
-- Main implementation in `src/lens_models/mass_profiles.py`.
-- Elliptical extension in `src/lens_models/advanced_profiles.py`.
-- Deflection/convergence kernels are implemented with dedicated NFW helper functions and projected-profile terms.
-
-### Time-delay cosmography
-- Implemented in `src/time_delay/cosmography.py`.
-- Uses Fermat-potential decomposition and:
-  - `Delta t ∝ (1+z_l) * (D_l*D_s/D_ls) * Delta phi`.
-
-### PINN / physics losses
-- Core model in `src/ml/pinn.py` and related models in `src/ml/pinn_models.py` / `src/ml/pinn_advanced.py`.
-- Physics constraints in `src/ml/physics_constrained_loss.py`.
-- Unit-safe helper routines in `src/ml/physics_unit_safe.py`.
-
-### Constants
-- Central constants in `src/utils/constants.py`:
-  - CODATA 2018 + Planck 2018 values and conversion helpers.
-
----
-
-## 5) Known Compatibility Layers (Do Not Remove Blindly)
-
-- `app/utils.py` is legacy; `app/utils/__init__.py` bridges legacy symbols for compatibility.
-- `src/lens_models.py` exists alongside package `src/lens_models/`; most active code/tests use the package path (`src.lens_models.*`).
-- API and app code include fallback import paths to support multiple launch contexts.
-
-When refactoring:
-- Prefer canonical package imports (`src.lens_models`, `app.utils.*`).
-- Preserve backward-compatible re-exports unless all call sites are migrated and tests pass.
-
----
-
-## 6) Current Validation Baseline (This Workspace)
-
-Executed in this workspace on 2026-02-23:
+Verified on 2026-02-23:
 
 ```bash
 python3 -m pytest tests/ -q
+# 551 passed, 22 skipped
+
+python3 -m mypy src/ --ignore-missing-imports
+# Success: no issues found in 42 source files
 ```
 
-Result:
-- `551 passed, 22 skipped`
+Additional check:
+- `LensSystem` defaults match Planck constants (`H0=67.4`, `Om0=0.315`).
 
-Also validated:
+Expected non-fatal local warning:
+- `urllib3` warns about LibreSSL/OpenSSL mismatch in this Python build.
 
+---
+
+## 3) Architecture (Current)
+
+### Scientific core (`src/`)
+- `src/lens_models/`: lens geometry, mass profiles, multi-plane models.
+- `src/optics/`: ray tracing, geodesics, wave optics.
+- `src/time_delay/`: Fermat potential and delay cosmography.
+- `src/ml/`: PINN models, training, physics losses, uncertainty.
+- `src/data/`: FITS/real-data loading and preprocessing.
+- `src/validation/`: calibration and scientific validation routines.
+- `src/utils/`: constants + shared scientific helpers.
+- `src/api_utils/`: auth/API support utilities.
+
+### Streamlit app (`app/`)
+- Entry: `app/Home.py`
+- Deprecated redirect entrypoint: `app/main.py`
+- Feature pages: `app/pages/*.py`
+- Reusable non-UI app logic:
+  - `app/core/landing.py`
+  - `app/core/web_utils.py`
+- Shared UI/session/demo logic:
+  - `app/utils/ui.py`
+  - `app/utils/session_state.py`
+  - `app/utils/demo_helpers.py`
+  - `app/utils/plotting.py`
+  - `app/utils/helpers.py`
+
+### API + persistence
+- API entry: `api/main.py`
+- Routers: `api/auth_routes.py`, `api/analysis_routes.py`
+- Database layer: `database/`
+- Alembic setup: `migrations/`, `alembic.ini`
+
+### Quality + ops
+- Tests: `tests/`
+- Benchmarks: `benchmarks/`
+- Utility scripts: `scripts/`
+- Validation/readiness docs:
+  - `JOURNAL_PUBLICATION_READINESS.md`
+  - `PROJECT_DOCUMENTATION.md`
+
+---
+
+## 4) Canonical Import and Module Rules
+
+1. Use package imports from canonical modules.
+- Preferred: `from src.lens_models import LensSystem, NFWProfile, ...`
+- Avoid introducing new top-level import paths.
+
+2. Treat `app/core/` as the location for reusable, testable app logic.
+- Business/scientific helper logic belongs in `app/core/*`.
+- Streamlit orchestration should remain in `app/pages/*` and `app/Home.py`.
+
+3. Compatibility wrappers are intentional.
+- `app/utils.py` re-exports from `app/core/web_utils.py`.
+- `app/styles.py` re-exports shared UI helpers from `app/utils/ui.py`.
+- `src/lens_models.py` is a legacy compatibility shim; canonical implementations are under `src/lens_models/` package.
+
+4. Do not remove compatibility wrappers unless all call sites are migrated and full tests pass.
+
+---
+
+## 5) Scientific Contracts (Implemented)
+
+### Cosmology and distances
+- `LensSystem` in `src/lens_models/lens_system.py` uses `astropy.cosmology.FlatLambdaCDM`.
+- Defaults are Planck-aligned via `src/utils/constants.py`.
+- Distances use:
+  - `angular_diameter_distance(z_l)`
+  - `angular_diameter_distance(z_s)`
+  - `angular_diameter_distance_z1z2(z_l, z_s)` for `D_ls`
+
+### Core lensing quantities
+- Critical surface density:
+  - `Sigma_crit = c^2/(4*pi*G) * D_s/(D_l*D_ls)`
+- Einstein scale:
+  - `theta_E = sqrt((4GM/c^2) * D_ls/(D_l*D_s))`
+
+### Time delays
+- Delay relation implemented in `src/time_delay/cosmography.py`:
+  - `Delta t ∝ (1+z_l) * (D_l*D_s/D_ls) * Delta phi`
+
+### PINN physics
+- Core model and inference in `src/ml/pinn.py` and related modules.
+- Physics-constrained losses in `src/ml/physics_constrained_loss.py`.
+
+---
+
+## 6) Demo/Data Behavior
+
+- One-click demos can request `builtin:*` assets in YAML configs.
+- If built-in demo assets are missing from `assets/demos/`, app fallback now generates a physics-based synthetic observation from config instead of hard-failing.
+- Keep demo generation deterministic when randomness is used (seeded RNG).
+
+---
+
+## 7) Validation Workflow (Agent Standard)
+
+For any non-trivial change:
+
+1. Syntax/compile check on modified modules:
 ```bash
+python3 -m py_compile <changed_files>
+```
+
+2. Targeted tests for touched subsystem(s).
+
+3. Full regression before handoff:
+```bash
+python3 -m pytest tests/ -q
 python3 -m mypy src/ --ignore-missing-imports
 ```
 
-Result:
-- `Success: no issues found in 42 source files`
-
-Common non-fatal warnings seen:
-- `urllib3` OpenSSL/LibreSSL warning in local Python build.
-- Some expected deprecation/user warnings in selected tests.
+For UI-focused work, also run:
+```bash
+python3 -m pytest tests/test_web_interface.py -q
+```
 
 ---
 
-## 7) Known Caveats / Drift to Watch
+## 8) Coding and Organization Conventions
 
-1. README and docs drift
-- Some README claims (e.g., historical test counts, some page names, some links/text artifacts) may not match current code state.
-- Use code + tests as primary source of truth.
+1. Keep modules single-purpose.
+- UI rendering and scientific logic should remain separated.
 
-2. Demo assets dependency
-- `app/utils/demo_helpers.py` expects built-in assets under:
-  - `assets/demos/*.npy`
-- In this workspace snapshot, `assets/` is absent.
-- One-click demo flows using `builtin:*` source images can fail until assets are added.
+2. Prefer explicit names over abbreviations.
+- Use domain terms (`convergence_map`, `deflection_field`, `einstein_radius_arcsec`) where practical.
 
-3. Cosmology defaults are not globally unified
-- `src/utils/constants.py` defines Planck 2018 constants (`H0_PLANCK=67.4`, `OMEGA_M_PLANCK=0.315`).
-- `LensSystem` defaults are currently `H0=70.0`, `Om0=0.3`.
-- Be explicit about cosmology values in scientific comparisons.
+3. Keep docs and architecture synchronized.
+- If you add/move core modules, update:
+  - `README.md`
+  - `app/README.md`
+  - this `AGENTS.md`
 
-4. API synthetic request compatibility
-- `scale_radius` remains in API/data-generation signatures for compatibility even where current NFW constructors derive scale from mass+concentration.
-
-5. Python version considerations
-- Project requires `>=3.9` in `pyproject.toml`.
-- Avoid Python-only syntax that requires newer runtimes unless guarded or backported.
+4. Avoid placeholder/dummy data in runtime paths.
+- Placeholder terms may exist only in explanatory documentation of scans/results.
 
 ---
 
-## 8) Agent Workflow Guidance
+## 9) High-Signal File Map
 
-When making changes:
+Scientific core:
+- `src/lens_models/lens_system.py`
+- `src/lens_models/mass_profiles.py`
+- `src/lens_models/advanced_profiles.py`
+- `src/lens_models/multi_plane_recursive.py`
+- `src/optics/ray_tracing.py`
+- `src/time_delay/cosmography.py`
+- `src/ml/pinn.py`
+- `src/ml/physics_constrained_loss.py`
+- `src/utils/constants.py`
 
-1. Prefer code reality over docs
-- Verify behavior from source + tests.
+App core/UI:
+- `app/Home.py`
+- `app/core/landing.py`
+- `app/core/web_utils.py`
+- `app/utils/ui.py`
+- `app/utils/demo_helpers.py`
+- `app/pages/03_Results.py`
+- `app/pages/05_Real_Data.py`
 
-2. Keep imports/package boundaries stable
-- Avoid introducing top-level import ambiguity (especially lens model modules).
+API:
+- `api/main.py`
+- `api/auth_routes.py`
+- `api/analysis_routes.py`
 
-3. Preserve scientific consistency
-- Use existing constants/utilities where available.
-- Keep units explicit and convert intentionally.
-
-4. Validate incrementally
-- Minimum:
-  - `python3 -m py_compile <changed_files>`
-  - targeted pytest modules for touched subsystems
-- Before handoff:
-  - `python3 -m pytest tests/ -q`
-  - `python3 -m mypy src/ --ignore-missing-imports` for core changes
-
-5. UI changes
-- Confirm Streamlit page routes exist before switching.
-- Avoid debug artifacts (`st.write("Debug: ...")`) in production pages.
-
-6. Data realism
-- Do not introduce synthetic stand-in data for scientific outputs.
-- If synthetic generation is required, keep deterministic seeds and document assumptions.
-
----
-
-## 9) High-Signal File Map (Start Here)
-
-- Scientific core:
-  - `src/lens_models/lens_system.py`
-  - `src/lens_models/mass_profiles.py`
-  - `src/lens_models/advanced_profiles.py`
-  - `src/optics/ray_tracing.py`
-  - `src/time_delay/cosmography.py`
-  - `src/ml/pinn.py`
-  - `src/ml/physics_constrained_loss.py`
-  - `src/utils/constants.py`
-
-- App/UI:
-  - `app/Home.py`
-  - `app/pages/02_Simple_Lensing.py`
-  - `app/pages/03_PINN_Inference.py`
-  - `app/pages/03_Results.py`
-  - `app/pages/05_Real_Data.py`
-  - `app/utils/demo_helpers.py`
-
-- API:
-  - `api/main.py`
-  - `api/auth_routes.py`
-  - `api/analysis_routes.py`
-
-- Validation/test coverage:
-  - `tests/test_lens_system.py`
-  - `tests/test_mass_profiles.py`
-  - `tests/test_ray_tracing.py`
-  - `tests/test_time_delay.py`
-  - `tests/test_physics_constrained_loss.py`
-  - `tests/test_web_interface.py`
-  - `tests/test_api.py`
-  - `tests/test_real_data.py`
+Validation/tests:
+- `tests/test_lens_system.py`
+- `tests/test_mass_profiles.py`
+- `tests/test_ray_tracing.py`
+- `tests/test_time_delay.py`
+- `tests/test_physics_constrained_loss.py`
+- `tests/test_web_interface.py`
+- `tests/test_api.py`
+- `tests/test_real_data.py`
 
 ---
 
-## 10) Practical Command Reference
+## 10) Practical Commands
 
 Setup:
 ```bash
@@ -298,15 +233,14 @@ pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-Run:
+Run app/API:
 ```bash
 streamlit run app/Home.py
 uvicorn api.main:app --reload
 ```
 
-Quality checks:
+Regression:
 ```bash
-python3 -m py_compile app/Home.py
 python3 -m pytest tests/ -q
 python3 -m mypy src/ --ignore-missing-imports
 ```
@@ -316,7 +250,3 @@ Targeted checks:
 python3 -m pytest tests/test_web_interface.py tests/test_real_data.py -q
 python3 -m pytest tests/test_lens_system.py tests/test_mass_profiles.py tests/test_time_delay.py -q
 ```
-
----
-
-If this file becomes stale, refresh it from code + test execution logs, not from documentation claims.
