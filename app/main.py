@@ -1,71 +1,33 @@
-"""
-⚠️ DEPRECATION NOTICE ⚠️
+"""Deprecated Streamlit entrypoint.
 
-This file (app/main.py) has been DEPRECATED as of November 5, 2025.
-
-The application has been refactored into a multi-page structure for better 
-maintainability, security, and scalability.
-
-NEW LAUNCH COMMAND:
+`app/main.py` is intentionally retained only to redirect users to:
     streamlit run app/Home.py
 
-MIGRATION GUIDE:
-- Old monolithic structure (3,142 lines): app/main.py ❌
-- New multi-page structure: app/Home.py + app/pages/*.py ✅
-
-WHY THIS CHANGE?
-1. Better Code Organization: Each feature in its own file
-2. Easier Maintenance: Smaller, focused modules
-3. Team Collaboration: Multiple developers can work simultaneously
-4. Performance: Streamlit loads only active pages
-5. Security: Isolated page logic prevents cross-contamination
-
-DIRECTORY STRUCTURE:
+Current app organization:
 app/
-├── Home.py                    # Main entry point (NEW)
-├── main.py                    # DEPRECATED - DO NOT USE
-├── main_legacy.py             # Backup of original implementation
-├── styles.py                  # Shared styling
-├── error_handler.py           # Shared error handling
-├── utils/                     # Shared utilities
-│   └── session_state.py
-└── pages/                     # Individual feature pages
-    ├── 01_Home.py             # Landing page (used by Home.py)
-    ├── 02_Simple_Lensing.py   # Basic lensing demo
-    ├── 03_PINN_Inference.py   # Neural network inference
-    ├── 04_Multi_Plane.py      # Multi-plane lensing
-    ├── 05_Real_Data.py        # FITS file analysis
-    ├── 06_Training.py         # Model training
-    ├── 07_Validation.py       # Scientific validation
-    ├── 08_Bayesian_UQ.py      # Uncertainty quantification
-    └── 09_Settings.py         # Configuration
-
-WHAT TO DO IF YOU SEE THIS MESSAGE:
-If you're running:
-    streamlit run app/main.py
-
-Change to:
-    streamlit run app/Home.py
-
-If you have scripts or documentation referencing app/main.py, update them.
-
-TIMELINE:
-- Nov 5, 2025: Multi-page structure created, main.py deprecated
-- Dec 1, 2025: main.py will be renamed to main_legacy.py
-- Jan 1, 2026: main_legacy.py may be removed
-
-For questions, see:
-- README.md
-- MONOLITH_REFACTOR_GUIDE.md
-- docs/ARCHITECTURE.md
-
-This file is kept for backward compatibility but SHOULD NOT BE USED.
-All new development should use the multi-page structure.
+├── Home.py                 # Main launch page
+├── main.py                 # Deprecated redirect page (this file)
+├── styles.py               # Styling compatibility wrapper
+├── core/                   # Reusable non-UI app services
+│   ├── landing.py
+│   └── web_utils.py
+├── utils/                  # UI/session/demo helper modules
+│   ├── ui.py
+│   ├── session_state.py
+│   └── demo_helpers.py
+└── pages/                  # Feature pages
+    ├── 02_Simple_Lensing.py
+    ├── 03_PINN_Inference.py
+    ├── 03_Results.py
+    ├── 04_Multi_Plane.py
+    ├── 05_Real_Data.py
+    ├── 06_Training.py
+    ├── 07_Validation.py
+    ├── 08_Bayesian_UQ.py
+    └── 09_Settings.py
 """
 
 import streamlit as st
-import sys
-from pathlib import Path
 
 st.set_page_config(
     page_title="⚠️ Deprecated",
@@ -76,26 +38,22 @@ st.set_page_config(
 st.error("""
 # ⚠️ DEPRECATION WARNING
 
-This entry point (`app/main.py`) has been **DEPRECATED**.
+This entry point (`app/main.py`) is **deprecated**.
 
 ## Use Instead:
 ```bash
 streamlit run app/Home.py
 ```
 
-## Why?
-The application has been refactored into a **multi-page structure** for:
-- ✅ Better maintainability (smaller files)
-- ✅ Improved security (isolated pages)
-- ✅ Easier collaboration (multiple devs)
-- ✅ Better performance (lazy loading)
+## Why
+The app now uses a modular multipage structure with shared core/services and reusable UI helpers.
 
-## What to Do?
+## What to do
 1. Stop the current Streamlit server (Ctrl+C)
 2. Run: `streamlit run app/Home.py`
 3. Update any scripts/bookmarks
 
-See `MONOLITH_REFACTOR_GUIDE.md` for details.
+See `README.md` for current architecture and usage.
 """)
 
 st.stop()

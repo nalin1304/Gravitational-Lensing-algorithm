@@ -216,7 +216,10 @@ python test_imports.py
 gravitational-lensing-algorithm/
 ├── app/                           # Streamlit web interface
 │   ├── Home.py                   # Streamlit root page
-│   ├── main.py                   # Shared app entry/config helpers
+│   ├── main.py                   # Deprecated redirect entrypoint
+│   ├── core/                     # Reusable app services (non-UI logic)
+│   │   ├── landing.py            # Home-page metrics and preview generation
+│   │   └── web_utils.py          # Testable scientific helper functions
 │   ├── pages/                    # Multipage UI modules
 │   │   ├── 02_Simple_Lensing.py
 │   │   ├── 03_PINN_Inference.py
@@ -227,7 +230,8 @@ gravitational-lensing-algorithm/
 │   │   ├── 07_Validation.py
 │   │   ├── 08_Bayesian_UQ.py
 │   │   └── 09_Settings.py
-│   └── utils/                    # Shared app utilities
+│   ├── utils/                    # Shared UI/session/demo helper modules
+│   └── utils.py                  # Backward-compatible shim to app/core/web_utils.py
 ├── api/                          # FastAPI REST backend
 │   ├── main.py                  # API server with JWT auth
 │   ├── auth_routes.py           # Authentication endpoints
@@ -293,11 +297,15 @@ gravitational-lensing-algorithm/
 
 5. **App Architecture**
    - Refactored monolithic `app/main.py` into multi-page structure
-   - Created `app/utils/` with modular utilities:
+   - Introduced `app/core/` for reusable, testable non-UI logic:
+     - `landing.py` - Home-page stats and preview synthesis
+     - `web_utils.py` - Scientific utility functions used in tests and UI flows
+   - Consolidated `app/utils/` for UI/session/demo concerns:
      - `session_state.py` - Centralized state management
      - `plotting.py` - Publication-quality visualization
      - `ui.py` - Reusable UI components
      - `helpers.py` - Validation and dependency checking
+   - Added compatibility shims (`app/utils.py`, `app/styles.py`) to preserve legacy imports during refactors
 
 6. **Test Organization**
    - Renamed phase-based tests to descriptive names:

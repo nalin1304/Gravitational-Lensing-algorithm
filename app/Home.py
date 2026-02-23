@@ -6,16 +6,16 @@ Launch with:
 
 from __future__ import annotations
 
-import json
-from io import BytesIO
 from pathlib import Path
-from typing import Any
 
-import matplotlib.pyplot as plt
-import numpy as np
 import streamlit as st
 
 from styles import inject_custom_css, render_header
+try:
+    from app.core.landing import DEMO_CARDS, collect_home_stats, generate_demo_preview_png
+except ImportError:  # pragma: no cover - fallback when run with app/ on PYTHONPATH
+    from core.landing import DEMO_CARDS, collect_home_stats, generate_demo_preview_png  # type: ignore
+
 from utils.demo_helpers import run_demo_and_redirect
 from utils.session_state import init_session_state
 
@@ -37,107 +37,6 @@ def _safe_switch_page(page_path: str) -> None:
         st.error(f"Page not found: {page_path}")
 
 
-def _load_peak_inference_speed() -> float | None:
-    """Return peak images/sec from benchmark results, if available."""
-    if not BENCHMARK_RESULTS_PATH.exists():
-        return None
-
-    try:
-        payload: dict[str, Any] = json.loads(BENCHMARK_RESULTS_PATH.read_text())
-    except (OSError, json.JSONDecodeError, TypeError):
-        return None
-
-    runs = payload.get("results", [])
-    if not isinstance(runs, list):
-        return None
-
-    speeds: list[float] = []
-    for run in runs:
-        if not isinstance(run, dict):
-            continue
-        value = run.get("images_per_sec")
-        if isinstance(value, (int, float)):
-            speeds.append(float(value))
-
-    return max(speeds) if speeds else None
-
-
-def _collect_home_stats() -> dict[str, str]:
-    """Collect lightweight repository stats for landing-page panels."""
-    demo_count = len(list(DEMOS_DIR.glob("*.yaml")))
-    test_modules = len(list(TESTS_DIR.glob("test_*.py")))
-    page_count = len(list(PAGES_DIR.glob("*.py")))
-    peak_speed = _load_peak_inference_speed()
-
-    return {
-        "demo_count": str(demo_count),
-        "test_modules": str(test_modules),
-        "page_count": str(page_count),
-        "peak_speed": f"{peak_speed:.1f} img/s" if peak_speed is not None else "N/A",
-    }
-
-
-def _gaussian_2d(x_grid: np.ndarray, y_grid: np.ndarray, cx: float, cy: float, sigma: float) -> np.ndarray:
-    """Return an isotropic 2D Gaussian on a grid."""
-    return np.exp(-((x_grid - cx) ** 2 + (y_grid - cy) ** 2) / (2.0 * sigma * sigma))
-
-
-@st.cache_data(show_spinner=False)
-def _demo_preview_png(demo_id: str) -> bytes:
-    """Render a small synthetic thumbnail image for each demo system."""
-    plt.style.use("dark_background")
-
-    n = 220
-    x = np.linspace(-2.4, 2.4, n)
-    y = np.linspace(-2.4, 2.4, n)
-    xx, yy = np.meshgrid(x, y)
-
-    base = 0.02 * np.exp(-(xx * xx + yy * yy) / 8.0)
-
-    if demo_id == "einstein_cross":
-        image = base.copy()
-        for cx, cy in [(-0.85, -0.12), (0.82, 0.08), (0.12, 0.86), (-0.08, -0.88)]:
-            image += 1.35 * _gaussian_2d(xx, yy, cx, cy, 0.16)
-        ring = np.exp(-((np.sqrt(xx**2 + yy**2) - 1.0) ** 2) / 0.05)
-        image += 0.55 * ring
-        cmap = "magma"
-        title = "Einstein Cross"
-    elif demo_id == "twin_quasar":
-        image = base.copy()
-        image += 1.6 * _gaussian_2d(xx, yy, -0.95, 0.12, 0.2)
-        image += 1.4 * _gaussian_2d(xx, yy, 0.88, -0.08, 0.22)
-        image += 0.45 * np.exp(-(xx * xx / 0.9 + yy * yy / 2.3))
-        arc = np.exp(-((yy - 0.5 * np.sin(1.6 * xx)) ** 2) / 0.12) * np.exp(-(xx + 0.3) ** 2 / 4.0)
-        image += 0.35 * arc
-        cmap = "inferno"
-        title = "Twin Quasar"
-    else:
-        image = base.copy()
-        image += 0.55 * np.exp(-(xx * xx + yy * yy) / 3.5)
-        for cx, cy, amp in [(-1.0, 0.9, 0.7), (0.7, 1.1, 0.6), (1.2, -0.5, 0.65), (-0.6, -1.1, 0.5)]:
-            image += amp * _gaussian_2d(xx, yy, cx, cy, 0.25)
-        arc_1 = np.exp(-((yy + 0.8 - 0.25 * xx) ** 2) / 0.07) * np.exp(-(xx - 0.2) ** 2 / 5.0)
-        arc_2 = np.exp(-((yy - 0.9 + 0.18 * xx) ** 2) / 0.06) * np.exp(-(xx + 0.5) ** 2 / 6.0)
-        image += 0.95 * arc_1 + 0.85 * arc_2
-        cmap = "viridis"
-        title = "JWST Cluster"
-
-    fig, ax = plt.subplots(figsize=(3.2, 3.2), dpi=130)
-    fig.patch.set_facecolor("#0A0E1A")
-    ax.imshow(image, cmap=cmap, origin="lower")
-    ax.set_title(title, fontsize=10, color="#EAF4FF", pad=6)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    for spine in ax.spines.values():
-        spine.set_color("#00D4FF")
-        spine.set_linewidth(0.9)
-
-    buffer = BytesIO()
-    fig.savefig(buffer, format="png", dpi=130, facecolor="#0A0E1A", bbox_inches="tight", pad_inches=0.12)
-    plt.close(fig)
-    return buffer.getvalue()
-
-
 st.set_page_config(
     page_title="Gravitational Lensing Analysis Platform",
     page_icon="🔭",
@@ -155,7 +54,12 @@ st.set_page_config(
 
 init_session_state()
 inject_custom_css()
-stats = _collect_home_stats()
+stats = collect_home_stats(
+    demos_dir=DEMOS_DIR,
+    tests_dir=TESTS_DIR,
+    pages_dir=PAGES_DIR,
+    benchmark_results_path=BENCHMARK_RESULTS_PATH,
+)
 
 render_header(
     "Gravitational Lensing Toolkit",
@@ -216,32 +120,8 @@ st.markdown('<div class="nebula-divider"></div>', unsafe_allow_html=True)
 st.markdown("## Demo Systems")
 st.markdown("Choose one-click systems with preconfigured astrophysical parameters.")
 
-demo_cards = [
-    {
-        "demo_id": "einstein_cross",
-        "title": "Einstein Cross Q2237+030",
-        "subtitle": "Quad image morphology, compact source, low-z lens.",
-        "tags": "SIS-like morphology | z_l=0.04 | z_s=1.695",
-        "button": "Run Einstein Cross",
-    },
-    {
-        "demo_id": "twin_quasar",
-        "title": "Twin Quasar Q0957+561",
-        "subtitle": "Classic time-delay lens for cosmography workflows.",
-        "tags": "NFW halo | time-delay use-case | historical benchmark",
-        "button": "Run Twin Quasar",
-    },
-    {
-        "demo_id": "jwst_cluster_demo",
-        "title": "JWST Cluster Arc Field",
-        "subtitle": "Cluster-scale lensing with substructure sensitivity.",
-        "tags": "High-mass lens | arc morphology | subhalo analysis",
-        "button": "Run JWST Cluster",
-    },
-]
-
 columns = st.columns(3, gap="large")
-for column, card in zip(columns, demo_cards):
+for column, card in zip(columns, DEMO_CARDS):
     with column:
         st.markdown(
             f"""
@@ -253,7 +133,7 @@ for column, card in zip(columns, demo_cards):
 """,
             unsafe_allow_html=True,
         )
-        st.image(_demo_preview_png(card["demo_id"]), use_container_width=True)
+        st.image(generate_demo_preview_png(card["demo_id"]), use_container_width=True)
         if st.button(card["button"], use_container_width=True, type="primary", key=f"launch_{card['demo_id']}"):
             run_demo_and_redirect(card["demo_id"])
 
