@@ -128,13 +128,11 @@ Alternative web UI runs at **http://localhost:8000/ui**
 
 | Document | Description |
 |----------|-------------|
-| [🚀 QUICKSTART.md](QUICKSTART.md) | Get started in 5 minutes |
-| [� QUICK_REFERENCE_CARD.txt](QUICK_REFERENCE_CARD.txt) | Essential commands & troubleshooting |
-| [� ISEF_QUICK_REFERENCE.md](ISEF_QUICK_REFERENCE.md) | Demo script for presentations |
-| [🔬 REAL_DATA_SOURCES.md](REAL_DATA_SOURCES.md) | Access HST/JWST/SDSS data |
-| [� MODEL_TRAINING_GUIDE.md](MODEL_TRAINING_GUIDE.md) | Train custom PINN models |
-| [🚀 PRODUCTION_DEPLOYMENT_GUIDE.md](PRODUCTION_DEPLOYMENT_GUIDE.md) | Production deployment |
-| [🔧 database/SSL_SETUP_GUIDE.md](database/SSL_SETUP_GUIDE.md) | SSL certificate setup |
+| [📘 PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md) | Comprehensive architecture and usage guide |
+| [🧭 AGENTS.md](AGENTS.md) | Operational context, architecture map, validation workflow |
+| [✅ JOURNAL_PUBLICATION_READINESS.md](JOURNAL_PUBLICATION_READINESS.md) | Executable validation matrix and release checks |
+| [🎤 ISEF_QUICK_REFERENCE.md](ISEF_QUICK_REFERENCE.md) | Presentation flow and demo script |
+| [🧩 app/README.md](app/README.md) | Streamlit and FastAPI UI structure notes |
 
 ## 🎨 Features Overview
 
