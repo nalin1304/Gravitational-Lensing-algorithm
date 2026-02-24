@@ -4,7 +4,7 @@ Operational context for humans and coding agents working in this repository.
 Use this as the working source-of-truth for architecture, validation workflow,
 and current branch/release state.
 
-Last updated: 2026-02-23
+Last updated: 2026-02-24
 
 ---
 
@@ -18,7 +18,7 @@ Last updated: 2026-02-23
 Current VCS state in this workspace:
 - Git repo initialized and connected to `origin`
 - Active branch: `codex/publication-ready-r2`
-- Head commit: `a040d40`
+- Head commit: `087d65a`
 - Open PR: `https://github.com/nalin1304/Gravitational-Lensing-algorithm/pull/3`
 
 ---
@@ -28,11 +28,11 @@ Current VCS state in this workspace:
 Observed local runtime:
 - Python: `3.9.6`
 
-Verified on 2026-02-23:
+Verified on 2026-02-24:
 
 ```bash
 python3 -m pytest tests/ -q
-# 551 passed, 22 skipped
+# 554 passed, 22 skipped
 
 python3 -m mypy src/ --ignore-missing-imports
 # Success: no issues found in 42 source files
@@ -71,6 +71,15 @@ Expected non-fatal local warning:
   - `app/utils/demo_helpers.py`
   - `app/utils/plotting.py`
   - `app/utils/helpers.py`
+
+### Alternative web UI (`web_ui/`)
+- FastAPI-served static frontend via `api/main.py`.
+- Route: `/ui`
+- Static assets route: `/ui-static`
+- Files:
+  - `web_ui/index.html`
+  - `web_ui/styles.css`
+  - `web_ui/app.js`
 
 ### API + persistence
 - API entry: `api/main.py`
@@ -160,7 +169,7 @@ python3 -m mypy src/ --ignore-missing-imports
 
 For UI-focused work, also run:
 ```bash
-python3 -m pytest tests/test_web_interface.py -q
+python3 -m pytest tests/test_web_interface.py tests/test_next_ui.py -q
 ```
 
 ---
@@ -205,6 +214,8 @@ App core/UI:
 - `app/utils/demo_helpers.py`
 - `app/pages/03_Results.py`
 - `app/pages/05_Real_Data.py`
+- `web_ui/index.html`
+- `web_ui/app.js`
 
 API:
 - `api/main.py`
@@ -218,6 +229,7 @@ Validation/tests:
 - `tests/test_time_delay.py`
 - `tests/test_physics_constrained_loss.py`
 - `tests/test_web_interface.py`
+- `tests/test_next_ui.py`
 - `tests/test_api.py`
 - `tests/test_real_data.py`
 
@@ -237,6 +249,7 @@ Run app/API:
 ```bash
 streamlit run app/Home.py
 uvicorn api.main:app --reload
+# open http://localhost:8000/ui for the non-Streamlit frontend
 ```
 
 Regression:

@@ -20,7 +20,8 @@ pip install -r requirements.txt
 streamlit run app/Home.py
 ```
 
-**Then click "Einstein Cross" → see results immediately**
+**Then click "Einstein Cross" → see results immediately**  
+Alternative browser UI: `uvicorn api.main:app --reload` then open `http://localhost:8000/ui`
 
 ✅ **No training** • ✅ **No config** • ✅ **Scientifically validated**
 
@@ -100,12 +101,13 @@ pip install -r requirements-dev.txt
 # Launch the Streamlit app (Multi-Page)
 streamlit run app/Home.py
 
-# OR launch the FastAPI backend
+# OR launch the FastAPI backend + non-Streamlit UI
 uvicorn api.main:app --reload
 ```
 
 The Streamlit app opens at **http://localhost:8501**  
-The API server runs at **http://localhost:8000**
+The API server runs at **http://localhost:8000**  
+Alternative web UI runs at **http://localhost:8000/ui**
 
 ## 📚 Documentation
 
@@ -199,16 +201,16 @@ python -m pytest tests/test_mass_profiles.py -v
 python test_imports.py
 ```
 
-**Current Test Status**: ✅ 551 passed, 22 skipped (`python -m pytest tests/ -q`, run on February 23, 2026)
+**Current Test Status**: ✅ 554 passed, 22 skipped (`python -m pytest tests/ -q`, run on February 24, 2026)
 
 ## ✅ Publication Readiness
 
 - Full reproducibility and validation record: `JOURNAL_PUBLICATION_READINESS.md`
 - Latest release gate summary:
-  - `551 passed, 22 skipped` (full test suite)
+  - `554 passed, 22 skipped` (full test suite)
   - `mypy src/` clean
   - Python compile sanity clean
-  - Placeholder/dummy marker scan clean
+  - Runtime/config placeholder marker scan clean
 
 ## 📊 Project Structure
 
@@ -236,6 +238,10 @@ gravitational-lensing-algorithm/
 │   ├── main.py                  # API server with JWT auth
 │   ├── auth_routes.py           # Authentication endpoints
 │   └── analysis_routes.py       # Analysis endpoints
+├── web_ui/                       # FastAPI-served non-Streamlit frontend
+│   ├── index.html               # Main journal-workbench shell
+│   ├── styles.css               # Shared visual theme and layout
+│   └── app.js                   # API-backed interaction logic
 ├── src/                          # Core scientific library
 │   ├── lens_models/             # Mass profiles, lens systems, multi-plane
 │   ├── ml/                      # PINN, training, uncertainty quantification
@@ -251,6 +257,7 @@ gravitational-lensing-algorithm/
 │   └── crud.py                  # CRUD operations
 ├── tests/                        # Comprehensive test suite
 │   ├── test_database_crud.py    # Database tests (renamed from phase12)
+│   ├── test_next_ui.py          # Smoke tests for /ui frontend route
 │   ├── test_scientific_validation.py  # Validation tests (renamed from phase13)
 │   └── test_*.py                # 20+ test modules
 ├── benchmarks/                   # Performance profiling
@@ -322,7 +329,7 @@ gravitational-lensing-algorithm/
 ## 📊 Project Statistics
 
 - **Lines of Code**: 15,000+ (Python)
-- **Automated Tests**: 551 passed, 22 skipped in latest full `tests/` run
+- **Automated Tests**: 554 passed, 22 skipped in latest full `tests/` run
 - **Documentation**: 30+ comprehensive guides
 - **CI/CD**: Automated testing, linting, and deployment
 - **Performance**: PINN inference at 134.6 img/s on CPU (134× above target)
@@ -357,7 +364,7 @@ Tested against:
 
 This project was developed for Intel ISEF 2025. For judges and presenters:
 
-1. **Launch Demo**: `streamlit run app/Home.py`
+1. **Launch Demo**: `streamlit run app/Home.py` or `uvicorn api.main:app --reload` then open `/ui`
 2. **Follow**: [ISEF_QUICK_REFERENCE.md](ISEF_QUICK_REFERENCE.md)
 3. **Show**: Live synthetic generation → Inference → Validation
 4. **Highlight**: GR geodesics, multi-plane lensing, uncertainty quantification
@@ -366,7 +373,7 @@ This project was developed for Intel ISEF 2025. For judges and presenters:
 - Combines ML with physics constraints (not pure black-box)
 - Full GR implementation (not just Born approximation)
 - Research-grade accuracy on known systems
-- Production-ready with a 551-test passing baseline
+- Production-ready with a 554-test passing baseline
 
 ## 🤝 Contributing
 

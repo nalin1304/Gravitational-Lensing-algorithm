@@ -8,6 +8,13 @@ Launch:
 streamlit run app/Home.py
 ```
 
+Alternative non-Streamlit UI:
+
+```bash
+uvicorn api.main:app --reload
+# open http://localhost:8000/ui
+```
+
 ## Purpose
 
 The app layer is organized to keep scientific logic testable and UI logic readable.
@@ -57,7 +64,7 @@ app/
 
 ## Testing Notes
 
-- App utility tests use `tests/test_web_interface.py`.
+- App utility tests use `tests/test_web_interface.py` and `tests/test_next_ui.py`.
 - Global regression guard remains the full suite:
 
 ```bash

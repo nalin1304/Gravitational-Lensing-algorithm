@@ -1,6 +1,6 @@
 # Journal Publication Readiness Report
 
-Date: February 23, 2026  
+Date: February 24, 2026  
 Repository path: `/Users/nalinaggarwal/Downloads/Gravitational-Lensing-algorithm-master`
 
 ## Scope
@@ -24,7 +24,7 @@ python3 -m pytest tests/ -q
 
 Result:
 
-- `551 passed, 22 skipped in 85.42s`
+- `554 passed, 22 skipped in 95.58s`
 
 ### 2) Scientific validation module
 
@@ -55,12 +55,12 @@ Result:
 Command:
 
 ```bash
-python3 -m pytest tests/test_web_interface.py tests/test_api.py tests/test_scientific_validation.py -q
+python3 -m pytest tests/test_web_interface.py tests/test_api.py tests/test_scientific_validation.py tests/test_next_ui.py -q
 ```
 
 Result:
 
-- `68 passed, 21 skipped in 0.39s`
+- `71 passed, 21 skipped in 0.67s`
 
 ### 5) Static typing
 
@@ -91,7 +91,7 @@ PY
 
 Result:
 
-- `compile_ok 119`
+- `compile_ok 124`
 
 ### 7) Dummy/placeholder scan
 
@@ -104,7 +104,8 @@ grep -RIn "Your Name\|yourusername\|changeme\|TODO\|FIXME\|placeholder\|dummy\|f
 
 Result:
 
-- No matches.
+- Matches appear only in documentation text where the scan criteria are described.
+- No actionable placeholder/dummy markers were found in runtime source or configuration paths.
 
 ## Fixed in Final Hardening Pass
 
@@ -114,7 +115,8 @@ Result:
 4. Multi-plane trace near-convergence behavior adjusted to reduce false-positive warnings.
 5. FITS pixel-scale fallback switched from warning spam to structured logging.
 6. `LensSystem` defaults aligned with Planck constants in centralized constants module.
-7. README test-count and app-structure drift updated to current repo state.
+7. README/AGENTS test-count and app-structure drift updated to current repo state.
+8. FastAPI-served non-Streamlit frontend (`/ui`) added with smoke coverage in `tests/test_next_ui.py`.
 
 ## Reproducibility Notes
 
@@ -129,6 +131,6 @@ By executable evidence in this workspace:
 1. No known regression failures in tests.
 2. No static type errors in `src/`.
 3. No syntax errors across Python modules.
-4. No placeholder/dummy marker matches in source/docs/config scan.
+4. No actionable placeholder/dummy markers in runtime source/config paths.
 
 Status: **Ready for release candidate submission**, pending external peer review and independent replication.
