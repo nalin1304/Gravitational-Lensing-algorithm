@@ -253,7 +253,7 @@ def main():
     )
     
     # Run validation
-    if st.button("▶️ Run Validation", type="primary", use_container_width=True):
+    if st.button("▶️ Run Validation", type="primary", width="stretch"):
         with st.spinner("Running validation..."):
             try:
                 # Calculate metrics

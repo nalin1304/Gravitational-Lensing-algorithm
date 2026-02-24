@@ -208,7 +208,7 @@ def main():
         st.markdown("---")
         st.subheader("🚀 Run Inference")
         
-        if st.button("▶️ Predict Parameters", type="primary", use_container_width=True):
+        if st.button("▶️ Predict Parameters", type="primary", width="stretch"):
             with st.spinner("Running PINN inference..."):
                 try:
                     # Prepare input

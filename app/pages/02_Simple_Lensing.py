@@ -228,7 +228,7 @@ Tune halo mass and concentration, then inspect map statistics and downloads.
 
         st.markdown("---")
         st.info(f"⏱️ Estimated computation time: {_format_time_estimate(grid_size)}")
-        generate_clicked = st.button("🚀 Generate Map", type="primary", use_container_width=True)
+        generate_clicked = st.button("🚀 Generate Map", type="primary", width="stretch")
 
     with viz_col:
         st.subheader("📊 Visualization")
@@ -299,7 +299,7 @@ Tune halo mass and concentration, then inspect map statistics and downloads.
                     data=map_buffer,
                     file_name=f"convergence_map_{st.session_state.get('grid_size', grid_size)}.npy",
                     mime="application/octet-stream",
-                    use_container_width=True,
+                    width="stretch",
                 )
             with download_col_2:
                 st.download_button(
@@ -307,7 +307,7 @@ Tune halo mass and concentration, then inspect map statistics and downloads.
                     data=figure_buffer,
                     file_name=f"convergence_map_{st.session_state.get('grid_size', grid_size)}.png",
                     mime="image/png",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
     with st.expander("ℹ️ About Convergence Maps"):

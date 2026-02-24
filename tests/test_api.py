@@ -40,7 +40,7 @@ class TestHealthEndpoints:
         data = response.json()
         assert "message" in data
         assert "version" in data
-        assert data["version"] == "1.0.0"
+        assert data["version"] == "2.0.0"
     
     def test_health_check(self):
         """Test health check endpoint"""
@@ -214,7 +214,9 @@ class TestInference:
         assert "predictions" in data
         assert "classification" in data
         assert "entropy" in data
+        assert "inference_mode" in data
         assert "timestamp" in data
+        assert data["inference_mode"] in ["pinn", "physics_fallback"]
         
         # Check predictions
         predictions = data["predictions"]
@@ -244,6 +246,7 @@ class TestInference:
         
         data = response.json()
         assert "uncertainties" in data
+        assert data["inference_mode"] in ["pinn", "physics_fallback"]
         
         uncertainties = data["uncertainties"]
         assert "M_vir_std" in uncertainties

@@ -242,7 +242,7 @@ def main():
     st.markdown("---")
     st.subheader("ðŸš€ Run Simulation")
     
-    if st.button("ℹ–¶ï¸ Trace Rays", type="primary", use_container_width=True):
+    if st.button("ℹ–¶ï¸ Trace Rays", type="primary", width="stretch"):
         with st.spinner("Tracing light rays through multiple planes..."):
             try:
                 # Create multi-plane system

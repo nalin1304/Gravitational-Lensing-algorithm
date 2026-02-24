@@ -224,7 +224,7 @@ def main():
     est_total_time = est_time_per_epoch * num_epochs
     st.info(f"⏱️ Estimated training time: {est_total_time:.1f} seconds (~{est_total_time/60:.1f} minutes)")
     
-    if st.button("▶️ Start Training", type="primary", use_container_width=True):
+    if st.button("▶️ Start Training", type="primary", width="stretch"):
         
         # Create UI containers for live updates
         progress_bar = st.progress(0)
@@ -316,7 +316,7 @@ def main():
         st.markdown("### 💾 Export Model")
         st.info("Model saved to `results/pinn_model_best.pth`")
         
-        if st.button("🔬 Test Model (Go to Inference)", use_container_width=True):
+        if st.button("🔬 Test Model (Go to Inference)", width="stretch"):
             show_success("Navigate to PINN Inference page to test the trained model!")
     
     # Educational content

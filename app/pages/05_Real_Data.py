@@ -324,12 +324,12 @@ def main():
                     data=buf,
                     file_name=f"processed_{filename}.npy",
                     mime="application/octet-stream",
-                    use_container_width=True
+                    width="stretch"
                 )
             
             with col_exp2:
                 # Use processed data for inference
-                if st.button("🔬 Use for PINN Inference", use_container_width=True):
+                if st.button("🔬 Use for PINN Inference", width="stretch"):
                     st.session_state['convergence_map'] = st.session_state['processed_data']
                     show_success("Data ready for inference! Go to PINN Inference page.")
     

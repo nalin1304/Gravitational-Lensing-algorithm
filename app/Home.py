@@ -72,7 +72,7 @@ st.markdown(
 <div class="kpi-strip">
     <span class="kpi-pill">Demo Systems: {stats['demo_count']}</span>
     <span class="kpi-pill">Peak Inference: {stats['peak_speed']}</span>
-    <span class="kpi-pill">Physics Tests: 551 passed / 22 skipped</span>
+    <span class="kpi-pill">Physics Tests: 554 passed / 22 skipped</span>
     <span class="kpi-pill">UI Modules: {stats['page_count']} pages</span>
 </div>
 """,
@@ -92,13 +92,13 @@ and uncertainty-aware inference outputs with physically constrained pipelines.
 
     action_col_1, action_col_2, action_col_3 = st.columns(3)
     with action_col_1:
-        if st.button("Open Simple Lensing", use_container_width=True):
+        if st.button("Open Simple Lensing", width="stretch"):
             _safe_switch_page("pages/02_Simple_Lensing.py")
     with action_col_2:
-        if st.button("Open Real Data", use_container_width=True):
+        if st.button("Open Real Data", width="stretch"):
             _safe_switch_page("pages/05_Real_Data.py")
     with action_col_3:
-        if st.button("Open Validation", use_container_width=True):
+        if st.button("Open Validation", width="stretch"):
             _safe_switch_page("pages/07_Validation.py")
 
 with right_col:
@@ -133,8 +133,8 @@ for column, card in zip(columns, DEMO_CARDS):
 """,
             unsafe_allow_html=True,
         )
-        st.image(generate_demo_preview_png(card["demo_id"]), use_container_width=True)
-        if st.button(card["button"], use_container_width=True, type="primary", key=f"launch_{card['demo_id']}"):
+        st.image(generate_demo_preview_png(card["demo_id"]), width="stretch")
+        if st.button(card["button"], width="stretch", type="primary", key=f"launch_{card['demo_id']}"):
             run_demo_and_redirect(card["demo_id"])
 
 st.markdown('<div class="nebula-divider"></div>', unsafe_allow_html=True)

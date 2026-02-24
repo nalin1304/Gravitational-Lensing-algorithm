@@ -240,7 +240,7 @@ def main():
     if input_data is not None:
         st.markdown("---")
         
-        if st.button("▶️ Estimate Uncertainties", type="primary", use_container_width=True):
+        if st.button("▶️ Estimate Uncertainties", type="primary", width="stretch"):
             with st.spinner(f"Running {method} with {n_samples} samples..."):
                 try:
                     # Run Bayesian UQ pipeline with actual implementation

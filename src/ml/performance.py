@@ -213,7 +213,8 @@ class _TimedBlock:
 def benchmark_convergence_map(
     lens_model,
     grid_sizes: list = None,
-    use_gpu: bool = None
+    use_gpu: bool = None,
+    repeats: int = 5,
 ) -> Dict[str, Any]:
     """
     Benchmark convergence map generation at different resolutions.
@@ -226,6 +227,8 @@ def benchmark_convergence_map(
         List of grid sizes to test (default: [32, 64, 128, 256])
     use_gpu : bool, optional
         Force GPU usage (None = auto-detect)
+    repeats : int
+        Number of timed repetitions per grid size (median is reported)
     
     Returns
     -------
@@ -246,9 +249,15 @@ def benchmark_convergence_map(
     print(f"\nBenchmarking convergence map generation ({results['backend']})...")
     
     for size in grid_sizes:
-        start = time.perf_counter()
+        # Warm up once to reduce one-off initialization noise in timing tests.
         _ = generate_convergence_map_vectorized(lens_model, grid_size=size)
-        duration = time.perf_counter() - start
+
+        measured_durations = []
+        for _ in range(max(3, repeats)):
+            start = time.perf_counter()
+            _ = generate_convergence_map_vectorized(lens_model, grid_size=size)
+            measured_durations.append(time.perf_counter() - start)
+        duration = float(np.median(measured_durations))
         
         results['timings'].append(duration)
         print(f"  Grid {size}x{size}: {duration:.4f}s ({size*size/duration:.0f} pts/s)")

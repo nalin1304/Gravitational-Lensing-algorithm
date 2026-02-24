@@ -364,7 +364,7 @@ def main():
     col_save1, col_save2, col_save3 = st.columns([1, 1, 2])
     
     with col_save1:
-        if st.button("💾 Save Settings", type="primary", use_container_width=True):
+        if st.button("💾 Save Settings", type="primary", width="stretch"):
             try:
                 save_settings(settings)
                 st.session_state['app_settings'] = settings
@@ -373,7 +373,7 @@ def main():
                 show_error(f"Error saving settings: {e}")
     
     with col_save2:
-        if st.button("🔄 Reset to Defaults", use_container_width=True):
+        if st.button("🔄 Reset to Defaults", width="stretch"):
             default_settings = load_settings()
             st.session_state['app_settings'] = default_settings
             st.rerun()

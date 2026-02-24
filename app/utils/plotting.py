@@ -382,5 +382,6 @@ def plot_training_history(
 
 def display_figure(fig: plt.Figure, use_container_width: bool = True):
     """Display matplotlib figure in Streamlit with proper cleanup."""
-    st.pyplot(fig, use_container_width=use_container_width)
+    container_width = "stretch" if use_container_width else "content"
+    st.pyplot(fig, width=container_width)
     plt.close(fig)  # Prevent memory leaks

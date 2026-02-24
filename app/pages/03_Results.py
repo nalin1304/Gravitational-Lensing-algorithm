@@ -254,7 +254,7 @@ col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     # Export PDF report
-    if st.button("📄 Export PDF Report", use_container_width=True, type="primary"):
+    if st.button("📄 Export PDF Report", width="stretch", type="primary"):
         try:
             pdf_buffer = export_pdf_report(results)
             st.download_button(
@@ -262,7 +262,7 @@ with col1:
                 data=pdf_buffer,
                 file_name=f"{demo_name}_analysis_report.pdf",
                 mime="application/pdf",
-                use_container_width=True
+                width="stretch"
             )
             st.success("✅ PDF generated successfully!")
         except Exception as e:
@@ -270,7 +270,7 @@ with col1:
 
 with col2:
     # Save results to JSON
-    if st.button("💾 Save Results (JSON)", use_container_width=True):
+    if st.button("💾 Save Results (JSON)", width="stretch"):
         import json
         
         # Prepare JSON-serializable data
@@ -291,17 +291,17 @@ with col2:
             data=json_str,
             file_name=f"{demo_name}_parameters.json",
             mime="application/json",
-            use_container_width=True
+            width="stretch"
         )
 
 with col3:
     # Run another demo
-    if st.button("🔄 Run Another Demo", use_container_width=True):
+    if st.button("🔄 Run Another Demo", width="stretch"):
         st.switch_page("Home.py")
 
 with col4:
     # Advanced analysis
-    if st.button("🔬 Advanced Analysis", use_container_width=True):
+    if st.button("🔬 Advanced Analysis", width="stretch"):
         st.switch_page("pages/08_Bayesian_UQ.py")
 
 st.markdown("---")
