@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lensing Research Workbench</title>
+    <link rel="stylesheet" href="/ui-static/styles.css" />
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+    <script src="/ui-static/app.js" defer></script>
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <p class="eyebrow">Non-Streamlit Interface</p>
+        <h1>Lensing Research Workbench</h1>
+        <p>
+          Browser-native frontend for synthetic lens generation, inference,
+          diagnostics, and publication-ready exports.
+        </p>
+      </header>
+
+      <section class="layout">
+        <aside class="controls card">
+          <h2>Simulation Controls</h2>
+          <label>
+            Profile Type
+            <select id="profileType">
+              <option value="NFW">NFW</option>
+              <option value="Elliptical NFW">Elliptical NFW</option>
+            </select>
+          </label>
+          <label>
+            Virial Mass (M☉)
+            <input id="mass" type="number" min="1e11" max="1e14" step="1e11" value="2e12" />
+          </label>
+          <label>
+            Scale Radius (kpc)
+            <input id="scaleRadius" type="number" min="50" max="500" step="10" value="200" />
+          </label>
+          <label>
+            Ellipticity
+            <input id="ellipticity" type="number" min="0" max="0.5" step="0.05" value="0.2" />
+          </label>
+          <label>
+            Grid Size
+            <select id="gridSize">
+              <option value="32">32</option>
+              <option value="64" selected>64</option>
+              <option value="128">128</option>
+            </select>
+          </label>
+
+          <div class="button-grid">
+            <button id="generateBtn" class="primary">Generate Map</button>
+            <button id="inferBtn" disabled>Run Inference</button>
+            <button id="exportBtn" disabled>Download Run Package</button>
+          </div>
+
+          <p id="status" class="status">Ready.</p>
+        </aside>
+
+        <section class="results">
+          <div class="metrics">
+            <article class="metric card"><h3>Min κ</h3><p id="metricMin">-</p></article>
+            <article class="metric card"><h3>Mean κ</h3><p id="metricMean">-</p></article>
+            <article class="metric card"><h3>Max κ</h3><p id="metricMax">-</p></article>
+            <article class="metric card"><h3>Std κ</h3><p id="metricStd">-</p></article>
+          </div>
+
+          <article class="card">
+            <h2>Convergence Map</h2>
+            <div id="mapPlot" class="plot"></div>
+          </article>
+
+          <article class="card">
+            <h2>Radial Profile</h2>
+            <div id="radialPlot" class="plot"></div>
+          </article>
+
+          <article class="card">
+            <h2>Inference Output</h2>
+            <pre id="inferenceOutput">No inference run yet.</pre>
+          </article>
+
+          <article class="card">
+            <h2>Methods Preview</h2>
+            <pre id="methodsOutput">Generate a run to populate this section.</pre>
+          </article>
+
+          <article class="card">
+            <h2>Recent Runs</h2>
+            <div id="historyList">No runs recorded yet.</div>
+          </article>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

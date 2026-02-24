@@ -14,8 +14,9 @@ Date: October 2025
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from slowapi import Limiter
@@ -97,6 +98,12 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=app_lifespan,
 )
+
+# Alternative non-Streamlit UI (FastAPI-served static frontend)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+NEXT_UI_DIR = PROJECT_ROOT / "web_ui"
+if NEXT_UI_DIR.exists():
+    app.mount("/ui-static", StaticFiles(directory=str(NEXT_UI_DIR)), name="ui-static")
 
 # P1 SECURITY FIX: Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -289,8 +296,19 @@ async def root():
         "message": "Gravitational Lensing API",
         "version": "1.0.0",
         "docs": "/docs",
-        "health": "/health"
+        "health": "/health",
+        "web_ui": "/ui",
+        "streamlit_ui": "app/Home.py",
     }
+
+
+@app.get("/ui", include_in_schema=False)
+async def journal_workbench_ui():
+    """Serve alternative non-Streamlit frontend for analysis workflows."""
+    index_path = NEXT_UI_DIR / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail="UI frontend not available in this deployment.")
+    return FileResponse(index_path)
 
 
 @app.get("/health", response_model=HealthResponse)
