@@ -5,7 +5,7 @@ This module validates the scientific separation between:
 1. thin_lens mode: Cosmological lensing (z > 0) with FLRW distances
 2. schwarzschild_geodesic mode: Strong-field lensing (z ≈ 0) in flat spacetime
 
-ISEF 2025 - Scientific Rigor Enhancement
+IEEE TCI - Scientific Rigor Enhancement
 """
 
 import pytest

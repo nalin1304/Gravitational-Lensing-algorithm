@@ -31,7 +31,7 @@ Scientific References:
 - McCully et al. (2014), ApJ 836, 141
 - Collett & Cunnington (2016), MNRAS 462, 3255
 
-Author: ISEF 2025 - Task 2
+Author: IEEE TCI - Task 2
 """
 
 import numpy as np

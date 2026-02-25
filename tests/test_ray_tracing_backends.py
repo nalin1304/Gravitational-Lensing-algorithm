@@ -4,7 +4,7 @@ Unit Tests for Dual Ray-Tracing Backends
 Tests both thin-lens and Schwarzschild geodesic methods,
 ensuring physical correctness and proper regime separation.
 
-Author: ISEF 2025 - Scientific Validation
+Author: IEEE TCI - Scientific Validation
 """
 
 import pytest

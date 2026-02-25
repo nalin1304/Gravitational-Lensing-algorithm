@@ -19,7 +19,8 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.utils import generate_synthetic_convergence, load_pretrained_model, prepare_model_input
+from src.ml.generate_dataset import generate_synthetic_convergence
+from src.utils.common import load_pretrained_model, prepare_model_input
 from benchmarks.metrics import calculate_all_metrics, print_metrics_report
 
 logger = logging.getLogger(__name__)

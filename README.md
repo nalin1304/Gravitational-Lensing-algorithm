@@ -1,10 +1,10 @@
-# 🌌 Gravitational Lensing Toolkit (ISEF 2025)
+# 🌌 Computational Imaging Research Platform (IEEE TCI)
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-red.svg)](https://pytorch.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B.svg)](https://streamlit.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![ISEF](https://img.shields.io/badge/ISEF-2025-gold.svg)](https://www.societyforscience.org/isef/)
+[![IEEE TCI](https://img.shields.io/badge/IEEE_TCI-Publication_Ready-blue.svg)](https://ieeexplore.ieee.org/)
 
 > **Research-grade lens modeling in one command**  
 > Physics-informed neural networks + cosmological ray tracing for gravitational lensing analysis
@@ -31,7 +31,7 @@ Alternative browser UI: `uvicorn api.main:app --reload` then open `http://localh
 
 Turn **raw astronomical observations** into **validated mass maps** with **full uncertainty quantification** — automatically.
 
-**Built for ISEF 2025**, this toolkit demonstrates:
+**Built for IEEE Transactions on Computational Imaging (TCI)**, this toolkit demonstrates:
 - ✨ Physics-informed machine learning (PINNs constrained by General Relativity)
 - 🌌 Cosmological thin-lens ray tracing (ΛCDM distances)
 - 📊 Bayesian uncertainty quantification (Monte Carlo dropout)
@@ -121,7 +121,7 @@ Alternative web UI runs at **http://localhost:8000/ui**
 - Production Deployment
 - API Reference
 - Testing & Validation
-- ISEF Presentation Guide
+- IEEE TCI Submission Guide
 - Troubleshooting
 
 ### Quick Reference Guides
@@ -131,7 +131,7 @@ Alternative web UI runs at **http://localhost:8000/ui**
 | [📘 PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md) | Comprehensive architecture and usage guide |
 | [🧭 AGENTS.md](AGENTS.md) | Operational context, architecture map, validation workflow |
 | [✅ JOURNAL_PUBLICATION_READINESS.md](JOURNAL_PUBLICATION_READINESS.md) | Executable validation matrix and release checks |
-| [🎤 ISEF_QUICK_REFERENCE.md](ISEF_QUICK_REFERENCE.md) | Presentation flow and demo script |
+| [🎤 IEEE_SUBMISSION_CHECKLIST.md](IEEE_SUBMISSION_CHECKLIST.md) | Validation and publication checklist |
 | [🧩 app/README.md](app/README.md) | Streamlit and FastAPI UI structure notes |
 
 ## 🎨 Features Overview
@@ -358,12 +358,12 @@ Tested against:
 - **SDSS J1004+4112**: Five-image quasar lens system
 - **Literature values**: Sub-5% error on Einstein radii
 
-## 🏆 ISEF Presentation
+## 🏆 IEEE TCI Publication Readiness
 
-This project was developed for Intel ISEF 2025. For judges and presenters:
+This project was developed for submission to IEEE Transactions on Computational Imaging. For peer-review validation:
 
 1. **Launch Demo**: `streamlit run app/Home.py` or `uvicorn api.main:app --reload` then open `/ui`
-2. **Follow**: [ISEF_QUICK_REFERENCE.md](ISEF_QUICK_REFERENCE.md)
+2. **Follow**: [IEEE_SUBMISSION_CHECKLIST.md](IEEE_SUBMISSION_CHECKLIST.md)
 3. **Show**: Live synthetic generation → Inference → Validation
 4. **Highlight**: GR geodesics, multi-plane lensing, uncertainty quantification
 
@@ -402,7 +402,7 @@ MIT License - see [LICENSE](LICENSE) for details
 - **Astropy Community**: FITS file handling
 - **PyTorch Team**: Deep learning framework
 - **Streamlit**: Interactive web framework
-- **ISEF**: Motivation and platform
+- **IEEE TCI**: Target publication venue
 
 ## 📞 Contact
 
@@ -416,4 +416,4 @@ If you find this project useful, please consider giving it a star! ⭐
 
 ---
 
-**Built with ❤️ for gravitational lensing research and ISEF 2025**
+**Built with ❤️ for gravitational lensing research and IEEE TCI**

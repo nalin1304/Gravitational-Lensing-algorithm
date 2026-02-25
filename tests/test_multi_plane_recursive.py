@@ -12,7 +12,7 @@ Scientific Validation:
 5. Plane ordering: Swapping planes changes result
 6. Additive vs recursive: Show difference for strong lensing
 
-Author: ISEF 2025 - Task 2
+Author: IEEE TCI - Task 2
 """
 
 import pytest

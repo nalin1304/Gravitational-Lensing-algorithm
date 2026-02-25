@@ -11,7 +11,7 @@ CRITICAL DISTINCTION:
 - schwarzschild_geodesic: For strong-field regime near black holes (z ≈ 0)
   Assumes flat, static spacetime - NOT compatible with cosmology
 
-Author: ISEF 2025 - Scientific Refinement
+Author: IEEE TCI - Scientific Refinement
 References:
     - Schneider, Ehlers & Falco (1992): "Gravitational Lenses"
     - Misner, Thorne & Wheeler (1973): "Gravitation"

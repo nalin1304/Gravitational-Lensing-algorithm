@@ -28,7 +28,7 @@ Scientific References:
 - Schmidt et al. (1998) - Q2237+030 (Einstein Cross) parameters
 - Oguri (2007) - Gravitational lens modeling review
 
-Author: ISEF 2025 - Scientific Calibration
+Author: IEEE TCI - Scientific Calibration
 """
 
 import numpy as np

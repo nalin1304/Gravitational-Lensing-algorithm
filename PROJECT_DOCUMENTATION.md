@@ -23,7 +23,7 @@
 10. [API Reference](#api-reference)
 11. [Testing & Validation](#testing--validation)
 12. [Troubleshooting](#troubleshooting)
-13. [ISEF Presentation Guide](#isef-presentation-guide)
+13. [IEEE TCI Presentation Guide](#ieee-tci-presentation-guide)
 
 ---
 
@@ -31,7 +31,7 @@
 
 ### 🎯 What is This?
 
-An advanced gravitational lensing simulation and analysis toolkit combining **Physics-Informed Neural Networks (PINNs)** with **General Relativity** integration. Built for the Intel International Science and Engineering Fair (ISEF) 2025.
+An advanced gravitational lensing simulation and analysis toolkit combining **Physics-Informed Neural Networks (PINNs)** with **General Relativity** integration. Built for IEEE Transactions on Computational Imaging (TCI).
 
 ### ✨ Key Features
 
@@ -1269,7 +1269,7 @@ print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
 ---
 
-## 13. ISEF Presentation Guide
+## 13. IEEE TCI Presentation Guide
 
 ### 13.1 Quick Demo Script (10 Minutes)
 
@@ -1452,7 +1452,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ### 🎯 Ready For
 
-✅ ISEF Presentation  
+✅ IEEE TCI Publication  
 ✅ Academic Showcase  
 ✅ Research Deployment  
 ✅ Public Demonstration  
@@ -1466,7 +1466,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ---
 
-**Built with ❤️ for gravitational lensing research and ISEF 2025**
+**Built with ❤️ for gravitational lensing research and IEEE TCI**
 
 **License**: MIT  
 **Version**: 1.0.0  

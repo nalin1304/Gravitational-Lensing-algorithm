@@ -1,6 +1,6 @@
 # Advanced Substructure Detection Demo
 # Showcases PINN's ability to identify small-scale dark matter perturbations
-# Key innovation for ISEF project
+# Key innovation for IEEE TCI project
 
 name: "Dark Matter Substructure Detection"
 description: "Machine learning-based detection of sub-percent mass perturbations"

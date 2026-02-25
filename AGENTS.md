@@ -10,7 +10,7 @@ Last updated: 2026-02-24
 
 ## 1) Project Identity
 
-- Project: **Gravitational Lensing Toolkit (ISEF 2025)**
+- Project: **Computational Imaging Research Platform (IEEE TCI)**
 - Upstream repo: `https://github.com/nalin1304/Gravitational-Lensing-algorithm`
 - Local workspace:
   - `/Users/nalinaggarwal/Downloads/Gravitational-Lensing-algorithm-master`

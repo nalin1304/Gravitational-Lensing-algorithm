@@ -1,4 +1,4 @@
-# 🌌 ISEF 2025 Quick Reference Card
+# 🌌 IEEE TCI Submission Quick Reference Card
 
 **Project**: Gravitational Lensing Analysis with Physics-Informed Machine Learning  
 **Category**: Physics & Astronomy  
@@ -227,7 +227,7 @@ A: "The cosmology module uses FlatLambdaCDM (Λ-CDM with ΩΛ=0.7), so dark ener
 
 ---
 
-## 🏆 ISEF Rubric Alignment
+## 🏆 IEEE Peer Review Alignment
 
 | Criterion | How Project Addresses It |
 |-----------|---------------------------|
@@ -267,4 +267,4 @@ If stuck on a question:
 
 **Remember**: You're not just showing code - you're demonstrating **deep understanding of the physics** and **ability to implement complex scientific algorithms correctly**. The regime separation (thin-lens vs Schwarzschild) shows **scientific maturity** that most projects lack.
 
-**Confidence Booster**: You've implemented physics that PhD students get wrong. Your multi-plane equation is *correct*. Your mode enforcement prevents scientific errors. That's ISEF-winning rigor. 🏆
+**Confidence Booster**: You've implemented physics that are publication-ready. Your multi-plane equation is *correct*. Your mode enforcement prevents scientific errors. That's IEEE-level rigor. 🏆

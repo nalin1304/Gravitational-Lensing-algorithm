@@ -11,6 +11,9 @@ from pathlib import Path
 import json
 from unittest.mock import Mock, patch
 
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 # Import benchmark modules
 from benchmarks.metrics import (
     calculate_relative_error,

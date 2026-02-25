@@ -29,7 +29,7 @@ References:
 - Raissi et al. (2019), J. Comp. Phys. 378, 686 (PINN methodology)
 - Lu et al. (2021), Nat. Mach. Intell. 3, 218 (Physics-constrained ML)
 
-Author: ISEF 2025 - Task 3
+Author: IEEE TCI - Task 3
 """
 
 import torch

@@ -7,7 +7,7 @@ Validates that the physics constraints are correctly implemented:
 3. Autograd derivatives are correct
 4. Loss components combine properly
 
-Author: ISEF 2025 - Task 3
+Author: IEEE TCI - Task 3
 """
 
 import pytest
