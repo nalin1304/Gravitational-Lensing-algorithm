@@ -22,7 +22,9 @@ from astropy import constants as const
 from astropy.cosmology import FlatLambdaCDM
 import scipy.optimize as optimize
 from scipy.interpolate import interp1d
+import logging
 
+from ..utils.constants import H0_PLANCK, OMEGA_M_PLANCK
 from ..lens_models import (
     LensSystem,
     MassProfile,
@@ -31,6 +33,8 @@ from ..lens_models import (
     SIDMProfile,
     PointMassProfile,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _clone_lens_model_with_cosmology(
@@ -182,12 +186,10 @@ def calculate_time_delays(
             # Convert from arcsec² to rad²
             psi_rad2 = psi * (arcsec_to_rad**2)
         else:
-            # Approximate from deflection angle
-            # ψ(θ) ≈ θ · α(θ) for radial profiles
-            alpha_x, alpha_y = lens_model.deflection_angle(x_img, y_img)
-            alpha_x_rad = alpha_x * arcsec_to_rad
-            alpha_y_rad = alpha_y * arcsec_to_rad
-            psi_rad2 = (theta_x * alpha_x_rad + theta_y * alpha_y_rad)
+            raise NotImplementedError(
+                f"Time-delay cosmography requires a rigorous lensing potential computation. "
+                f"The model {type(lens_model).__name__} does not implement `lensing_potential`."
+            )
         
         # Fermat potential (dimensionless, in rad²)
         # Extract scalar if it's an array
@@ -211,7 +213,10 @@ def calculate_time_delays(
                 time_delay_matrix[i, j] = time_delay_days
                 
                 # Store components for analysis
-                # (Approximate geometric vs gravitational split)
+                # WARNING: Approximate geometric vs gravitational split.
+                # In strong lensing, the light path is not a straight line so 
+                # the Born approximation (evaluating potential along unperturbed ray) 
+                # carries O(10^-4) fractional errors in standard galactic potentials.
                 theta_i = np.array(image_positions[i]) * arcsec_to_rad
                 theta_j = np.array(image_positions[j]) * arcsec_to_rad
                 beta = np.array(source_position) * arcsec_to_rad
@@ -240,7 +245,7 @@ def infer_h0(
     lens_model: MassProfile,
     h0_range: Tuple[float, float] = (50.0, 90.0),
     n_grid: int = 200,
-    Om0: float = 0.3
+    Om0: float = OMEGA_M_PLANCK
 ) -> Dict[str, Union[float, np.ndarray]]:
     """
     Infer the Hubble constant H0 from observed time delays.
@@ -264,7 +269,7 @@ def infer_h0(
     n_grid : int, optional
         Number of grid points for H0 search
     Om0 : float, optional
-        Matter density parameter (default: 0.3)
+        Matter density parameter (default: Planck 2018 value 0.315)
         
     Returns
     -------
@@ -393,8 +398,9 @@ def monte_carlo_h0_uncertainty(
     lens_model: MassProfile,
     lens_uncertainties: Dict[str, float],
     n_realizations: int = 1000,
-    h0_true: float = 70.0,
-    Om0: float = 0.3
+    h0_true: float = H0_PLANCK,
+    Om0: float = OMEGA_M_PLANCK,
+    random_seed: Optional[int] = 42
 ) -> Dict[str, Union[np.ndarray, float]]:
     """
     Estimate H0 uncertainty using Monte Carlo sampling of lens model parameters.
@@ -421,7 +427,7 @@ def monte_carlo_h0_uncertainty(
     n_realizations : int, optional
         Number of Monte Carlo realizations
     h0_true : float, optional
-        True H0 value for cosmology (default: 70.0)
+        True H0 value for cosmology (default: Planck 2018 value 67.4)
     Om0 : float, optional
         Matter density parameter
         
@@ -445,14 +451,16 @@ def monte_carlo_h0_uncertainty(
     - External convergence from line-of-sight structure
     - Kinematic constraints
     """
-    h0_samples = np.zeros(n_realizations)
+    h0_samples = np.full(n_realizations, np.nan, dtype=float)
+    rng = np.random.RandomState(random_seed) if random_seed is not None else np.random
+    failed_realizations = 0
     
     for i in range(n_realizations):
         # Draw random lens parameters
         if hasattr(lens_model, 'M_vir'):
             # NFW-like profile
-            M_vir_sample = lens_model.M_vir + np.random.randn() * lens_uncertainties.get('M_vir', 0)
-            c_sample = lens_model.c + np.random.randn() * lens_uncertainties.get('c', 0)
+            M_vir_sample = lens_model.M_vir + rng.randn() * lens_uncertainties.get('M_vir', 0)
+            c_sample = lens_model.c + rng.randn() * lens_uncertainties.get('c', 0)
             
             # Ensure positive values
             M_vir_sample = max(M_vir_sample, 1e10)
@@ -493,7 +501,7 @@ def monte_carlo_h0_uncertainty(
                 
         elif hasattr(lens_model, 'M'):
             # Point mass
-            mass_sample = lens_model.M + np.random.randn() * lens_uncertainties.get('mass', 0)
+            mass_sample = lens_model.M + rng.randn() * lens_uncertainties.get('mass', 0)
             mass_sample = max(mass_sample, 1e10)
             
             lens_sys = LensSystem(lens_model.lens_system.z_l,
@@ -504,8 +512,8 @@ def monte_carlo_h0_uncertainty(
             raise ValueError("Unsupported lens model type")
         
         # Perturb source position
-        source_x = source_position[0] + np.random.randn() * lens_uncertainties.get('source_x', 0)
-        source_y = source_position[1] + np.random.randn() * lens_uncertainties.get('source_y', 0)
+        source_x = source_position[0] + rng.randn() * lens_uncertainties.get('source_x', 0)
+        source_y = source_position[1] + rng.randn() * lens_uncertainties.get('source_y', 0)
         source_sample = (source_x, source_y)
         
         # Infer H0 for this realization
@@ -520,21 +528,37 @@ def monte_carlo_h0_uncertainty(
                 Om0=Om0
             )
             h0_samples[i] = result['h0_best']
-        except Exception as e:
-            # If inference fails, use fiducial value
-            h0_samples[i] = h0_true
+        except Exception:
+            # Keep failures explicit instead of injecting oracle truth values.
+            failed_realizations += 1
+            continue
+
+    valid_mask = np.isfinite(h0_samples)
+    h0_valid = h0_samples[valid_mask]
+    if h0_valid.size == 0:
+        raise RuntimeError(
+            "Monte Carlo H0 inference failed for all realizations; "
+            "no valid posterior samples produced."
+        )
     
     # Remove outliers (> 3σ)
-    h0_median = np.median(h0_samples)
-    h0_std_robust = 1.4826 * np.median(np.abs(h0_samples - h0_median))
+    h0_median = np.median(h0_valid)
+    h0_std_robust = 1.4826 * np.median(np.abs(h0_valid - h0_median))
 
     if h0_std_robust <= 0 or not np.isfinite(h0_std_robust):
-        h0_samples_clean = h0_samples.copy()
+        h0_samples_clean = h0_valid.copy()
     else:
-        mask = np.abs(h0_samples - h0_median) <= 3 * h0_std_robust
-        h0_samples_clean = h0_samples[mask]
+        mask = np.abs(h0_valid - h0_median) <= 3 * h0_std_robust
+        h0_samples_clean = h0_valid[mask]
         if h0_samples_clean.size == 0:
-            h0_samples_clean = h0_samples.copy()
+            h0_samples_clean = h0_valid.copy()
+
+    if failed_realizations > 0:
+        logger.warning(
+            "Monte Carlo H0 inference dropped %d/%d failed realizations.",
+            failed_realizations,
+            n_realizations,
+        )
     
     return {
         'h0_samples': h0_samples_clean,
@@ -562,7 +586,7 @@ class TimeDelayCosmography:
     >>> from src.time_delay import TimeDelayCosmography
     >>> 
     >>> # Create lens system and model
-    >>> lens_sys = LensSystem(0.5, 1.5, H0=70)
+    >>> lens_sys = LensSystem(0.5, 1.5, H0=67.4)
     >>> lens = NFWProfile(1e12, 10.0, lens_sys)
     >>> 
     >>> # Create cosmography analyzer

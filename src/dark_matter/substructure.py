@@ -63,7 +63,8 @@ class SubhaloPopulation:
     def generate_population(
         self,
         total_mass_fraction: float = 0.01,
-        host_mass: float = 1e13
+        host_mass: float = 1e13,
+        random_seed: Optional[int] = None
     ) -> List[Subhalo]:
         """
         Generate subhalo population.
@@ -86,8 +87,10 @@ class SubhaloPopulation:
         # Generate masses from power-law
         n_halos = int(1000 * (total_mass_fraction / 0.01))
         
+        rng = np.random.RandomState(random_seed) if random_seed is not None else np.random
+        
         # Power-law sampling
-        u = np.random.uniform(0, 1, n_halos)
+        u = rng.uniform(0, 1, n_halos)
         if self.alpha != -1:
             masses = ((self.mass_max**(self.alpha+1) - self.mass_min**(self.alpha+1)) * u 
                      + self.mass_min**(self.alpha+1))**(1/(self.alpha+1))
@@ -99,8 +102,8 @@ class SubhaloPopulation:
         
         # Generate positions (uniform in FOV)
         positions = [
-            (np.random.uniform(-self.fov/2, self.fov/2),
-             np.random.uniform(-self.fov/2, self.fov/2))
+            (rng.uniform(-self.fov/2, self.fov/2),
+             rng.uniform(-self.fov/2, self.fov/2))
             for _ in range(len(masses))
         ]
         
@@ -134,10 +137,11 @@ class SubstructureDetector:
         'random_forest' or 'neural_net'
     """
     
-    def __init__(self, model_type: str = 'random_forest'):
+    def __init__(self, model_type: str = 'random_forest', macromodel=None):
         self.model_type = model_type
         self.trained = False
         self.model = None
+        self.macromodel = macromodel
     
     def extract_features(
         self,
@@ -182,12 +186,25 @@ class SubstructureDetector:
         """
         Predict smooth-model flux ratios from image geometry.
 
-        Uses a simple axisymmetric proxy where flux scales as 1/r and is
-        normalized to mean unity across images.
+        If a macroscopic lens model is provided, it calculates true absolute 
+        magnifications using the inverse Jacobian determinant. Otherwise, it 
+        falls back to a simple geometric 1/r axisymmetric proxy.
         """
+        if getattr(self, "macromodel", None) is not None:
+            from ..optics.ray_tracing import compute_magnification
+            mags = []
+            for pos in positions:
+                mag = compute_magnification(pos[0], pos[1], self.macromodel)
+                mags.append(np.abs(mag))
+            mags = np.array(mags)
+            # Normalize to mean unity
+            mean_mag = np.mean(mags)
+            return mags / np.maximum(mean_mag, 1e-10)
+
         radii = np.linalg.norm(positions, axis=1)
         inv_r = 1.0 / np.maximum(radii, 1e-6)
-        return inv_r / np.mean(inv_r)
+        mean_inv = np.mean(inv_r)
+        return inv_r / np.maximum(mean_inv, 1e-10)
     
     def train(
         self,
@@ -265,7 +282,8 @@ class SubstructureDetector:
 
 def generate_training_data(
     n_samples: int = 1000,
-    substructure_fraction: float = 0.5
+    substructure_fraction: float = 0.5,
+    random_seed: Optional[int] = None
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate synthetic training data for substructure detection.
@@ -290,11 +308,13 @@ def generate_training_data(
     X = []
     y = []
     
+    rng = np.random.RandomState(random_seed) if random_seed is not None else np.random
+    
     # Generate samples with substructure
     for _ in range(n_substructure):
         # Add anomalies
-        flux_ratios = np.random.uniform(0.5, 2.0, 4) + np.random.normal(0, 0.3, 4)
-        positions = np.random.uniform(-5, 5, (4, 2))
+        flux_ratios = rng.uniform(0.5, 2.0, 4) + rng.normal(0, 0.3, 4)
+        positions = rng.uniform(-5, 5, (4, 2))
         
         detector = SubstructureDetector()
         features = detector.extract_features(flux_ratios, positions)
@@ -304,8 +324,8 @@ def generate_training_data(
     
     # Generate smooth samples
     for _ in range(n_smooth):
-        flux_ratios = np.random.uniform(0.8, 1.2, 4)
-        positions = np.random.uniform(-5, 5, (4, 2))
+        flux_ratios = rng.uniform(0.8, 1.2, 4)
+        positions = rng.uniform(-5, 5, (4, 2))
         
         detector = SubstructureDetector()
         features = detector.extract_features(flux_ratios, positions)

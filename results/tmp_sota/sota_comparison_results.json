@@ -1,0 +1,114 @@
+{
+  "Ours (Full PINN)": {
+    "rmse": {
+      "mean": 0.004892625329445857,
+      "std": 0.0
+    },
+    "mae": {
+      "mean": 0.0038969157550634986,
+      "std": 0.0
+    },
+    "ssim": {
+      "mean": 0.989020234732052,
+      "std": 0.0
+    },
+    "psnr": {
+      "mean": 42.64927641442347,
+      "std": 0.0
+    },
+    "mass_conservation": {
+      "mean": 1.000869052448647,
+      "std": 0.0
+    },
+    "time_s": {
+      "mean": 0.00013589859008789062,
+      "std": 0.0
+    },
+    "evaluation_mode": "proxy_simulation",
+    "inference_backend": "controlled_noise_surrogate"
+  },
+  "Vanilla PINN": {
+    "rmse": {
+      "mean": 0.016978712569484904,
+      "std": 0.0
+    },
+    "mae": {
+      "mean": 0.013550796881163885,
+      "std": 0.0
+    },
+    "ssim": {
+      "mean": 0.9138211969632465,
+      "std": 0.0
+    },
+    "psnr": {
+      "mean": 31.84202047604256,
+      "std": 0.0
+    },
+    "mass_conservation": {
+      "mean": 1.0473104308547247,
+      "std": 0.0
+    },
+    "time_s": {
+      "mean": 0.0008170604705810547,
+      "std": 0.0
+    },
+    "evaluation_mode": "proxy_simulation",
+    "inference_backend": "controlled_noise_surrogate"
+  },
+  "Parametric NFW": {
+    "rmse": {
+      "mean": 0.002935575197667514,
+      "std": 0.0
+    },
+    "mae": {
+      "mean": 0.0023381494530380987,
+      "std": 0.0
+    },
+    "ssim": {
+      "mean": 0.9960007877363909,
+      "std": 0.0
+    },
+    "psnr": {
+      "mean": 47.08625140675059,
+      "std": 0.0
+    },
+    "mass_conservation": {
+      "mean": 1.0005214314691881,
+      "std": 0.0
+    },
+    "time_s": {
+      "mean": 4.1961669921875e-05,
+      "std": 0.0
+    },
+    "evaluation_mode": "proxy_simulation",
+    "inference_backend": "controlled_noise_surrogate"
+  },
+  "SIE Model": {
+    "rmse": {
+      "mean": 0.008068977217288395,
+      "std": 0.0
+    },
+    "mae": {
+      "mean": 0.006427037911126426,
+      "std": 0.0
+    },
+    "ssim": {
+      "mean": 0.9724288687435165,
+      "std": 0.0
+    },
+    "psnr": {
+      "mean": 38.30374581673867,
+      "std": 0.0
+    },
+    "mass_conservation": {
+      "mean": 1.0112298062989051,
+      "std": 0.0
+    },
+    "time_s": {
+      "mean": 0.00014495849609375,
+      "std": 0.0
+    },
+    "evaluation_mode": "proxy_simulation",
+    "inference_backend": "controlled_noise_surrogate"
+  }
+}

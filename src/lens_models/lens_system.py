@@ -9,6 +9,7 @@ import numpy as np
 from astropy.cosmology import FlatLambdaCDM
 from astropy import units as u
 from astropy import constants as const
+from typing import Optional, Union
 from src.utils.constants import H0_PLANCK, OMEGA_M_PLANCK
 
 
@@ -48,12 +49,32 @@ class LensSystem:
     
     def __init__(
         self,
-        z_lens: float,
-        z_source: float,
+        z_lens: Union[float, str],
+        z_source: Optional[float] = None,
         H0: float = H0_PLANCK,
         Om0: float = OMEGA_M_PLANCK,
     ):
         """Initialize the lens system with redshifts and cosmology."""
+        if isinstance(z_lens, str):
+            presets = {
+                "Q2237+030": (0.0394, 1.695),
+                "einstein_cross": (0.0394, 1.695),
+                "Q0957+561": (0.355, 1.414),
+                "twin_quasar": (0.355, 1.414),
+            }
+            if z_lens not in presets:
+                raise ValueError(
+                    f"Unknown named lens system '{z_lens}'. "
+                    f"Available: {list(presets.keys())}"
+                )
+            z_lens, z_source = presets[z_lens]
+
+        if z_source is None:
+            raise TypeError(
+                "LensSystem requires z_source when z_lens is numeric. "
+                "Example: LensSystem(0.5, 1.5)"
+            )
+
         if z_lens <= 0:
             raise ValueError("Lens redshift must be positive")
         if z_source <= z_lens:
@@ -204,6 +225,12 @@ class LensSystem:
         theta_E_arcsec = (theta_E_rad * u.rad).to(u.arcsec).value
         
         return theta_E_arcsec
+
+    def einstein_radius_arcsec(self, mass_msun: float = 1e11) -> float:
+        """
+        Backward-compatible alias for Einstein radius in arcseconds.
+        """
+        return self.einstein_radius_scale(mass_msun)
     
     def __repr__(self) -> str:
         """String representation of the lens system."""

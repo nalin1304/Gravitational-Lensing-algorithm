@@ -190,6 +190,8 @@ def compare_validation_levels():
 
 def main():
     """Main integration example"""
+    np.random.seed(42)  # Reproducible validation runs
+    
     print("\n" + "="*70)
     print("PHASE 15: SCIENTIFIC VALIDATION INTEGRATION EXAMPLE")
     print("="*70)
@@ -241,7 +243,7 @@ def main():
     print("="*70)
     print("1. Train PINN model: python src/ml/train_pinn.py --model nfw")
     print("2. Validate results: python scripts/integrate_validator.py")
-    print("3. Use in Streamlit: streamlit run app/main.py")
+    print("3. Launch UI: uvicorn api.main:app --reload, then open http://localhost:8000/ui")
     print()
     print("📚 Documentation: docs/Phase15_Part1_Complete.md")
     print("🧪 Test suite: python scripts/test_validator.py")

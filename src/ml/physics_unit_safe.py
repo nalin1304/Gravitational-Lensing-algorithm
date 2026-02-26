@@ -14,6 +14,8 @@ from typing import Tuple
 from astropy import units as u
 from astropy import constants as const
 
+from src.utils.constants import H0_PLANCK, OMEGA_M_PLANCK
+
 
 def compute_nfw_deflection_unit_safe(
     M_vir: torch.Tensor,
@@ -22,8 +24,8 @@ def compute_nfw_deflection_unit_safe(
     theta_y: torch.Tensor,
     z_l: float = 0.5,
     z_s: float = 2.0,
-    H0: float = 70.0,
-    Omega_m: float = 0.3
+    H0: float = H0_PLANCK,
+    Omega_m: float = OMEGA_M_PLANCK
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Compute NFW deflection angle with UNIT-SAFE dimensional analysis.
@@ -96,18 +98,15 @@ def compute_nfw_deflection_unit_safe(
     theta_x_astro = theta_x_numpy * u.arcsec
     theta_y_astro = theta_y_numpy * u.arcsec
     
-    # Hubble constant
-    H0_astro = H0 * u.km / u.s / u.Mpc
-    
     # ========================================================================
-    # STEP 3: Compute angular diameter distances (simplified flat ΛCDM)
+    # STEP 3: Compute angular diameter distances (full ΛCDM cosmology)
     # ========================================================================
+    from astropy.cosmology import FlatLambdaCDM
+    cosmo = FlatLambdaCDM(H0=H0, Om0=Omega_m)
     
-    # D = c/H0 * z (valid for small z in flat universe)
-    # Convert to consistent units (kpc)
-    D_l_astro = (c / H0_astro * z_l).to(u.kpc)
-    D_s_astro = (c / H0_astro * z_s).to(u.kpc)
-    D_ls_astro = (c / H0_astro * (z_s - z_l)).to(u.kpc)
+    D_l_astro = cosmo.angular_diameter_distance(z_l).to(u.kpc)
+    D_s_astro = cosmo.angular_diameter_distance(z_s).to(u.kpc)
+    D_ls_astro = cosmo.angular_diameter_distance_z1z2(z_l, z_s).to(u.kpc)
     
     # Validate units
     assert D_l_astro.unit == u.kpc, f"D_l has wrong units: {D_l_astro.unit}"

@@ -2,60 +2,162 @@
 Machine Learning Module for Gravitational Lensing
 
 This module provides physics-informed neural networks for:
-- Lens parameter inference
+- Lens parameter inference via variational physics optimization
 - Dark matter model classification
 - Training and evaluation utilities
 
-Phase 7 Updates:
-- GPU acceleration and performance optimization
-- Vectorized convergence map generation
+Hardware-Agnostic Backend: Automatically detects JAX, falls back to NumPy.
+All sub-modules are guarded against missing dependencies.
 
-Phase 9 Updates:
-- Transfer learning from synthetic to real data
-- Domain adaptation (DANN, MMD, CORAL)
-- Bayesian uncertainty quantification
-- Fine-tuning strategies
+Phase 7: GPU acceleration and performance optimization
+Phase 9: Transfer learning, domain adaptation, Bayesian UQ
 """
 
-from .pinn import PhysicsInformedNN, physics_informed_loss
-from .generate_dataset import (
-    generate_training_data,
-    generate_convergence_map_vectorized,
-    generate_convergence_map
-)
-from .evaluate import evaluate_model, compute_metrics
-from .augmentation import (
-    RandomRotation, RandomFlip, RandomBrightness, RandomNoise,
-    Compose, ToTensor, Normalize, get_training_transforms
-)
+from typing import Any
+
+# --------------------------------------------------------------------------
+# Backend detection
+# --------------------------------------------------------------------------
+BACKEND: str = "unavailable"
+"""Active compute backend: ``"jax"``, ``"numpy"``, or ``"unavailable"``."""
+
+try:
+    import jax  # noqa: F401
+    BACKEND = "jax"
+except ImportError:
+    try:
+        import numpy  # noqa: F401
+        BACKEND = "numpy"
+    except ImportError:
+        pass
+
+
+def check_backend() -> str:
+    """Print a diagnostic summary of the active compute backend.
+
+    Returns the backend name for programmatic use.
+    """
+    lines = [
+        f"LensPINN Backend: {BACKEND}",
+        f"  JAX available  : {BACKEND == 'jax'}",
+    ]
+    if BACKEND == "jax":
+        import jax
+        lines.append(f"  JAX version    : {jax.__version__}")
+        lines.append(f"  Default device : {jax.default_backend()}")
+    print("\n".join(lines))
+    return BACKEND
+
+
+# --------------------------------------------------------------------------
+# Physics-Informed Neural Network (requires JAX/Equinox)
+# --------------------------------------------------------------------------
+PhysicsInformedNN: Any
+
+try:
+    from . import pinn as _pinn
+    PhysicsInformedNN = _pinn.PhysicsInformedNN
+    physics_informed_loss = _pinn.physics_informed_loss
+except ImportError:
+    # JAX and Equinox are optional dependencies.
+    PhysicsInformedNN = None
+
+    def physics_informed_loss(*args: Any, **kwargs: Any) -> Any:
+        raise ImportError("JAX/Equinox dependencies are required for physics_informed_loss.")
+
+# --------------------------------------------------------------------------
+# Dataset generation (NumPy-only — always available)
+# --------------------------------------------------------------------------
+try:
+    from .generate_dataset import (
+        generate_training_data,
+        generate_convergence_map_vectorized,
+        generate_convergence_map
+    )
+except ImportError:
+    generate_training_data = None
+    generate_convergence_map_vectorized = None
+    generate_convergence_map = None
+
+# --------------------------------------------------------------------------
+# Evaluation
+# --------------------------------------------------------------------------
+try:
+    from .evaluate import evaluate_model, compute_metrics
+except ImportError:
+    evaluate_model = None
+    compute_metrics = None
+
+# --------------------------------------------------------------------------
+# Augmentation
+# --------------------------------------------------------------------------
+try:
+    from .augmentation import (
+        RandomRotation, RandomFlip, RandomBrightness, RandomNoise,
+        Compose, ToTensor, Normalize, get_training_transforms
+    )
+except ImportError:
+    RandomRotation = RandomFlip = RandomBrightness = RandomNoise = None
+    Compose = ToTensor = Normalize = None
+    get_training_transforms = None
+
+# --------------------------------------------------------------------------
+# TensorBoard logging (optional)
+# --------------------------------------------------------------------------
 try:
     from .tensorboard_logger import PINNLogger
 except Exception:
-    # Optional dependency (TensorBoard/TensorFlow)
     PINNLogger = None  # type: ignore
-from .performance import (
-    get_backend, set_backend, GPU_AVAILABLE,
-    PerformanceMonitor, timer,
-    benchmark_convergence_map, compare_cpu_gpu_performance,
-    cached_convergence, clear_cache
-)
-from .transfer_learning import (
-    TransferConfig,
-    DomainAdaptationNetwork,
-    MMDLoss,
-    CORALLoss,
-    BayesianUncertaintyEstimator,
-    TransferLearningTrainer,
-    create_synthetic_to_real_pipeline,
-    compute_domain_discrepancy
-)
+
+# --------------------------------------------------------------------------
+# Performance utilities (Phase 7)
+# --------------------------------------------------------------------------
+try:
+    from .performance import (
+        get_backend, set_backend, GPU_AVAILABLE,
+        PerformanceMonitor, timer,
+        benchmark_convergence_map, compare_cpu_gpu_performance,
+        cached_convergence, clear_cache
+    )
+except ImportError:
+    get_backend = set_backend = None
+    GPU_AVAILABLE = False
+    PerformanceMonitor = timer = None
+    benchmark_convergence_map = compare_cpu_gpu_performance = None
+    cached_convergence = clear_cache = None
+
+# --------------------------------------------------------------------------
+# Transfer Learning (Phase 9)
+# --------------------------------------------------------------------------
+try:
+    from .transfer_learning import (
+        TransferConfig,
+        DomainAdaptationNetwork,
+        MMDLoss,
+        CORALLoss,
+        BayesianUncertaintyEstimator,
+        TransferLearningTrainer,
+        create_synthetic_to_real_pipeline,
+        compute_domain_discrepancy
+    )
+except ImportError:
+    TransferConfig = DomainAdaptationNetwork = None
+    MMDLoss = CORALLoss = None
+    BayesianUncertaintyEstimator = TransferLearningTrainer = None
+    create_synthetic_to_real_pipeline = compute_domain_discrepancy = None
 
 __all__ = [
+    # Backend
+    'BACKEND',
+    'check_backend',
+    # PINN
     'PhysicsInformedNN',
     'physics_informed_loss',
+    # Dataset
     'generate_training_data',
     'generate_convergence_map_vectorized',
     'generate_convergence_map',
+    # Evaluation
     'evaluate_model',
     'compute_metrics',
     # Augmentation

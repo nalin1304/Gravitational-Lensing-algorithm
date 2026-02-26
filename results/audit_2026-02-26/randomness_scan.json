@@ -1,0 +1,1595 @@
+{
+  "src/utils/common.py": {
+    "random_calls": [
+      [
+        61,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        178,
+        "random.seed(seed)"
+      ],
+      [
+        179,
+        "np.random.seed(seed)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        61,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        178,
+        "random.seed(seed)"
+      ],
+      [
+        179,
+        "np.random.seed(seed)"
+      ],
+      [
+        180,
+        "torch.manual_seed(seed)"
+      ]
+    ],
+    "n_calls": 3,
+    "n_seed_mentions": 4
+  },
+  "src/time_delay/cosmography.py": {
+    "random_calls": [
+      [
+        452,
+        "rng = np.random.RandomState(random_seed) if random_seed is not None else np.random"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 1,
+    "n_seed_mentions": 0
+  },
+  "src/ml/neural_ode.py": {
+    "random_calls": [
+      [
+        27,
+        "def __init__(self, state_dim: int, hidden_dim: int, depth: int, key: jax.random.PRNGKey):"
+      ],
+      [
+        54,
+        "def __init__(self, state_dim: int = 12, hidden_dim: int = 64, layers: int = 3, key: jax.random.PRNGKey = jax.random.PRNGKey(0)):"
+      ],
+      [
+        93,
+        "def __init__(self, state_dim: int = 12, hidden_dim: int = 64, layers: int = 3, key: jax.random.PRNGKey = jax.random.PRNGKey(0)):"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        54,
+        "def __init__(self, state_dim: int = 12, hidden_dim: int = 64, layers: int = 3, key: jax.random.PRNGKey = jax.random.PRNGKey(0)):"
+      ],
+      [
+        93,
+        "def __init__(self, state_dim: int = 12, hidden_dim: int = 64, layers: int = 3, key: jax.random.PRNGKey = jax.random.PRNGKey(0)):"
+      ]
+    ],
+    "n_calls": 3,
+    "n_seed_mentions": 2
+  },
+  "src/ml/pinn_models.py": {
+    "random_calls": [
+      [
+        45,
+        "key: jax.random.PRNGKey = jax.random.PRNGKey(0)"
+      ],
+      [
+        65,
+        "keys = jax.random.split(key, len(hidden_dims) + 1 + len(hidden_dims))"
+      ],
+      [
+        150,
+        "key: jax.random.PRNGKey = jax.random.PRNGKey(0)"
+      ],
+      [
+        298,
+        "def create_lensing_pinn(model_type: str = 'general', key: jax.random.PRNGKey = jax.random.PRNGKey(0), **kwargs):"
+      ],
+      [
+        309,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        313,
+        "r = jax.random.uniform(key, (batch_size, 1)) * 2.0"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        45,
+        "key: jax.random.PRNGKey = jax.random.PRNGKey(0)"
+      ],
+      [
+        150,
+        "key: jax.random.PRNGKey = jax.random.PRNGKey(0)"
+      ],
+      [
+        298,
+        "def create_lensing_pinn(model_type: str = 'general', key: jax.random.PRNGKey = jax.random.PRNGKey(0), **kwargs):"
+      ],
+      [
+        309,
+        "key = jax.random.PRNGKey(0)"
+      ]
+    ],
+    "n_calls": 6,
+    "n_seed_mentions": 4
+  },
+  "src/ml/tensorboard_logger.py": {
+    "random_calls": [
+      [
+        302,
+        "sample_input = torch.randn(input_size)"
+      ],
+      [
+        387,
+        "np.random.seed(42)  # Reproducible demo output"
+      ],
+      [
+        395,
+        "'total': np.random.rand(),"
+      ],
+      [
+        396,
+        "'mse_params': np.random.rand(),"
+      ],
+      [
+        397,
+        "'ce_class': np.random.rand(),"
+      ],
+      [
+        398,
+        "'physics_residual': np.random.rand()"
+      ],
+      [
+        401,
+        "'total': np.random.rand(),"
+      ],
+      [
+        402,
+        "'mse_params': np.random.rand(),"
+      ],
+      [
+        403,
+        "'ce_class': np.random.rand(),"
+      ],
+      [
+        404,
+        "'physics_residual': np.random.rand()"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        387,
+        "np.random.seed(42)  # Reproducible demo output"
+      ]
+    ],
+    "n_calls": 10,
+    "n_seed_mentions": 1
+  },
+  "src/ml/generate_dataset.py": {
+    "random_calls": [
+      [
+        224,
+        "noise = np.random.normal(0, gaussian_noise_std, image.shape)"
+      ],
+      [
+        234,
+        "noisy_counts = np.random.poisson(scaled)"
+      ],
+      [
+        269,
+        "z_lens = np.random.uniform(0.3, 0.8)"
+      ],
+      [
+        270,
+        "z_source = np.random.uniform(1.0, 2.5)"
+      ],
+      [
+        271,
+        "H0 = np.random.uniform(60, 80)"
+      ],
+      [
+        272,
+        "Om0 = np.random.uniform(0.25, 0.35)"
+      ],
+      [
+        278,
+        "M_vir = np.random.uniform(1e11, 5e12)  # Solar masses"
+      ],
+      [
+        279,
+        "c = np.random.uniform(5, 15)  # Concentration"
+      ],
+      [
+        286,
+        "m_wdm = np.random.uniform(0.5, 5.0)  # keV"
+      ],
+      [
+        290,
+        "sigma_SIDM = np.random.uniform(0.1, 10.0)  # cm\u00b2/g"
+      ],
+      [
+        297,
+        "extent = np.random.uniform(2.0, 4.0)  # Vary field of view"
+      ],
+      [
+        302,
+        "noise_level = np.random.uniform(0.005, 0.02)"
+      ],
+      [
+        311,
+        "beta_x = np.random.uniform(-1.0, 1.0)"
+      ],
+      [
+        312,
+        "beta_y = np.random.uniform(-1.0, 1.0)"
+      ],
+      [
+        317,
+        "r_s = np.random.uniform(10, 100)  # kpc"
+      ],
+      [
+        365,
+        "np.random.seed(seed)"
+      ],
+      [
+        381,
+        "np.random.shuffle(dm_types)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        365,
+        "np.random.seed(seed)"
+      ]
+    ],
+    "n_calls": 17,
+    "n_seed_mentions": 1
+  },
+  "src/ml/pinn.py": {
+    "random_calls": [
+      [
+        93,
+        "def __init__(self, key: jax.random.PRNGKey):"
+      ],
+      [
+        94,
+        "keys = jax.random.split(key, 10)"
+      ],
+      [
+        271,
+        "key: jax.random.PRNGKey,"
+      ],
+      [
+        286,
+        "k1, k2 = jax.random.split(key)"
+      ],
+      [
+        287,
+        "theta_x = jax.random.uniform(k1, (batch_size, n_sample_points)) * 2 - 1"
+      ],
+      [
+        288,
+        "theta_y = jax.random.uniform(k2, (batch_size, n_sample_points)) * 2 - 1"
+      ],
+      [
+        339,
+        "key: jax.random.PRNGKey,"
+      ],
+      [
+        362,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        365,
+        "images = jax.random.normal(key, (32, 1, 64, 64))"
+      ],
+      [
+        366,
+        "true_params = jax.random.normal(key, (32, 5))"
+      ],
+      [
+        367,
+        "true_classes = jax.random.randint(key, (32,), 0, 3)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        362,
+        "key = jax.random.PRNGKey(42)"
+      ]
+    ],
+    "n_calls": 11,
+    "n_seed_mentions": 1
+  },
+  "src/ml/augmentation.py": {
+    "random_calls": [
+      [
+        30,
+        "if np.random.random() > self.p:"
+      ],
+      [
+        34,
+        "k = np.random.choice([1, 2, 3])  # Number of 90-degree rotations"
+      ],
+      [
+        69,
+        "if self.horizontal and np.random.random() < self.p:"
+      ],
+      [
+        75,
+        "if self.vertical and np.random.random() < self.p:"
+      ],
+      [
+        104,
+        "if np.random.random() > self.p:"
+      ],
+      [
+        108,
+        "factor = np.random.uniform(*self.brightness_range)"
+      ],
+      [
+        140,
+        "if np.random.random() > self.p:"
+      ],
+      [
+        144,
+        "noise = torch.randn_like(image) * self.noise_std"
+      ],
+      [
+        148,
+        "noise = np.random.randn(*image.shape) * self.noise_std"
+      ],
+      [
+        277,
+        "np.random.seed(42)  # Reproducible demo output"
+      ],
+      [
+        280,
+        "test_image = np.random.rand(1, 64, 64)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        277,
+        "np.random.seed(42)  # Reproducible demo output"
+      ]
+    ],
+    "n_calls": 11,
+    "n_seed_mentions": 1
+  },
+  "src/ml/transfer_learning.py": {
+    "random_calls": [
+      [
+        84,
+        ">>> features = torch.randn(32, 512)"
+      ],
+      [
+        148,
+        ">>> images_synthetic = torch.randn(32, 1, 64, 64)"
+      ],
+      [
+        149,
+        ">>> images_real = torch.randn(16, 1, 64, 64)"
+      ],
+      [
+        376,
+        ">>> images = torch.randn(8, 1, 64, 64)"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 4,
+    "n_seed_mentions": 0
+  },
+  "src/ml/train_pinn.py": {
+    "random_calls": [
+      [
+        68,
+        "masses = torch.rand(n_samples) * (mass_range[1] - mass_range[0]) + mass_range[0]"
+      ],
+      [
+        69,
+        "concentrations = torch.rand(n_samples) * (conc_range[1] - conc_range[0]) + conc_range[0]"
+      ],
+      [
+        187,
+        "perm = torch.randperm(len(train_data['x']))"
+      ],
+      [
+        390,
+        "np.random.seed(42)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        389,
+        "torch.manual_seed(42)"
+      ],
+      [
+        390,
+        "np.random.seed(42)"
+      ]
+    ],
+    "n_calls": 4,
+    "n_seed_mentions": 2
+  },
+  "src/ml/evaluate.py": {
+    "random_calls": [
+      [
+        363,
+        "indices = np.random.choice(len(pred_params), max_samples, replace=False)"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 1,
+    "n_seed_mentions": 0
+  },
+  "src/lens_models/mass_profiles.py": {
+    "random_calls": [
+      [
+        439,
+        "u = np.random.random(N_sub)"
+      ],
+      [
+        462,
+        "r = np.random.random() * theta_vir"
+      ],
+      [
+        463,
+        "angle = np.random.random() * 2 * np.pi"
+      ],
+      [
+        469,
+        "if np.random.random() < prob / 10:  # Normalize acceptance"
+      ],
+      [
+        1293,
+        "M_vir = 10**np.random.uniform(log_m_min, log_m_max)"
+      ],
+      [
+        1296,
+        "concentration = np.random.uniform(*concentration_range)"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 6,
+    "n_seed_mentions": 0
+  },
+  "src/data/mast_downloader.py": {
+    "random_calls": [
+      [
+        298,
+        "rng = np.random.RandomState(hash(entry[\"name\"]) & 0xFFFFFFFF)"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 1,
+    "n_seed_mentions": 0
+  },
+  "src/dark_matter/substructure.py": {
+    "random_calls": [
+      [
+        90,
+        "rng = np.random.RandomState(random_seed) if random_seed is not None else np.random"
+      ],
+      [
+        297,
+        "rng = np.random.RandomState(random_seed) if random_seed is not None else np.random"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 2,
+    "n_seed_mentions": 0
+  },
+  "tests/test_real_data.py": {
+    "random_calls": [
+      [
+        42,
+        "data = np.random.randn(100, 100).astype(np.float32)"
+      ],
+      [
+        119,
+        "hdu2 = fits.ImageHDU(np.random.randn(50, 50))"
+      ],
+      [
+        280,
+        "data = np.random.randn(100, 100)"
+      ],
+      [
+        290,
+        "data = np.random.randn(50, 50)"
+      ],
+      [
+        306,
+        "data = np.random.randn(50, 50)"
+      ],
+      [
+        323,
+        "data = np.random.randn(50, 50) * 100 + 50"
+      ],
+      [
+        337,
+        "data = np.random.randn(50, 50) * 100 + 50"
+      ],
+      [
+        352,
+        "data = np.random.randn(100, 100)"
+      ],
+      [
+        365,
+        "data = np.random.randn(50, 50)"
+      ],
+      [
+        422,
+        "data = np.random.randn(100, 100).astype(np.float32)"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 10,
+    "n_seed_mentions": 0
+  },
+  "tests/test_physics_constrained_loss.py": {
+    "random_calls": [
+      [
+        235,
+        "kappa = torch.rand(batch_size, 1, h, w, device=device) * 0.5  # [0, 0.5]"
+      ],
+      [
+        245,
+        "kappa = -torch.rand(batch_size, 1, h, w, device=device)  # Negative"
+      ],
+      [
+        272,
+        "params = torch.randn(batch_size, 5, device=device) * 0.5  # Small values"
+      ],
+      [
+        281,
+        "params = torch.randn(batch_size, 5, device=device) * 10.0  # Large values"
+      ],
+      [
+        301,
+        "params_pred = torch.randn(batch_size, 5, device=device)"
+      ],
+      [
+        302,
+        "params_true = torch.randn(batch_size, 5, device=device)"
+      ],
+      [
+        303,
+        "classes_pred = torch.randn(batch_size, 3, device=device)"
+      ],
+      [
+        304,
+        "classes_true = torch.randint(0, 3, (batch_size,), device=device)"
+      ],
+      [
+        306,
+        "psi = torch.randn(batch_size, 1, h, w, device=device)"
+      ],
+      [
+        307,
+        "kappa = torch.rand(batch_size, 1, h, w, device=device)"
+      ],
+      [
+        308,
+        "alpha = torch.randn(batch_size, 2, h, w, device=device)"
+      ],
+      [
+        358,
+        "params_pred = torch.randn(batch_size, 5, device=device, requires_grad=True)"
+      ],
+      [
+        359,
+        "params_true = torch.randn(batch_size, 5, device=device)"
+      ],
+      [
+        360,
+        "classes_pred = torch.randn(batch_size, 3, device=device, requires_grad=True)"
+      ],
+      [
+        361,
+        "classes_true = torch.randint(0, 3, (batch_size,), device=device)"
+      ],
+      [
+        381,
+        "params_pred = torch.randn(batch_size, 5, device=device)"
+      ],
+      [
+        382,
+        "params_true = torch.randn(batch_size, 5, device=device)"
+      ],
+      [
+        383,
+        "classes_pred = torch.randn(batch_size, 3, device=device)"
+      ],
+      [
+        384,
+        "classes_true = torch.randint(0, 3, (batch_size,), device=device)"
+      ],
+      [
+        448,
+        "params_pred = torch.randn(batch_size, 5, device=device)"
+      ],
+      [
+        449,
+        "params_true = torch.randn(batch_size, 5, device=device)"
+      ],
+      [
+        450,
+        "classes_pred = torch.randn(batch_size, 3, device=device)"
+      ],
+      [
+        451,
+        "classes_true = torch.randint(0, 3, (batch_size,), device=device)"
+      ],
+      [
+        452,
+        "psi = torch.randn(batch_size, 1, h, w, device=device)"
+      ],
+      [
+        453,
+        "kappa = torch.rand(batch_size, 1, h, w, device=device)"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 25,
+    "n_seed_mentions": 0
+  },
+  "tests/test_pinn_physics.py": {
+    "random_calls": [
+      [
+        121,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        122,
+        "k1, k2, k3, k4 = jax.random.split(key, 4)"
+      ],
+      [
+        124,
+        "M_vir = jax.random.uniform(k1, (batch_size, 1)) * 2.0 + 0.5"
+      ],
+      [
+        125,
+        "r_s = jax.random.uniform(k2, (batch_size, 1)) * 100.0 + 50.0"
+      ],
+      [
+        126,
+        "theta_x = jax.random.normal(k3, (batch_size, n_points)) * 10.0"
+      ],
+      [
+        127,
+        "theta_y = jax.random.normal(k4, (batch_size, n_points)) * 10.0"
+      ],
+      [
+        162,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        166,
+        "k1, k2, k3 = jax.random.split(key, 3)"
+      ],
+      [
+        167,
+        "images = jax.random.normal(k1, (batch_size, 1, 64, 64))"
+      ],
+      [
+        168,
+        "true_params = jax.random.normal(k2, (batch_size, 5))"
+      ],
+      [
+        169,
+        "true_classes = jax.random.randint(k3, (batch_size,), 0, 3)"
+      ],
+      [
+        191,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        192,
+        "k1, k2 = jax.random.split(key, 2)"
+      ],
+      [
+        202,
+        "true_classes = jax.random.randint(k1, (batch_size,), 0, 3)"
+      ],
+      [
+        203,
+        "images = jax.random.normal(k2, (batch_size, 1, 64, 64))"
+      ],
+      [
+        244,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        251,
+        "images = jax.random.normal(key, (4, 1, size, size))"
+      ],
+      [
+        261,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        264,
+        "images = jax.random.normal(key, (8, 1, 64, 64))"
+      ],
+      [
+        265,
+        "true_params = jax.random.normal(key, (8, 5))"
+      ],
+      [
+        266,
+        "true_classes = jax.random.randint(key, (8,), 0, 3)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        121,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        162,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        191,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        244,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        261,
+        "key = jax.random.PRNGKey(42)"
+      ]
+    ],
+    "n_calls": 21,
+    "n_seed_mentions": 5
+  },
+  "tests/test_time_delay.py": {
+    "random_calls": [
+      [
+        186,
+        "observed_delay = true_delay + np.random.randn() * noise_sigma"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 1,
+    "n_seed_mentions": 0
+  },
+  "tests/test_scientific_validation.py": {
+    "random_calls": [
+      [
+        108,
+        "image = np.random.rand(64, 64)"
+      ],
+      [
+        116,
+        "image = np.random.rand(64, 64)"
+      ],
+      [
+        168,
+        "template = np.random.rand(32, 32)"
+      ],
+      [
+        176,
+        "predicted = np.random.rand(64, 64)"
+      ],
+      [
+        177,
+        "ground_truth = predicted + 0.01 * np.random.rand(64, 64)"
+      ],
+      [
+        328,
+        "mock_kappa = np.random.rand(64, 64)"
+      ],
+      [
+        380,
+        "mock_kappa = np.random.rand(64, 64)"
+      ],
+      [
+        438,
+        "'our_map': np.random.rand(64, 64),"
+      ],
+      [
+        439,
+        "'analytic_map': np.random.rand(64, 64),"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 9,
+    "n_seed_mentions": 0
+  },
+  "tests/test_ml.py": {
+    "random_calls": [
+      [
+        25,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        33,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        37,
+        "x = jax.random.normal(key, (batch_size, 1, 64, 64))"
+      ],
+      [
+        48,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        51,
+        "x = jax.random.normal(key, (4, 1, 64, 64))"
+      ],
+      [
+        73,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        76,
+        "images = jax.random.normal(key, (batch_size, 1, 64, 64))"
+      ],
+      [
+        77,
+        "true_params = jax.random.normal(key, (batch_size, 5))"
+      ],
+      [
+        78,
+        "true_classes = jax.random.randint(key, (batch_size,), 0, 3)"
+      ],
+      [
+        104,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        109,
+        "x = jax.random.normal(key, (batch_size, 5))"
+      ],
+      [
+        117,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        122,
+        "x = jax.random.normal(key, (batch_size, 3))"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        25,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        33,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        48,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        73,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        104,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        117,
+        "key = jax.random.PRNGKey(0)"
+      ]
+    ],
+    "n_calls": 13,
+    "n_seed_mentions": 6
+  },
+  "tests/test_calibration.py": {
+    "random_calls": [
+      [
+        130,
+        "synthetic_maps = np.random.rand(10, 128, 128)"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 1,
+    "n_seed_mentions": 0
+  },
+  "tests/test_pinn_adaptive.py": {
+    "random_calls": [
+      [
+        22,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        30,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        31,
+        "x = jax.random.normal(key, (batch_size, 1, 64, 64))"
+      ],
+      [
+        44,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        45,
+        "x = jax.random.normal(key, (batch_size, 1, 128, 128))"
+      ],
+      [
+        58,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        59,
+        "x = jax.random.normal(key, (batch_size, 1, 256, 256))"
+      ],
+      [
+        75,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        80,
+        "key, subkey = jax.random.split(key)"
+      ],
+      [
+        81,
+        "x = jax.random.normal(subkey, (batch, 1, size, size))"
+      ],
+      [
+        95,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        96,
+        "x = jax.random.normal(key, (4, 1, 128, 128))"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        22,
+        "key = jax.random.PRNGKey(42)"
+      ],
+      [
+        30,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        44,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        58,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        75,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        95,
+        "key = jax.random.PRNGKey(0)"
+      ]
+    ],
+    "n_calls": 12,
+    "n_seed_mentions": 6
+  },
+  "tests/test_api.py": {
+    "random_calls": [
+      [
+        196,
+        "convergence_map = np.random.rand(64, 64).tolist()"
+      ],
+      [
+        232,
+        "convergence_map = np.random.rand(64, 64).tolist()"
+      ],
+      [
+        259,
+        "convergence_map = np.random.rand(size, size).tolist()"
+      ],
+      [
+        442,
+        "convergence_map = np.random.rand(64, 64).tolist()"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 4,
+    "n_seed_mentions": 0
+  },
+  "tests/test_transfer_learning.py": {
+    "random_calls": [
+      [
+        96,
+        "x = torch.randn(32, 128)"
+      ],
+      [
+        106,
+        "x = torch.randn(32, 128, requires_grad=True)"
+      ],
+      [
+        122,
+        "x1 = torch.randn(32, 128, requires_grad=True)"
+      ],
+      [
+        153,
+        "features = torch.randn(32, 512)"
+      ],
+      [
+        162,
+        "features = torch.randn(16, 256)"
+      ],
+      [
+        185,
+        "images = torch.randn(8, 1, 64, 64)"
+      ],
+      [
+        197,
+        "images = torch.randn(8, 1, 64, 64)"
+      ],
+      [
+        208,
+        "images = torch.randn(4, 1, 64, 64)"
+      ],
+      [
+        231,
+        "source = torch.randn(32, 128)"
+      ],
+      [
+        232,
+        "target = torch.randn(32, 128)"
+      ],
+      [
+        244,
+        "source = torch.randn(32, 128) * 1.0"
+      ],
+      [
+        245,
+        "target = torch.randn(32, 128) * 2.0 + 5.0  # Different mean and variance"
+      ],
+      [
+        255,
+        "source = torch.randn(32, 128)"
+      ],
+      [
+        256,
+        "target = torch.randn(32, 128)"
+      ],
+      [
+        277,
+        "source = torch.randn(32, 128)"
+      ],
+      [
+        278,
+        "target = torch.randn(32, 128)"
+      ],
+      [
+        290,
+        "source = torch.randn(32, 128)"
+      ],
+      [
+        291,
+        "target = torch.randn(32, 128) * 3.0  # Different variance"
+      ],
+      [
+        301,
+        "features = torch.randn(50, 64)"
+      ],
+      [
+        342,
+        "images = torch.randn(4, 1, 64, 64)"
+      ],
+      [
+        362,
+        "images = torch.randn(8, 1, 64, 64)"
+      ],
+      [
+        374,
+        "images = torch.randn(4, 1, 64, 64)"
+      ],
+      [
+        418,
+        "features_source = torch.randn(16, 512)"
+      ],
+      [
+        419,
+        "features_target = torch.randn(16, 512)"
+      ],
+      [
+        420,
+        "domain_logits_source = torch.randn(16, 2)"
+      ],
+      [
+        421,
+        "domain_logits_target = torch.randn(16, 2)"
+      ],
+      [
+        439,
+        "features_source = torch.randn(16, 512)"
+      ],
+      [
+        440,
+        "features_target = torch.randn(16, 512)"
+      ],
+      [
+        469,
+        "torch.randn(4, 1, 64, 64),"
+      ],
+      [
+        470,
+        "torch.randn(4, 5),"
+      ],
+      [
+        471,
+        "torch.randint(0, 3, (4,))"
+      ],
+      [
+        502,
+        "(torch.randn(4, 1, 64, 64), torch.randn(4, 5), torch.randint(0, 3, (4,)))"
+      ],
+      [
+        505,
+        "(torch.randn(4, 1, 64, 64), torch.randn(4, 5), torch.randint(0, 3, (4,)))"
+      ],
+      [
+        528,
+        "(torch.randn(4, 1, 64, 64), torch.randn(4, 5), torch.randint(0, 3, (4,)))"
+      ],
+      [
+        532,
+        "(torch.randn(4, 1, 64, 64), torch.randn(4, 5), torch.randint(0, 3, (4,)))"
+      ],
+      [
+        561,
+        "images_synthetic = torch.randn(8, 1, 64, 64)"
+      ],
+      [
+        573,
+        "images = torch.randn(4, 1, 64, 64)"
+      ],
+      [
+        590,
+        "torch.randn(4, 1, 64, 64),"
+      ],
+      [
+        591,
+        "torch.randn(4, 5),"
+      ],
+      [
+        592,
+        "torch.randint(0, 3, (4,))"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 40,
+    "n_seed_mentions": 0
+  },
+  "tests/test_neural_ode.py": {
+    "random_calls": [
+      [
+        18,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        31,
+        "key = jax.random.PRNGKey(42)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        18,
+        "key = jax.random.PRNGKey(0)"
+      ],
+      [
+        31,
+        "key = jax.random.PRNGKey(42)"
+      ]
+    ],
+    "n_calls": 2,
+    "n_seed_mentions": 2
+  },
+  "tests/test_api_security_integration.py": {
+    "random_calls": [
+      [
+        387,
+        "synthetic_map = np.random.rand(64, 64).tolist()"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 1,
+    "n_seed_mentions": 0
+  },
+  "scripts/test_bayesian_uq.py": {
+    "random_calls": [
+      [
+        66,
+        "x = torch.randn(100, 5)"
+      ],
+      [
+        88,
+        "x = torch.randn(50, 5)"
+      ],
+      [
+        118,
+        "x = torch.randn(20, 5)"
+      ],
+      [
+        178,
+        "true_values = np.random.randn(n_points)"
+      ],
+      [
+        179,
+        "predictions = true_values + np.random.normal(0, 0.1, n_points)"
+      ],
+      [
+        233,
+        "true_values = np.random.randn(n_points)"
+      ],
+      [
+        234,
+        "predictions = true_values + np.random.normal(0, 0.2, n_points)  # Actual std: 0.2"
+      ],
+      [
+        327,
+        "kappa_pred = kappa_true + np.random.normal(0, 0.01, kappa_true.shape)"
+      ],
+      [
+        365,
+        "x = torch.randn(100, 5)"
+      ],
+      [
+        392,
+        "np.random.seed(42)        # Reproducible validation runs"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        392,
+        "np.random.seed(42)        # Reproducible validation runs"
+      ],
+      [
+        393,
+        "torch.manual_seed(42)     # Reproducible PyTorch operations"
+      ]
+    ],
+    "n_calls": 10,
+    "n_seed_mentions": 2
+  },
+  "scripts/test_real_data.py": {
+    "random_calls": [
+      [
+        100,
+        "mass = np.random.uniform(5e13, 5e14)  # M_vir"
+      ],
+      [
+        101,
+        "concentration = np.random.uniform(3.0, 15.0)"
+      ],
+      [
+        164,
+        "predicted = ground_truth + np.random.normal(0, 0.01, ground_truth.shape)"
+      ],
+      [
+        325,
+        "np.random.seed(42)"
+      ],
+      [
+        326,
+        "x_test = torch.randn(n_points, 5)  # 5D input"
+      ],
+      [
+        494,
+        "np.random.seed(42)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        325,
+        "np.random.seed(42)"
+      ],
+      [
+        493,
+        "torch.manual_seed(42)"
+      ],
+      [
+        494,
+        "np.random.seed(42)"
+      ]
+    ],
+    "n_calls": 6,
+    "n_seed_mentions": 3
+  },
+  "scripts/sota_comparison.py": {
+    "random_calls": [
+      [
+        48,
+        "def generate_test_suite(n_lenses: int, rng: np.random.RandomState) -> List[Dict]:"
+      ],
+      [
+        81,
+        "def method_pinn_full(gt: np.ndarray, rng: np.random.RandomState) -> np.ndarray:"
+      ],
+      [
+        89,
+        "def method_pinn_vanilla(gt: np.ndarray, rng: np.random.RandomState) -> np.ndarray:"
+      ],
+      [
+        101,
+        "def method_parametric_nfw(gt: np.ndarray, rng: np.random.RandomState) -> np.ndarray:"
+      ],
+      [
+        109,
+        "def method_sie(gt: np.ndarray, rng: np.random.RandomState) -> np.ndarray:"
+      ],
+      [
+        136,
+        "rng: np.random.RandomState,"
+      ],
+      [
+        221,
+        "np.random.seed(args.seed)"
+      ],
+      [
+        222,
+        "rng = np.random.RandomState(args.seed)"
+      ],
+      [
+        241,
+        "method_rng = np.random.RandomState(args.seed)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        221,
+        "np.random.seed(args.seed)"
+      ]
+    ],
+    "n_calls": 9,
+    "n_seed_mentions": 1
+  },
+  "scripts/integrate_validator.py": {
+    "random_calls": [
+      [
+        168,
+        "predicted = ground_truth + np.random.normal(0, 0.01, ground_truth.shape)"
+      ],
+      [
+        193,
+        "np.random.seed(42)  # Reproducible validation runs"
+      ],
+      [
+        221,
+        "predicted = ground_truth + np.random.normal(0, 0.005, ground_truth.shape)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        193,
+        "np.random.seed(42)  # Reproducible validation runs"
+      ]
+    ],
+    "n_calls": 3,
+    "n_seed_mentions": 1
+  },
+  "scripts/ablation_study.py": {
+    "random_calls": [
+      [
+        136,
+        "rng: np.random.RandomState,"
+      ],
+      [
+        232,
+        "base_rng = np.random.RandomState(seed)"
+      ],
+      [
+        248,
+        "trial_rng = np.random.RandomState(trial_seed)"
+      ],
+      [
+        383,
+        "np.random.seed(args.seed)  # Global determinism"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        383,
+        "np.random.seed(args.seed)  # Global determinism"
+      ]
+    ],
+    "n_calls": 4,
+    "n_seed_mentions": 1
+  },
+  "scripts/uncertainty_calibration.py": {
+    "random_calls": [
+      [
+        47,
+        "rng: np.random.RandomState,"
+      ],
+      [
+        199,
+        "np.random.seed(args.seed)"
+      ],
+      [
+        200,
+        "rng = np.random.RandomState(args.seed)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        199,
+        "np.random.seed(args.seed)"
+      ]
+    ],
+    "n_calls": 3,
+    "n_seed_mentions": 1
+  },
+  "scripts/statistical_rigor_report.py": {
+    "random_calls": [
+      [
+        23,
+        "rng: np.random.Generator,"
+      ],
+      [
+        56,
+        "rng: np.random.Generator,"
+      ],
+      [
+        273,
+        "rng = np.random.default_rng(args.seed)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        273,
+        "rng = np.random.default_rng(args.seed)"
+      ]
+    ],
+    "n_calls": 3,
+    "n_seed_mentions": 1
+  },
+  "scripts/test_validator.py": {
+    "random_calls": [
+      [
+        46,
+        "kappa_predicted = kappa_analytic + np.random.normal(0, noise_level, kappa_analytic.shape)"
+      ],
+      [
+        216,
+        "ground_truth = np.random.rand(64, 64)"
+      ],
+      [
+        228,
+        "predicted_bad = ground_truth + np.random.normal(0, 0.5, ground_truth.shape)"
+      ],
+      [
+        287,
+        "np.random.seed(42)  # Reproducible validation runs"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        287,
+        "np.random.seed(42)  # Reproducible validation runs"
+      ]
+    ],
+    "n_calls": 4,
+    "n_seed_mentions": 1
+  },
+  "scripts/quick_demo.py": {
+    "random_calls": [
+      [
+        13,
+        "np.random.seed(42)  # Reproducible demo output"
+      ],
+      [
+        37,
+        "ground_truth = np.random.rand(64, 64)"
+      ],
+      [
+        38,
+        "predicted = ground_truth + np.random.normal(0, 0.005, ground_truth.shape)"
+      ],
+      [
+        50,
+        "x = torch.randn(10, 5)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        13,
+        "np.random.seed(42)  # Reproducible demo output"
+      ]
+    ],
+    "n_calls": 4,
+    "n_seed_mentions": 1
+  },
+  "scripts/scalability_benchmark.py": {
+    "random_calls": [
+      [
+        46,
+        "rng = np.random.RandomState(seed)"
+      ],
+      [
+        102,
+        "rng = np.random.RandomState(seed)"
+      ],
+      [
+        204,
+        "np.random.seed(args.seed)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        204,
+        "np.random.seed(args.seed)"
+      ]
+    ],
+    "n_calls": 3,
+    "n_seed_mentions": 1
+  },
+  "scripts/validate_real_data.py": {
+    "random_calls": [
+      [
+        124,
+        "rng: np.random.RandomState,"
+      ],
+      [
+        170,
+        "rng: np.random.RandomState,"
+      ],
+      [
+        376,
+        "np.random.seed(args.seed)"
+      ],
+      [
+        377,
+        "rng = np.random.RandomState(args.seed)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        376,
+        "np.random.seed(args.seed)"
+      ]
+    ],
+    "n_calls": 4,
+    "n_seed_mentions": 1
+  },
+  "benchmarks/pinn_inference.py": {
+    "random_calls": [
+      [
+        69,
+        "input_tensor = torch.randn(batch_size, 1, input_size, input_size).to(device)"
+      ]
+    ],
+    "seed_mentions": [],
+    "n_calls": 1,
+    "n_seed_mentions": 0
+  },
+  "api/main.py": {
+    "random_calls": [
+      [
+        358,
+        "rng = np.random.default_rng(seed)"
+      ]
+    ],
+    "seed_mentions": [
+      [
+        358,
+        "rng = np.random.default_rng(seed)"
+      ]
+    ],
+    "n_calls": 1,
+    "n_seed_mentions": 1
+  }
+}

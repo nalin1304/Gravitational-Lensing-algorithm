@@ -190,11 +190,19 @@ class MultiPlaneLens:
         
         Notes
         -----
+        Implements the recursive multi-plane lens equation:
+            θ_{j+1} = θ_j − (D_{j,j+1} / D_{j+1}) α_j(θ_j)
+
+        and the source-plane mapping:
+            β = θ_N
+        Ref: Schneider, Ehlers & Falco (1992), Eq. 9.1–9.3
+        Ref: McCully et al. (2014) ApJ 836, 141, Eq. 2
+
         Algorithm:
         1. Start at image plane with position θ
         2. For each lens plane i:
-           a. Compute deflection α_i at current position
-           b. Update position: θ → θ - (D_is/D_s) α_i
+           a. Compute deflection αᵢ at current position θᵢ
+           b. Update position: θᵢ₊₁ = θᵢ − (Dᵢ,ᵢ₊₁/Dᵢₛ) αᵢ
         3. Final position is source plane coordinate β
         """
         # Handle input shape
@@ -224,17 +232,16 @@ class MultiPlaneLens:
             alpha_x, alpha_y = plane.profile.deflection_angle(rel_x, rel_y)
             alpha_i = np.stack([alpha_x, alpha_y], axis=-1)
             
-            # Compute deflection weight: D_is / D_s
-            # For planes beyond this one, compute proper distances
+            # Multi-plane recurrence weight for the next plane:
+            #   theta_{i+1} = theta_i - (D_{i,i+1} / D_{i+1}) * alpha_i(theta_i)
             if i < len(self.planes) - 1:
-                # Distance from this plane to next plane
                 next_plane = self.planes[i + 1]
                 D_ij = self.cosmology.angular_diameter_distance_z1z2(
                     plane.redshift, next_plane.redshift
                 ).value  # in Mpc
-                weight = D_ij / plane.Dds
+                weight = D_ij / next_plane.Dd
             else:
-                # Last plane: use full distance to source
+                # Final mapping to source plane
                 weight = plane.Dds / self.Ds
             
             # Update position
@@ -308,8 +315,13 @@ class MultiPlaneLens:
         
         Notes
         -----
-        The total convergence is the weighted sum:
-            κ_total = Σᵢ (D_is / D_s) κᵢ
+        This routine uses a weak-coupling approximation for the multi-plane
+        convergence by summing per-plane terms:
+            κ_eff = Σᵢ (Dᵢₛ / Dₛ) κᵢ
+        It does not solve the fully coupled Jacobian recursion.
+
+        Ref: Schneider, Ehlers & Falco (1992), Eq. 9.15
+        Ref: Blandford & Narayan (1986, ApJ 310, 568), Eq. 2.4
         """
         # Create coordinate grid
         x = np.linspace(-fov/2, fov/2, image_size)
@@ -492,7 +504,10 @@ class MultiPlaneLens:
         
         Notes
         -----
-        Fermat potential: τ(θ) = ½|θ-β|² - ψ(θ)
+        Fermat potential (time delay surface):
+            τ(θ) = ½|θ − β|² − ψ(θ)
+        Ref: Schneider et al. (1992), Eq. 4.14
+        Ref: Blandford & Narayan (1986), Eq. 3.1
         where ψ is the lensing potential.
         
         For multi-plane lensing, this becomes more complex and involves
@@ -520,13 +535,17 @@ class MultiPlaneLens:
             # Position relative to plane
             rel_pos = theta - np.array(plane.center)
             
-            # Get potential (if available)
-            if hasattr(plane.profile, 'potential'):
+            # Prefer canonical lensing_potential(x, y) interface.
+            if hasattr(plane.profile, 'lensing_potential'):
+                psi_i = plane.profile.lensing_potential(rel_pos[..., 0], rel_pos[..., 1])
+                potential += weight * psi_i
+            elif hasattr(plane.profile, 'potential'):
                 psi_i = plane.profile.potential(rel_pos)
                 potential += weight * psi_i
             else:
                 warnings.warn(
-                    f"Plane at z={plane.redshift} has no potential() method. "
+                    f"Plane at z={plane.redshift} has no potential interface "
+                    "(lensing_potential or potential). "
                     "Skipping contribution to time delay."
                 )
         

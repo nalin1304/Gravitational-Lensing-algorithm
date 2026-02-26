@@ -1,0 +1,20 @@
+\begin{table}[t]
+\centering
+\caption{Ablation Study: Impact of Individual Components on Convergence Map Accuracy}
+\label{tab:ablation}
+\small
+\begin{tabular}{l|cccc|c}
+\toprule
+\textbf{Configuration} & \textbf{RMSE}$\downarrow$ & \textbf{MAE}$\downarrow$ & \textbf{SSIM}$\uparrow$ & \textbf{PSNR}$\uparrow$ & \textbf{Pass} \\
+\midrule
+  \textbf{Full Pipeline} & 0.0050 ± 0.0001 & 0.0040 ± 0.0001 & 0.9342 ± 0.0010 & 39.6 ± 0.1 & 0% \\
+  No Physics Loss & 0.0173 ± 0.0001 & 0.0139 ± 0.0001 & 0.6359 ± 0.0042 & 28.8 ± 0.0 & 0% \\
+  No Bayesian UQ & 0.0081 ± 0.0001 & 0.0064 ± 0.0001 & 0.8487 ± 0.0021 & 35.5 ± 0.1 & 0% \\
+  No Augmentation & 0.0099 ± 0.0001 & 0.0079 ± 0.0001 & 0.7921 ± 0.0018 & 33.7 ± 0.0 & 0% \\
+  No NFW Constraint & 0.0119 ± 0.0001 & 0.0095 ± 0.0001 & 0.7214 ± 0.0048 & 31.6 ± 0.1 & 0% \\
+  No Multi-Plane & 0.0071 ± 0.0002 & 0.0056 ± 0.0001 & 0.8793 ± 0.0039 & 36.6 ± 0.2 & 0% \\
+\bottomrule
+\end{tabular}
+\vspace{1mm}
+\parbox{\columnwidth}{\footnotesize Each row reports mean ± std over 5 independent trials on a $64\times64$ convergence map. ``Pass'' indicates the fraction of trials meeting publication-quality thresholds (RMSE $< 0.01$, SSIM $> 0.95$, mass conservation $\in [0.95, 1.05]$).}
+\end{table}

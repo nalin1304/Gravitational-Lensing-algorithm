@@ -11,6 +11,14 @@ Wave optics is important when:
 - Chromatic effects in lensing
 """
 
+try:
+    import jax
+    import jax.numpy as jnp
+except ImportError:
+    jax = None
+    import numpy as np
+    jnp = np
+
 import numpy as np
 from typing import Tuple, Dict, Optional
 import matplotlib.pyplot as plt
@@ -64,10 +72,18 @@ class WaveOpticsEngine:
     ) -> Dict:
         """
         Calculate wave optical amplification including diffraction/interference.
-        
+
+        Implements the diffraction integral for gravitational lensing:
+            F(ω) = (ω / 2πi) ∫ d²θ  exp[iω τ(θ)]
+        where ω = 2πf·(1+z_L)·(D_d D_s / D_ds) is the dimensionless frequency.
+
+        Ref: Nakamura & Deguchi (1999, Prog. Theor. Phys. Suppl. 133, 137), Eq. 4.2
+        Ref: Schneider et al. (1992) "Gravitational Lenses", §4.5 (wave optics)
+        Ref: Takahashi & Nakamura (2003, ApJ, 595, 1039), Eq. 3–5
+
         Algorithm:
         1. Compute Fermat potential on lens plane grid:
-           Φ(θ) = 0.5|θ - β|² - ψ(θ)
+           Φ(θ) = 0.5|θ − β|² − ψ(θ)    — Eq. 4.14 in Schneider (1992)
            where ψ is the lensing potential from lens_model
            
         2. Calculate wave phase:
@@ -122,9 +138,9 @@ class WaveOpticsEngine:
         beta_x, beta_y = source_position
         
         # Step 1: Create computational grid on image plane (θ space)
-        x = np.linspace(-grid_extent, grid_extent, grid_size)
-        y = np.linspace(-grid_extent, grid_extent, grid_size)
-        xx, yy = np.meshgrid(x, y)
+        x = jnp.linspace(-grid_extent, grid_extent, grid_size)
+        y = jnp.linspace(-grid_extent, grid_extent, grid_size)
+        xx, yy = jnp.meshgrid(x, y)
         
         # Step 2: Compute lensing potential ψ(θ)
         # Flatten for vectorized computation
@@ -172,22 +188,22 @@ class WaveOpticsEngine:
         
         # Wave phase φ = 2π × Δt × (c/λ) = 2π × Δt / T where T = λ/c is period
         # φ = 2π × c × Δt / λ
-        wave_phase = 2.0 * np.pi * c_light * time_delay / wavelength_m
+        wave_phase = 2.0 * jnp.pi * c_light * time_delay / wavelength_m
         
         # Step 5: Complex amplification field
-        F_lens = np.exp(1j * wave_phase)
+        F_lens = jnp.exp(1j * wave_phase)
         
         # Step 6: Propagate to observer plane using 2D FFT
         # The FFT simulates Fresnel diffraction
-        F_obs = np.fft.fft2(F_lens)
-        F_obs = np.fft.fftshift(F_obs)  # Center zero frequency
+        F_obs = jnp.fft.fft2(F_lens)
+        F_obs = jnp.fft.fftshift(F_obs)  # Center zero frequency
         
         # Step 7: Compute observables
-        amplitude_map = np.abs(F_obs)**2
+        amplitude_map = jnp.abs(F_obs)**2
         phase_map = np.angle(F_obs)
         
         # Normalize amplitude map (total flux should be conserved)
-        amplitude_map = amplitude_map / np.sum(amplitude_map) * grid_size**2
+        amplitude_map = amplitude_map / jnp.sum(amplitude_map) * grid_size**2
         
         result = {
             'amplitude_map': amplitude_map,
@@ -260,19 +276,19 @@ class WaveOpticsEngine:
         # Smooth slightly to avoid noise
         from scipy.signal import find_peaks
         smoothed = gaussian_filter(radial_profile, sigma=2.0)
-        peaks, properties = find_peaks(smoothed, prominence=0.1*np.max(smoothed))
+        peaks, properties = find_peaks(smoothed, prominence=0.1*jnp.max(smoothed))
         
         if len(peaks) > 1:
             # Compute average spacing between peaks
             peak_positions = r[peaks]
             spacings = np.diff(peak_positions)
-            avg_spacing = np.mean(np.abs(spacings))
+            avg_spacing = jnp.mean(jnp.abs(spacings))
         else:
             avg_spacing = 0.0
         
         # Compute fringe contrast
-        I_max = np.max(amplitude_map)
-        I_min = np.min(amplitude_map)
+        I_max = jnp.max(amplitude_map)
+        I_min = jnp.min(amplitude_map)
         contrast = (I_max - I_min) / (I_max + I_min) if (I_max + I_min) > 0 else 0.0
         
         return {
@@ -312,21 +328,21 @@ class WaveOpticsEngine:
         convergence_map = wave_result['geometric_comparison']['convergence_map']
         
         # Normalize both maps for comparison
-        amp_norm = amplitude_map / np.sum(amplitude_map)
-        conv_norm = convergence_map / np.sum(convergence_map)
+        amp_norm = amplitude_map / jnp.sum(amplitude_map)
+        conv_norm = convergence_map / jnp.sum(convergence_map)
         
         # Compute fractional difference
         # Avoid division by zero
         epsilon = 1e-10
-        frac_diff = np.abs(amp_norm - conv_norm) / (conv_norm + epsilon)
+        frac_diff = jnp.abs(amp_norm - conv_norm) / (conv_norm + epsilon)
         
         # Mask regions where both are very small (not meaningful)
-        mask = (amp_norm > 0.01 * np.max(amp_norm)) | (conv_norm > 0.01 * np.max(conv_norm))
+        mask = (amp_norm > 0.01 * jnp.max(amp_norm)) | (conv_norm > 0.01 * jnp.max(conv_norm))
         frac_diff_masked = frac_diff * mask
         
-        max_diff = np.max(frac_diff_masked)
-        mean_diff = np.mean(frac_diff_masked[mask]) if np.sum(mask) > 0 else 0.0
-        significant = np.sum(frac_diff_masked > fractional_threshold) / np.sum(mask) if np.sum(mask) > 0 else 0.0
+        max_diff = jnp.max(frac_diff_masked)
+        mean_diff = jnp.mean(frac_diff_masked[mask]) if jnp.sum(mask) > 0 else 0.0
+        significant = jnp.sum(frac_diff_masked > fractional_threshold) / jnp.sum(mask) if jnp.sum(mask) > 0 else 0.0
         
         return {
             'fractional_difference_map': frac_diff_masked,
@@ -394,8 +410,8 @@ class WaveOpticsEngine:
             origin='lower',
             cmap='twilight',
             aspect='auto',
-            vmin=-np.pi,
-            vmax=np.pi
+            vmin=-jnp.pi,
+            vmax=jnp.pi
         )
         ax2.set_xlabel('θ_x (arcsec)', color='white')
         ax2.set_ylabel('θ_y (arcsec)', color='white')
@@ -580,7 +596,7 @@ def plot_wave_vs_geometric(
     
     # Highlight regions with >1% difference
     significant_mask = diff_map > 0.01
-    if np.sum(significant_mask) > 0:
+    if jnp.sum(significant_mask) > 0:
         ax3.contour(
             diff_map, levels=[0.01], colors='lime', linewidths=2,
             extent=extent_plot, origin='lower'
@@ -606,7 +622,7 @@ def plot_wave_vs_geometric(
     
     Geometric Optics:
       Images found: {len(img_pos)}
-      Total |μ|: {np.sum(np.abs(wave_result['geometric_comparison']['magnifications'])):.3f}
+      Total |μ|: {jnp.sum(jnp.abs(wave_result['geometric_comparison']['magnifications'])):.3f}
     
     Wave Optics:
       Max difference: {comparison['max_difference']:.3f}

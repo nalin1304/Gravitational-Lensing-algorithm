@@ -55,7 +55,7 @@ def generate_test_data(grid_size=128):
     return kappa_predicted, kappa_analytic
 
 
-def test_quick_validation():
+def evaluate_quick_validation():
     """Test quick validation"""
     print("\n" + "="*70)
     print("TEST 1: Quick Validation")
@@ -73,7 +73,7 @@ def test_quick_validation():
     return passed
 
 
-def test_standard_validation():
+def evaluate_standard_validation():
     """Test standard validation"""
     print("\n" + "="*70)
     print("TEST 2: Standard Validation")
@@ -109,7 +109,7 @@ def test_standard_validation():
     return result.passed
 
 
-def test_rigorous_validation():
+def evaluate_rigorous_validation():
     """Test rigorous validation with full report"""
     print("\n" + "="*70)
     print("TEST 3: Rigorous Validation (Full Report)")
@@ -135,7 +135,7 @@ def test_rigorous_validation():
     return result.passed
 
 
-def test_different_profiles():
+def evaluate_different_profiles():
     """Test validation on different mass profiles"""
     print("\n" + "="*70)
     print("TEST 4: Different Mass Profiles")
@@ -164,7 +164,7 @@ def test_different_profiles():
     return all(results.values())
 
 
-def test_validation_levels():
+def evaluate_validation_levels():
     """Test all validation levels"""
     print("\n" + "="*70)
     print("TEST 5: Validation Levels Comparison")
@@ -203,7 +203,7 @@ def test_validation_levels():
     return True
 
 
-def test_edge_cases():
+def evaluate_edge_cases():
     """Test edge cases and error handling"""
     print("\n" + "="*70)
     print("TEST 6: Edge Cases")
@@ -245,7 +245,7 @@ def test_edge_cases():
     return True
 
 
-def test_with_existing_benchmarks():
+def evaluate_with_existing_benchmarks():
     """Test integration with existing benchmark tools"""
     print("\n" + "="*70)
     print("TEST 7: Integration with Existing Benchmarks")
@@ -284,19 +284,21 @@ def test_with_existing_benchmarks():
 
 def main():
     """Run all tests"""
+    np.random.seed(42)  # Reproducible validation runs
+    
     print("\n" + "="*70)
     print("SCIENTIFIC VALIDATOR TEST SUITE")
     print("="*70)
     print("Testing comprehensive validation framework...")
     
     tests = [
-        ("Quick Validation", test_quick_validation),
-        ("Standard Validation", test_standard_validation),
-        ("Rigorous Validation", test_rigorous_validation),
-        ("Different Profiles", test_different_profiles),
-        ("Validation Levels", test_validation_levels),
-        ("Edge Cases", test_edge_cases),
-        ("Benchmark Integration", test_with_existing_benchmarks),
+        ("Quick Validation", evaluate_quick_validation),
+        ("Standard Validation", evaluate_standard_validation),
+        ("Rigorous Validation", evaluate_rigorous_validation),
+        ("Different Profiles", evaluate_different_profiles),
+        ("Validation Levels", evaluate_validation_levels),
+        ("Edge Cases", evaluate_edge_cases),
+        ("Benchmark Integration", evaluate_with_existing_benchmarks),
     ]
     
     results = []

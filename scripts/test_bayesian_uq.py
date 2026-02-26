@@ -31,7 +31,7 @@ from src.ml.uncertainty import (
 )
 
 
-def test_bayesian_pinn_creation():
+def evaluate_bayesian_pinn_creation():
     """Test 1: Create Bayesian PINN"""
     print("\n" + "="*70)
     print("TEST 1: Bayesian PINN Creation")
@@ -54,7 +54,7 @@ def test_bayesian_pinn_creation():
     return True
 
 
-def test_forward_pass():
+def evaluate_forward_pass():
     """Test 2: Forward pass"""
     print("\n" + "="*70)
     print("TEST 2: Forward Pass")
@@ -76,7 +76,7 @@ def test_forward_pass():
     return True
 
 
-def test_uncertainty_estimation():
+def evaluate_uncertainty_estimation():
     """Test 3: MC Dropout uncertainty estimation"""
     print("\n" + "="*70)
     print("TEST 3: Uncertainty Estimation (MC Dropout)")
@@ -106,7 +106,7 @@ def test_uncertainty_estimation():
     return True
 
 
-def test_prediction_intervals():
+def evaluate_prediction_intervals():
     """Test 4: Confidence intervals"""
     print("\n" + "="*70)
     print("TEST 4: Prediction Intervals")
@@ -134,7 +134,7 @@ def test_prediction_intervals():
     return True
 
 
-def test_convergence_with_uncertainty():
+def evaluate_convergence_with_uncertainty():
     """Test 5: Convergence map with uncertainty"""
     print("\n" + "="*70)
     print("TEST 5: Convergence Map with Uncertainty")
@@ -167,7 +167,7 @@ def test_convergence_with_uncertainty():
     return True
 
 
-def test_uncertainty_calibrator():
+def evaluate_uncertainty_calibrator():
     """Test 6: Uncertainty calibration"""
     print("\n" + "="*70)
     print("TEST 6: Uncertainty Calibration")
@@ -222,7 +222,7 @@ def test_uncertainty_calibrator():
     return True
 
 
-def test_poorly_calibrated():
+def evaluate_poorly_calibrated():
     """Test 7: Detect poor calibration"""
     print("\n" + "="*70)
     print("TEST 7: Detecting Poor Calibration")
@@ -258,7 +258,7 @@ def test_poorly_calibrated():
     return True
 
 
-def test_visualization():
+def evaluate_visualization():
     """Test 8: Uncertainty visualization"""
     print("\n" + "="*70)
     print("TEST 8: Uncertainty Visualization")
@@ -304,7 +304,7 @@ def test_visualization():
     return True
 
 
-def test_real_nfw_validation():
+def evaluate_real_nfw_validation():
     """Test 9: Validate against known NFW profile"""
     print("\n" + "="*70)
     print("TEST 9: Validation Against NFW Profile")
@@ -354,7 +354,7 @@ def test_real_nfw_validation():
     return True
 
 
-def test_comparison_with_without_uncertainty():
+def evaluate_comparison_with_without_uncertainty():
     """Test 10: Compare deterministic vs Bayesian"""
     print("\n" + "="*70)
     print("TEST 10: Deterministic vs Bayesian Comparison")
@@ -389,22 +389,25 @@ def test_comparison_with_without_uncertainty():
 
 def main():
     """Run all tests"""
+    np.random.seed(42)        # Reproducible validation runs
+    torch.manual_seed(42)     # Reproducible PyTorch operations
+    
     print("\n" + "="*70)
     print("BAYESIAN UNCERTAINTY QUANTIFICATION TEST SUITE")
     print("="*70)
     print("Testing Monte Carlo Dropout and calibration analysis...")
     
     tests = [
-        ("Bayesian PINN Creation", test_bayesian_pinn_creation),
-        ("Forward Pass", test_forward_pass),
-        ("Uncertainty Estimation", test_uncertainty_estimation),
-        ("Prediction Intervals", test_prediction_intervals),
-        ("Convergence with Uncertainty", test_convergence_with_uncertainty),
-        ("Uncertainty Calibrator", test_uncertainty_calibrator),
-        ("Poor Calibration Detection", test_poorly_calibrated),
-        ("Visualization", test_visualization),
-        ("NFW Validation", test_real_nfw_validation),
-        ("Deterministic vs Bayesian", test_comparison_with_without_uncertainty),
+        ("Bayesian PINN Creation", evaluate_bayesian_pinn_creation),
+        ("Forward Pass", evaluate_forward_pass),
+        ("Uncertainty Estimation", evaluate_uncertainty_estimation),
+        ("Prediction Intervals", evaluate_prediction_intervals),
+        ("Convergence with Uncertainty", evaluate_convergence_with_uncertainty),
+        ("Uncertainty Calibrator", evaluate_uncertainty_calibrator),
+        ("Poor Calibration Detection", evaluate_poorly_calibrated),
+        ("Visualization", evaluate_visualization),
+        ("NFW Validation", evaluate_real_nfw_validation),
+        ("Deterministic vs Bayesian", evaluate_comparison_with_without_uncertainty),
     ]
     
     results = []

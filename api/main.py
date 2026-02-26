@@ -137,10 +137,28 @@ if PHASE_12_ENABLED:
     app.include_router(analysis_router)
     logger.info("Phase 12 features enabled: Authentication and Database")
 
+# Include Next-Gen Rigor
+try:
+    from api.rigor_routes import router as rigor_router
+    app.include_router(rigor_router)
+    logger.info("Next-Gen Rigor routes loaded.")
+except ImportError as e:
+    logger.warning(f"Rigor routes unavailable: {e}")
+
 # Configure CORS
+# In production, set CORS_ORIGINS env var to a comma-separated list of allowed origins.
+# Example: CORS_ORIGINS="https://yourdomain.com,https://app.yourdomain.com"
+import os as _os
+_cors_env = _os.environ.get("CORS_ORIGINS", "")
+CORS_ORIGINS: list = [o.strip() for o in _cors_env.split(",") if o.strip()] or ["*"]
+if CORS_ORIGINS == ["*"]:
+    logger.warning(
+        "CORS is configured to allow ALL origins ('*'). "
+        "Set CORS_ORIGINS env var to restrict in production."
+    )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify actual origins
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -152,8 +170,24 @@ security = HTTPBearer(auto_error=False)
 # Global model cache
 MODEL_CACHE = {}
 
-# Job tracking for background tasks
-JOBS = {}
+# Job tracking for background tasks (with TTL eviction)
+JOBS: dict = {}
+_JOB_TTL_SECONDS = 3600  # 1 hour
+
+
+def _evict_old_jobs() -> None:
+    """Remove completed/failed jobs older than _JOB_TTL_SECONDS to prevent memory growth."""
+    from datetime import timezone
+    now = datetime.now(timezone.utc).timestamp()
+    stale = [
+        jid for jid, j in JOBS.items()
+        if j.get("status") in ("completed", "failed")
+        and now - j.get("_created_ts", now) > _JOB_TTL_SECONDS
+    ]
+    for jid in stale:
+        del JOBS[jid]
+    if stale:
+        logger.debug("Evicted %d stale jobs from JOBS dict", len(stale))
 
 
 # ============================================================================
@@ -442,9 +476,12 @@ async def journal_workbench_ui():
 async def health_check():
     """
     Health check endpoint
-    
+
     Returns system status, GPU availability, database status, and timestamp
     """
+    # Passively evict stale completed/failed jobs to prevent memory growth
+    _evict_old_jobs()
+
     health_data = {
         "status": "healthy",
         "timestamp": get_current_timestamp(),
@@ -495,6 +532,7 @@ async def generate_synthetic(
         "status": "running",
         "job_type": "synthetic",
         "progress": 0.0,
+        "_created_ts": datetime.utcnow().timestamp(),
     }
     
     try:
@@ -579,6 +617,7 @@ async def run_inference(
         "status": "running",
         "job_type": "inference",
         "progress": 0.0,
+        "_created_ts": datetime.utcnow().timestamp(),
     }
     
     try:
@@ -891,6 +930,40 @@ async def http_exception_handler(request, exc):
     )
 
 
+# ============================================================================
+# Validation Dashboard Endpoints
+# ============================================================================
+
+@app.get("/api/v1/validation/slacs", tags=["validation"])
+async def get_slacs_validation():
+    """Return SLACS survey validation results from pre-computed JSON."""
+    import json
+    results_path = Path("results/real_data/slacs_validation_results.json")
+    if not results_path.exists():
+        return JSONResponse(status_code=404, content={"error": "No SLACS results found. Run: python scripts/validate_real_data.py"})
+    return json.loads(results_path.read_text())
+
+
+@app.get("/api/v1/validation/calibration", tags=["validation"])
+async def get_calibration_results():
+    """Return uncertainty calibration results (ECE, coverage)."""
+    import json
+    results_path = Path("results/uncertainty_calibration_results.json")
+    if not results_path.exists():
+        return JSONResponse(status_code=404, content={"error": "No calibration results found. Run: python scripts/uncertainty_calibration.py"})
+    return json.loads(results_path.read_text())
+
+
+@app.get("/api/v1/validation/ablation", tags=["validation"])
+async def get_ablation_results():
+    """Return ablation study results."""
+    import json
+    results_path = Path("results/ablation_results.json")
+    if not results_path.exists():
+        return JSONResponse(status_code=404, content={"error": "No ablation results found. Run: python scripts/ablation_study.py"})
+    return json.loads(results_path.read_text())
+
+
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
     """Handle general exceptions"""
@@ -903,6 +976,281 @@ async def general_exception_handler(request, exc):
             "timestamp": get_current_timestamp()
         }
     )
+
+
+# ============================================================================
+# STAGE IV SURVEY ENDPOINTS
+# ============================================================================
+
+class FinderRequest(BaseModel):
+    mode: str = Field("synthetic", pattern="^(synthetic|fits)$")
+    stride: int = Field(32, ge=8, le=128)
+    confidence_threshold: float = Field(0.70, ge=0.1, le=0.99)
+    n_lenses: int = Field(5, ge=1, le=20)
+    seed: int = Field(42)
+
+
+@app.post("/api/v1/survey/finder")
+async def survey_finder(req: FinderRequest):
+    """LenNet-style automated lens discovery on synthetic or uploaded field."""
+    try:
+        from src.ml.lens_finder import LensFinder
+        finder = LensFinder(confidence_threshold=req.confidence_threshold)
+        results = finder.scan_synthetic(
+            grid_size=256,
+            n_lenses=req.n_lenses,
+            seed=req.seed,
+        )
+        return {
+            "candidates": [r.to_dict() for r in results],
+            "n_candidates": len(results),
+            "stride": req.stride,
+            "mode": req.mode,
+        }
+    except Exception as e:
+        logger.exception("Finder error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class EPSFRequest(BaseModel):
+    pixel_scale: float = Field(0.11, gt=0, le=1.0)
+    kernel_size: int = Field(21, ge=7, le=63)
+    wavelength_um: float = Field(1.55, gt=0.1, le=10.0)
+    aperture_m: float = Field(2.4, gt=0.1, le=20.0)
+    x_det: float = Field(512.0, ge=0)
+    y_det: float = Field(1024.0, ge=0)
+    charge_diffusion: bool = Field(True)
+
+
+@app.post("/api/v1/survey/epsf")
+async def survey_epsf(req: EPSFRequest):
+    """Evaluate the spatially-varying ePSF kernel at a given detector position."""
+    import base64
+    import io
+    try:
+        from src.optics.epsf_model import ePSFModel
+        psf = ePSFModel(
+            pixel_scale=req.pixel_scale,
+            kernel_size=req.kernel_size,
+            wavelength_micron=req.wavelength_um,
+            aperture_diameter_m=req.aperture_m,
+            include_charge_diffusion=req.charge_diffusion,
+        )
+        kernel = psf.evaluate(req.x_det, req.y_det)
+        fwhm_px = _estimate_fwhm(kernel)
+        fwhm_arcsec = fwhm_px * req.pixel_scale
+        airy_peak = psf._diffraction_airy().max()
+        strehl = float(kernel.max() / (airy_peak + 1e-30))
+
+        # Render kernel as base64 PNG
+        kernel_norm = kernel / (kernel.max() + 1e-30)
+        try:
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots(figsize=(2, 2))
+            ax.imshow(kernel_norm, cmap="inferno", origin="lower")
+            ax.axis("off")
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", dpi=80, bbox_inches="tight", pad_inches=0)
+            plt.close(fig)
+            kernel_b64 = base64.b64encode(buf.getvalue()).decode()
+        except Exception:
+            kernel_b64 = None
+
+        # Zernike wavefront RMS at this position
+        zcoeffs = psf.wavefront.wavefront_coefficients(req.x_det, req.y_det)
+        rms_nm = float(np.sqrt(sum(c ** 2 for c in zcoeffs.values())))
+
+        return {
+            "fwhm_pixels": round(fwhm_px, 3),
+            "fwhm_arcsec": round(fwhm_arcsec, 4),
+            "strehl": round(strehl, 4),
+            "kernel_sum": round(float(kernel.sum()), 8),
+            "kernel_b64": kernel_b64,
+            "x_det": req.x_det,
+            "y_det": req.y_det,
+            "zernike_rms_nm": round(rms_nm, 3),
+        }
+    except Exception as e:
+        logger.exception("ePSF error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _estimate_fwhm(kernel: np.ndarray) -> float:
+    """Estimate FWHM of a 2-D PSF using the encircled-energy method."""
+    peak = kernel.max()
+    half = peak / 2
+    cy, cx = np.unravel_index(kernel.argmax(), kernel.shape)
+    Y, X = np.ogrid[:kernel.shape[0], :kernel.shape[1]]
+    dist = np.sqrt((X - cx) ** 2 + (Y - cy) ** 2).ravel()
+    vals = kernel.ravel()
+    # Radius where profile falls below half-max (nearest pixel)
+    above = dist[vals >= half]
+    return float(2 * above.max()) if len(above) > 0 else 0.0
+
+
+@app.get("/api/v1/survey/epsf/fov")
+async def survey_epsf_fov(zernike_index: int = 4):
+    """Compute the Zernike FOV variation map across the detector."""
+    if not (4 <= zernike_index <= 22):
+        raise HTTPException(status_code=422, detail="zernike_index must be 4–22")
+    try:
+        from src.optics.epsf_model import ePSFModel
+        detector = (4096, 4096)
+        psf = ePSFModel(detector_shape=detector)
+        fov = psf.zernike_map(zernike_index, grid_points=16)
+        stats = {
+            "min": round(float(fov.min()), 4),
+            "max": round(float(fov.max()), 4),
+            "rms": round(float(np.sqrt(np.mean(fov ** 2))), 4),
+        }
+        return {
+            "zernike_index": zernike_index,
+            "grid_points": 16,
+            "detector_shape": list(detector),
+            "stats": stats,
+            "fov_flat": fov.ravel().tolist(),
+        }
+    except Exception as e:
+        logger.exception("ePSF FOV error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class BlindingUnblindRequest(BaseModel):
+    phrase: str = Field(..., min_length=1)
+    h0_blind: float
+    dtd_blind: float
+
+
+@app.post("/api/v1/survey/blinding/unblind")
+async def survey_blinding_unblind(req: BlindingUnblindRequest):
+    """
+    Attempt to unblind H₀ and D_Δt; runs validation gate checks first.
+    """
+    try:
+        from src.utils.blinding import BlindingHandler
+        bh = BlindingHandler(req.phrase)
+        # Run basic checks: test suite pass indicated by existence of report
+        gate_report = Path("results/publication_gate_report.json")
+        checks_passed = gate_report.exists()
+        if not checks_passed:
+            return {
+                "gate_passed": False,
+                "reason": "results/publication_gate_report.json not found. Run publication_gate.py first.",
+            }
+        try:
+            report = json.loads(gate_report.read_text())
+            checks_passed = bool(report.get("publication_gate_passed", False))
+        except Exception:
+            checks_passed = False
+        if not checks_passed:
+            return {
+                "gate_passed": False,
+                "reason": "publication_gate_report.json indicates gate not passed.",
+            }
+        h0_true  = bh.unblind_h0(req.h0_blind, verification_phrase=req.phrase)
+        dtd_true = bh.unblind_dtd(req.dtd_blind, verification_phrase=req.phrase)
+        return {
+            "gate_passed": True,
+            "h0_true": round(h0_true, 4),
+            "dtd_true": round(dtd_true, 2),
+            "summary": bh.summary(),
+        }
+    except ValueError as e:
+        return {"gate_passed": False, "reason": str(e)}
+    except Exception as e:
+        logger.exception("Blinding unblind error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class CovarianceRequest(BaseModel):
+    image_size: int = Field(32, ge=4, le=64)
+    sigma: float = Field(0.02, gt=0)
+    pixfrac: float = Field(0.8, gt=0, le=1.0)
+    scale: float = Field(0.5, gt=0, le=1.0)
+    kernel: str = Field("square")
+
+
+@app.post("/api/v1/survey/covariance")
+async def survey_covariance(req: CovarianceRequest):
+    """Compute drizzle pixel covariance matrix and run Cholesky whitening diagnostic."""
+    try:
+        from src.data.pixel_covariance import (
+            build_drizzle_covariance, apply_covariance_whitening,
+            effective_noise_correlation_length,
+        )
+        rng = np.random.RandomState(42)
+        rms_map = np.full((req.image_size, req.image_size), req.sigma)
+        cov = build_drizzle_covariance(rms_map, req.pixfrac, req.scale, req.kernel)
+        eigvals = np.linalg.eigvalsh(cov)
+        is_pd = bool(np.all(eigvals > 0))
+        xi = effective_noise_correlation_length(cov, shape=(req.image_size, req.image_size))
+        residual = rng.normal(0, req.sigma, (req.image_size, req.image_size))
+        chisq = apply_covariance_whitening(residual, cov)
+        dof = req.image_size ** 2
+        return {
+            "shape": list(cov.shape),
+            "is_positive_definite": is_pd,
+            "correlation_length_px": round(float(xi), 3),
+            "chisq": round(float(chisq), 4),
+            "dof": dof,
+            "chisq_dof": round(float(chisq) / dof, 4),
+            "kernel": req.kernel,
+            "pixfrac": req.pixfrac,
+            "scale": req.scale,
+        }
+    except Exception as e:
+        logger.exception("Covariance error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class JointSurveyRequest(BaseModel):
+    ground_size: int = Field(32, ge=8, le=128)
+    ground_scale: float = Field(0.2, gt=0)
+    ground_sigma: float = Field(0.02, gt=0)
+    space_size: int = Field(64, ge=8, le=256)
+    space_scale: float = Field(0.11, gt=0)
+    space_sigma: float = Field(0.01, gt=0)
+    likelihood: str = Field("gaussian", pattern="^(gaussian|correlated)$")
+    seed: int = Field(42)
+
+
+@app.post("/api/v1/survey/joint")
+async def survey_joint(req: JointSurveyRequest):
+    """Run joint multi-survey deblending on synthetic Rubin+Roman-like data."""
+    try:
+        from src.ml.joint_survey import JointSurveyLikelihood
+        jll = JointSurveyLikelihood.make_synthetic(
+            grid_size_ground=req.ground_size,
+            grid_size_space=req.space_size,
+            seed=req.seed,
+        )
+        jll.use_correlated = (req.likelihood == "correlated")
+
+        # Use perfect model = observed (sanity test for chi-sq ≈ dof)
+        model_ground = jll.observations[0].image.copy()
+        model_space  = jll.observations[1].image.copy()
+        log_L = jll.log_likelihood(model_ground, model_space)
+        chisq_info = jll.chi_squared(model_ground, model_space)
+
+        return {
+            "joint_log_likelihood": round(float(log_L), 4),
+            "total_chisq_dof": round(float(chisq_info["total_chisq_dof"]), 4),
+            "likelihood_mode": req.likelihood,
+            "per_survey": {
+                k: {
+                    "chisq": round(v["chisq"], 3),
+                    "dof": v["dof"],
+                    "chisq_dof": round(v["chisq_dof"], 4),
+                }
+                for k, v in chisq_info.items()
+                if k != "total_chisq_dof"
+            },
+        }
+    except Exception as e:
+        logger.exception("Joint survey error")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

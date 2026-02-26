@@ -88,17 +88,37 @@ def generate_nfw_training_data(
         mass = masses[i].item()
         conc = concentrations[i].item()
         
-        # NFW scale radius (simplified)
+        # NFW scale radius from virial mass-concentration relation
+        # r_vir ∝ M^(1/3) is standard M(z) scaling at z=0 for Δ=200c
         r_vir = (mass / 1e12) ** (1/3) * 200.0  # kpc
         r_s = r_vir / conc
         
-        # NFW convergence (simplified analytic formula)
-        x = R / r_s
-        kappa_s = mass / (1e12 * r_s**2)  # Simplified normalization
+        # True 2D NFW projected surface convergence physics (Bartelmann 1996)
+        x_val = R / r_s
+        x_safe = torch.clamp(x_val, min=1e-5)
         
-        # NFW profile: κ(x) = κ_s / [x(1+x)²]
-        kappa = kappa_s / (x * (1 + x)**2)
-        kappa = torch.clamp(kappa, 0, 10)  # Clamp extreme values
+        kappa_s = mass / (1e12 * r_s**2)  # Physical reference density scale
+        kappa = torch.zeros_like(x_safe)
+        
+        # Regime 1: x < 1 (Inner core)
+        mask_in = x_safe < 0.999
+        x_in = x_safe[mask_in]
+        kappa[mask_in] = 2.0 * kappa_s / (x_in**2 - 1.0) * (
+            1.0 - torch.acosh(1.0 / x_in) / torch.sqrt(1.0 - x_in**2)
+        )
+        
+        # Regime 2: x > 1 (Outer region)
+        mask_out = x_safe > 1.001
+        x_out = x_safe[mask_out]
+        kappa[mask_out] = 2.0 * kappa_s / (x_out**2 - 1.0) * (
+            1.0 - torch.acos(1.0 / x_out) / torch.sqrt(x_out**2 - 1.0)
+        )
+        
+        # Regime 3: x ≈ 1 (Limit convergence to avoid singular derivative division)
+        mask_core = ~(mask_in | mask_out)
+        kappa[mask_core] = 2.0 * kappa_s / 3.0
+        
+        kappa = torch.clamp(kappa, 0.0, 10.0)  # Clamp extreme core values
         
         # Flatten and store
         x_flat = X.flatten()
@@ -385,6 +405,13 @@ def plot_benchmark_comparison(
 # ============================================================================
 
 def main():
+    # Enforce deterministic random generation for scientific reproducibility
+    torch.manual_seed(42)
+    np.random.seed(42)
+    if 'jax' in sys.modules:
+        import jax
+        jax.config.update("jax_enable_x64", True)
+        
     parser = argparse.ArgumentParser(description='Train and benchmark PINN for gravitational lensing')
     
     parser.add_argument('--model', type=str, default='nfw',

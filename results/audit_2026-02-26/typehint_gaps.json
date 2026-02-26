@@ -1,0 +1,7275 @@
+{
+  "summary": {
+    "files_with_missing_hints": 92,
+    "total_missing_functions": 999
+  },
+  "files": {
+    "src/utils/config.py": [
+      {
+        "name": "from_yaml",
+        "line": 45,
+        "missing_args": [
+          "cls"
+        ],
+        "missing_return": false
+      }
+    ],
+    "src/utils/visualization.py": [
+      {
+        "name": "setup_dark_style",
+        "line": 15,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "plot_lens_system",
+        "line": 20,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "plot_radial_profile",
+        "line": 163,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "plot_deflection_field",
+        "line": 244,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "plot_magnification_map",
+        "line": 328,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "plot_source_plane_mapping",
+        "line": 418,
+        "missing_args": [
+          "beta_x",
+          "beta_y",
+          "grid_x",
+          "grid_y"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/utils/common.py": [
+      {
+        "name": "load_pretrained_model",
+        "line": 22,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "set_random_seed",
+        "line": 170,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/utils/zenodo_integration.py": [
+      {
+        "name": "__init__",
+        "line": 22,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/time_delay/cosmography.py": [
+      {
+        "name": "__init__",
+        "line": 586,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "infer_h0",
+        "line": 625,
+        "missing_args": [
+          "kwargs"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "monte_carlo_uncertainty",
+        "line": 659,
+        "missing_args": [
+          "kwargs"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "parabola",
+        "line": 353,
+        "missing_args": [
+          "h",
+          "a",
+          "b",
+          "c"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/ml/image_prob_model.py": [
+      {
+        "name": "__init__",
+        "line": 60,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/ml/physics_unit_safe.py": [
+      {
+        "name": "test_unit_correctness",
+        "line": 249,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/ml/neural_ode.py": [
+      {
+        "name": "__init__",
+        "line": 27,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__call__",
+        "line": 41,
+        "missing_args": [
+          "args"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "__init__",
+        "line": 54,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 93,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "fused_vector_field",
+        "line": 123,
+        "missing_args": [
+          "t",
+          "y",
+          "args"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/ml/pinn_models.py": [
+      {
+        "name": "create_lensing_pinn",
+        "line": 298,
+        "missing_args": [
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 37,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 146,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 196,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_psi_and_kappa",
+        "line": 220,
+        "missing_args": [
+          "x_scalar",
+          "y_scalar",
+          "params_scalar"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "psi_fn",
+        "line": 230,
+        "missing_args": [
+          "x_s",
+          "y_s",
+          "p_s"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "compute_point_residual",
+        "line": 233,
+        "missing_args": [
+          "x_val",
+          "y_val",
+          "p_val"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward_point",
+        "line": 268,
+        "missing_args": [
+          "x_s",
+          "y_s",
+          "p_s"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/ml/tensorboard_logger.py": [
+      {
+        "name": "plot_to_tensorboard_image",
+        "line": 359,
+        "missing_args": [
+          "fig"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "__init__",
+        "line": 23,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "log_scalars",
+        "line": 39,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "log_training_metrics",
+        "line": 55,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "log_images",
+        "line": 85,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "log_predictions_comparison",
+        "line": 120,
+        "missing_args": [
+          "model",
+          "dataloader",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "_create_prediction_figure",
+        "line": 175,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "log_confusion_matrix",
+        "line": 209,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "log_parameter_errors",
+        "line": 262,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "log_model_graph",
+        "line": 290,
+        "missing_args": [
+          "model",
+          "input_size"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "log_histograms",
+        "line": 308,
+        "missing_args": [
+          "model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "log_text",
+        "line": 325,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "log_hyperparameters",
+        "line": 340,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "close",
+        "line": 353,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/ml/generate_dataset.py": [
+      {
+        "name": "generate_convergence_map_vectorized",
+        "line": 29,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "generate_convergence_map",
+        "line": 87,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "__init__",
+        "line": 477,
+        "missing_args": [
+          "transform"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__len__",
+        "line": 486,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__getitem__",
+        "line": 489,
+        "missing_args": [
+          "idx"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/ml/pinn.py": [
+      {
+        "name": "h_less",
+        "line": 219,
+        "missing_args": [
+          "x_val"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "h_greater",
+        "line": 224,
+        "missing_args": [
+          "x_val"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "physics_informed_loss",
+        "line": 352,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "train_step",
+        "line": 354,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 93,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 171,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "filter_jit",
+        "line": 19,
+        "missing_args": [
+          "f"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/ml/augmentation.py": [
+      {
+        "name": "__init__",
+        "line": 19,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 50,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 90,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 126,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 160,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 256,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/ml/transfer_learning.py": [
+      {
+        "name": "create_synthetic_to_real_pipeline",
+        "line": 635,
+        "missing_args": [
+          "synthetic_loader",
+          "real_loader"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "compute_domain_discrepancy",
+        "line": 709,
+        "missing_args": [
+          "source_loader",
+          "target_loader"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "forward",
+        "line": 56,
+        "missing_args": [
+          "ctx",
+          "x",
+          "lambda_param"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "backward",
+        "line": 61,
+        "missing_args": [
+          "ctx",
+          "grad_output"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 89,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 114,
+        "missing_args": [
+          "x"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 155,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "_setup_feature_extraction",
+        "line": 176,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 251,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "gaussian_kernel",
+        "line": 257,
+        "missing_args": [
+          "source",
+          "target",
+          "kernel_mul",
+          "kernel_num"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 276,
+        "missing_args": [
+          "source",
+          "target"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 317,
+        "missing_args": [
+          "source",
+          "target"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "_compute_covariance",
+        "line": 346,
+        "missing_args": [
+          "features"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 383,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "enable_dropout",
+        "line": 393,
+        "missing_args": [
+          "model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "_compute_predictive_entropy",
+        "line": 449,
+        "missing_args": [
+          "class_samples"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 500,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "fine_tune",
+        "line": 570,
+        "missing_args": [
+          "target_loader",
+          "optimizer",
+          "criterion"
+        ],
+        "missing_return": false
+      }
+    ],
+    "src/ml/train_pinn.py": [
+      {
+        "name": "plot_training_history",
+        "line": 325,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "plot_benchmark_comparison",
+        "line": 345,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 387,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "convert_to_python_types",
+        "line": 453,
+        "missing_args": [
+          "obj"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/ml/pinn_advanced.py": [
+      {
+        "name": "__init__",
+        "line": 34,
+        "missing_args": [
+          "activation_type",
+          "num_features"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 42,
+        "missing_args": [
+          "x"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 84,
+        "missing_args": [
+          "channels",
+          "activation",
+          "use_batch_norm",
+          "dropout_rate"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 98,
+        "missing_args": [
+          "x"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 131,
+        "missing_args": [
+          "channels",
+          "reduction"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 145,
+        "missing_args": [
+          "x"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 199,
+        "missing_args": [
+          "in_channels",
+          "out_channels"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 214,
+        "missing_args": [
+          "x"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 247,
+        "missing_args": [
+          "enforce_positivity",
+          "enforce_causality"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 252,
+        "missing_args": [
+          "convergence",
+          "shear_1",
+          "shear_2"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 330,
+        "missing_args": [
+          "input_channels",
+          "num_blocks",
+          "base_channels",
+          "num_params",
+          "num_classes",
+          "dropout_rate",
+          "use_attention"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 395,
+        "missing_args": [
+          "x",
+          "return_features"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "predict_with_uncertainty",
+        "line": 462,
+        "missing_args": [
+          "x",
+          "num_samples"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 526,
+        "missing_args": [
+          "lambda_physics",
+          "lambda_conservation",
+          "lambda_reg"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_equation_residual",
+        "line": 532,
+        "missing_args": [
+          "convergence_pred",
+          "convergence_true"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "_compute_laplacian",
+        "line": 559,
+        "missing_args": [
+          "field"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "mass_conservation",
+        "line": 573,
+        "missing_args": [
+          "convergence"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "parameter_regularization",
+        "line": 587,
+        "missing_args": [
+          "params"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 603,
+        "missing_args": [
+          "params_pred",
+          "params_true",
+          "classes_pred",
+          "classes_true",
+          "convergence_pred",
+          "convergence_true"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/ml/physics_constrained_loss.py": [
+      {
+        "name": "__init__",
+        "line": 98,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/ml/evaluate.py": [
+      {
+        "name": "evaluate_model",
+        "line": 87,
+        "missing_args": [
+          "model",
+          "dataloader"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "print_evaluation_summary",
+        "line": 395,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/ml/source_models.py": [
+      {
+        "name": "__init__",
+        "line": 44,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/ml/performance.py": [
+      {
+        "name": "set_backend",
+        "line": 102,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "benchmark_convergence_map",
+        "line": 213,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "compare_cpu_gpu_performance",
+        "line": 268,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "cached_convergence",
+        "line": 321,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "clear_cache",
+        "line": 357,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 38,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "array",
+        "line": 55,
+        "missing_args": [
+          "data",
+          "dtype"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "zeros",
+        "line": 59,
+        "missing_args": [
+          "shape",
+          "dtype"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "ones",
+        "line": 63,
+        "missing_args": [
+          "shape",
+          "dtype"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "linspace",
+        "line": 67,
+        "missing_args": [
+          "start",
+          "stop",
+          "num"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "meshgrid",
+        "line": 71,
+        "missing_args": [
+          "indexing",
+          "arrays"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "to_numpy",
+        "line": 75,
+        "missing_args": [
+          "array"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "to_device",
+        "line": 81,
+        "missing_args": [
+          "array"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wrapper",
+        "line": 127,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 149,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "time_block",
+        "line": 152,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "record",
+        "line": 156,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "print_summary",
+        "line": 177,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "clear",
+        "line": 191,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 199,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__enter__",
+        "line": 204,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__exit__",
+        "line": 208,
+        "missing_args": [
+          "exc_type",
+          "exc_val",
+          "exc_tb"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/ml/uncertainty/bayesian_uq.py": [
+      {
+        "name": "visualize_uncertainty",
+        "line": 560,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "print_uncertainty_summary",
+        "line": 627,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 80,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "_initialize_weights",
+        "line": 139,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 325,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "plot_calibration_curve",
+        "line": 382,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 499,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/lens_models/lens_system.py": [
+      {
+        "name": "__init__",
+        "line": 49,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/lens_models/multi_plane.py": [
+      {
+        "name": "__init__",
+        "line": 109,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/lens_models/multi_plane_recursive.py": [
+      {
+        "name": "__init__",
+        "line": 690,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/lens_models/advanced_profiles.py": [
+      {
+        "name": "__init__",
+        "line": 97,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 342,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 604,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/lens_models/mass_profiles.py": [
+      {
+        "name": "__init__",
+        "line": 140,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 346,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "_compute_nfw_parameters",
+        "line": 376,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "_generate_subhalos",
+        "line": 416,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 916,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 972,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 1035,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 1176,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "create_halo",
+        "line": 1218,
+        "missing_args": [
+          "lens_system",
+          "kwargs"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "generate_random_halo",
+        "line": 1266,
+        "missing_args": [
+          "lens_system",
+          "kwargs"
+        ],
+        "missing_return": false
+      }
+    ],
+    "src/data/mast_downloader.py": [
+      {
+        "name": "__init__",
+        "line": 121,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "_generate_synthetic_fits",
+        "line": 268,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/data/real_data_loader.py": [
+      {
+        "name": "__init__",
+        "line": 113,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "_extract_metadata",
+        "line": 188,
+        "missing_args": [
+          "header"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "_extract_pixel_scale",
+        "line": 239,
+        "missing_args": [
+          "header"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "__init__",
+        "line": 355,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/dark_matter/substructure.py": [
+      {
+        "name": "__init__",
+        "line": 51,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 140,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/validation/hst_targets.py": [
+      {
+        "name": "validate_against_all_targets",
+        "line": 388,
+        "missing_args": [
+          "model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "__init__",
+        "line": 119,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/validation/scientific_validator.py": [
+      {
+        "name": "__init__",
+        "line": 109,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "power_law",
+        "line": 797,
+        "missing_args": [
+          "r",
+          "A",
+          "alpha"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/validation/mu_glance.py": [
+      {
+        "name": "__init__",
+        "line": 26,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/validation/calibration.py": [
+      {
+        "name": "__init__",
+        "line": 132,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "save_calibration",
+        "line": 435,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/optics/geodesic_integration.py": [
+      {
+        "name": "__init__",
+        "line": 83,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "src/optics/ray_tracing_backends.py": [
+      {
+        "name": "_as_scalar",
+        "line": 81,
+        "missing_args": [
+          "value"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "thin_lens_ray_trace",
+        "line": 191,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "_compute_magnification_jacobian",
+        "line": 349,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "ray_trace",
+        "line": 588,
+        "missing_args": [
+          "lens_model",
+          "kwargs"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "compare_methods_weak_field",
+        "line": 652,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      }
+    ],
+    "src/optics/ray_tracing.py": [
+      {
+        "name": "ray_trace",
+        "line": 22,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "compute_magnification",
+        "line": 184,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "find_einstein_radius",
+        "line": 268,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "compute_time_delay",
+        "line": 319,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "equation",
+        "line": 298,
+        "missing_args": [
+          "r"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 403,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": true
+      }
+    ],
+    "src/optics/wave_optics.py": [
+      {
+        "name": "plot_wave_vs_geometric",
+        "line": 473,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "__init__",
+        "line": 60,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "compute_amplification_factor",
+        "line": 64,
+        "missing_args": [
+          "lens_model"
+        ],
+        "missing_return": false
+      }
+    ],
+    "tests/test_ray_tracing.py": [
+      {
+        "name": "setup_method",
+        "line": 18,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_centered_source_four_images",
+        "line": 25,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_off_center_source_finds_images",
+        "line": 38,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_images_near_einstein_radius",
+        "line": 51,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_magnifications_computed",
+        "line": 67,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_magnifications_greater_than_one",
+        "line": 83,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_map_returned",
+        "line": 98,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_grid_coordinates_returned",
+        "line": 108,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 123,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_nfw_finds_images",
+        "line": 128,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_nfw_runs_without_errors",
+        "line": 143,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_nfw_convergence_map",
+        "line": 154,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 176,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_magnification_at_einstein_radius",
+        "line": 181,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_magnification_far_from_lens",
+        "line": 190,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_magnification_finite",
+        "line": 197,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 209,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_find_einstein_radius_matches_property",
+        "line": 214,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_radius_positive",
+        "line": 222,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 232,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_computed",
+        "line": 237,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_reasonable_magnitude",
+        "line": 247,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_different_for_different_images",
+        "line": 258,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 273,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_source_far_from_lens",
+        "line": 278,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_small_grid_extent",
+        "line": 291,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_low_resolution",
+        "line": 301,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_database_crud.py": [
+      {
+        "name": "test_db",
+        "line": 46,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "client",
+        "line": 65,
+        "missing_args": [
+          "test_db"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_user",
+        "line": 80,
+        "missing_args": [
+          "test_db"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_admin",
+        "line": 94,
+        "missing_args": [
+          "test_db"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "auth_headers",
+        "line": 108,
+        "missing_args": [
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "admin_headers",
+        "line": 117,
+        "missing_args": [
+          "test_admin"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "override_get_db",
+        "line": 67,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_user",
+        "line": 132,
+        "missing_args": [
+          "test_db"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_user_unique_email",
+        "line": 149,
+        "missing_args": [
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_user_unique_username",
+        "line": 159,
+        "missing_args": [
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_analysis",
+        "line": 169,
+        "missing_args": [
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_job",
+        "line": 186,
+        "missing_args": [
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_authenticate_valid_user",
+        "line": 209,
+        "missing_args": [
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_authenticate_with_email",
+        "line": 215,
+        "missing_args": [
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_authenticate_invalid_password",
+        "line": 221,
+        "missing_args": [
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_authenticate_nonexistent_user",
+        "line": 226,
+        "missing_args": [
+          "test_db"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_access_token",
+        "line": 231,
+        "missing_args": [
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_api_key_creation",
+        "line": 240,
+        "missing_args": [
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_register_user",
+        "line": 264,
+        "missing_args": [
+          "client"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_register_duplicate_email",
+        "line": 282,
+        "missing_args": [
+          "client",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_login_success",
+        "line": 296,
+        "missing_args": [
+          "client",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_login_invalid_credentials",
+        "line": 312,
+        "missing_args": [
+          "client",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_get_current_user",
+        "line": 324,
+        "missing_args": [
+          "client",
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_get_current_user_unauthorized",
+        "line": 336,
+        "missing_args": [
+          "client"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_analysis",
+        "line": 345,
+        "missing_args": [
+          "client",
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_analysis_unauthorized",
+        "line": 365,
+        "missing_args": [
+          "client"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_list_analyses",
+        "line": 377,
+        "missing_args": [
+          "client",
+          "auth_headers",
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_get_analysis",
+        "line": 398,
+        "missing_args": [
+          "client",
+          "auth_headers",
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_get_analysis_not_found",
+        "line": 419,
+        "missing_args": [
+          "client",
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_list_users_as_admin",
+        "line": 431,
+        "missing_args": [
+          "client",
+          "admin_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_list_users_as_regular_user",
+        "line": 442,
+        "missing_args": [
+          "client",
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_full_analysis_workflow",
+        "line": 458,
+        "missing_args": [
+          "client",
+          "auth_headers",
+          "test_db",
+          "test_user"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/conftest.py": [
+      {
+        "name": "db_session",
+        "line": 22,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "reset_rate_limiter",
+        "line": 46,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "override_db_for_security_modules",
+        "line": 70,
+        "missing_args": [
+          "request"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "_override_get_db",
+        "line": 81,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_advanced_profiles.py": [
+      {
+        "name": "lens_sys",
+        "line": 24,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 28,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_ellipticity",
+        "line": 44,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_reduces_to_circular_nfw",
+        "line": 58,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_shape",
+        "line": 78,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_symmetry",
+        "line": 99,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_various_ellipticities",
+        "line": 117,
+        "missing_args": [
+          "lens_sys",
+          "ellipticity"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_various_position_angles",
+        "line": 133,
+        "missing_args": [
+          "lens_sys",
+          "angle"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_angle_shape",
+        "line": 146,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_sys",
+        "line": 166,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 170,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_parameters",
+        "line": 178,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_exponential_disk",
+        "line": 186,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_de_vaucouleurs_profile",
+        "line": 198,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_surface_brightness_decay",
+        "line": 205,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_shape",
+        "line": 218,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_circular_symmetry",
+        "line": 229,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_total_luminosity",
+        "line": 246,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_various_sersic_indices",
+        "line": 255,
+        "missing_args": [
+          "lens_sys",
+          "n"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_sys",
+        "line": 270,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "bulge",
+        "line": 275,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "disk",
+        "line": 280,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "halo",
+        "line": 285,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization_single_component",
+        "line": 289,
+        "missing_args": [
+          "bulge",
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization_all_components",
+        "line": 297,
+        "missing_args": [
+          "bulge",
+          "disk",
+          "halo",
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_requires_at_least_one_component",
+        "line": 304,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_is_sum",
+        "line": 309,
+        "missing_args": [
+          "bulge",
+          "halo",
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_angle_is_sum",
+        "line": 322,
+        "missing_args": [
+          "bulge",
+          "halo",
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_realistic_early_type_galaxy",
+        "line": 336,
+        "missing_args": [
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_realistic_spiral_galaxy",
+        "line": 357,
+        "missing_args": [
+          "bulge",
+          "disk",
+          "halo",
+          "lens_sys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_elliptical_composite_galaxy",
+        "line": 378,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_profile_comparison",
+        "line": 407,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_real_data.py": [
+      {
+        "name": "create_test_fits",
+        "line": 36,
+        "missing_args": [
+          "tmpdir",
+          "with_data"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_loader_initialization",
+        "line": 63,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_load_fits_basic",
+        "line": 68,
+        "missing_args": [
+          "tmpdir"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_metadata_extraction",
+        "line": 79,
+        "missing_args": [
+          "tmpdir"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_load_with_header",
+        "line": 95,
+        "missing_args": [
+          "tmpdir"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_file_not_found",
+        "line": 106,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_empty_extension",
+        "line": 113,
+        "missing_args": [
+          "tmpdir"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_list_extensions",
+        "line": 133,
+        "missing_args": [
+          "tmpdir"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_pixel_scale_extraction_methods",
+        "line": 153,
+        "missing_args": [
+          "tmpdir"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_psf_initialization",
+        "line": 190,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_psf_shape",
+        "line": 198,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_psf_odd_size",
+        "line": 207,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_psf_normalization",
+        "line": 215,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_psf_symmetry",
+        "line": 224,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_psf_peak_at_center",
+        "line": 234,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_convolve_image",
+        "line": 247,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "create_test_metadata",
+        "line": 268,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_preprocess_basic",
+        "line": 278,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_handle_nans_zero",
+        "line": 288,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_handle_nans_median",
+        "line": 304,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_normalization",
+        "line": 321,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_no_normalization",
+        "line": 335,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_resize",
+        "line": 350,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_handle_inf_values",
+        "line": 363,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_metadata_creation",
+        "line": 382,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_metadata_optional_fields",
+        "line": 396,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_load_real_data_convenience",
+        "line": 418,
+        "missing_args": [
+          "tmpdir"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_lens_system.py": [
+      {
+        "name": "setup_method",
+        "line": 16,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 22,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_redshifts",
+        "line": 29,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_distances_positive",
+        "line": 43,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_distance_ordering",
+        "line": 53,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_critical_surface_density",
+        "line": 61,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_critical_density_caching",
+        "line": 72,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_arcsec_to_kpc_positive",
+        "line": 80,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_arcsec_to_kpc_scale",
+        "line": 86,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_radius_positive",
+        "line": 93,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_radius_reasonable",
+        "line": 100,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_radius_mass_scaling",
+        "line": 108,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_repr",
+        "line": 120,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_nearby_lens",
+        "line": 133,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_distant_source",
+        "line": 141,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_close_redshifts",
+        "line": 149,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_custom_h0",
+        "line": 162,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_custom_om0",
+        "line": 168,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_different_cosmology_affects_distances",
+        "line": 174,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_mu_glance.py": [
+      {
+        "name": "test_evaluate_flux_anomalies",
+        "line": 14,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_aggregate_anomaly_score",
+        "line": 32,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_map_spatial_residuals",
+        "line": 43,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_api_security.py": [
+      {
+        "name": "run_security_tests",
+        "line": 310,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "run_functionality_tests",
+        "line": 324,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "run_all_tests",
+        "line": 338,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_unauthenticated_access_denied",
+        "line": 58,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_token_rejected",
+        "line": 63,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_valid_authentication_works",
+        "line": 72,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_cannot_access_other_users_data",
+        "line": 99,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_login_rate_limiting",
+        "line": 139,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_file_extension_rejected",
+        "line": 160,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_synthetic_map_validation",
+        "line": 166,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_database_ssl_enabled",
+        "line": 198,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_error_messages_no_pii",
+        "line": 208,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_health_endpoint",
+        "line": 228,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_metrics_endpoint",
+        "line": 237,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_synthetic_map_generation",
+        "line": 248,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_model_inference",
+        "line": 267,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_physics_constrained_loss.py": [
+      {
+        "name": "device",
+        "line": 32,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "grid_size",
+        "line": 38,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "batch_size",
+        "line": 44,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "coordinate_grid",
+        "line": 50,
+        "missing_args": [
+          "grid_size",
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_grid_shape",
+        "line": 63,
+        "missing_args": [
+          "grid_size",
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_grid_requires_grad",
+        "line": 71,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_grid_range",
+        "line": 75,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_grid_x_y_separate",
+        "line": 80,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_quadratic_potential",
+        "line": 97,
+        "missing_args": [
+          "coordinate_grid",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_poisson_loss_zero_for_consistent",
+        "line": 120,
+        "missing_args": [
+          "coordinate_grid",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_poisson_loss_increases_for_inconsistent",
+        "line": 135,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_linear_potential_has_zero_laplacian",
+        "line": 151,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_quadratic_potential_gradient",
+        "line": 174,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_gradient_loss_zero_for_consistent",
+        "line": 198,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_gradient_loss_increases_for_wrong_alpha",
+        "line": 211,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_positive_mass_no_penalty",
+        "line": 232,
+        "missing_args": [
+          "grid_size",
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_negative_mass_penalty",
+        "line": 242,
+        "missing_args": [
+          "grid_size",
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_extremely_large_mass_penalty",
+        "line": 252,
+        "missing_args": [
+          "grid_size",
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_small_params_low_penalty",
+        "line": 270,
+        "missing_args": [
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_large_params_penalty",
+        "line": 279,
+        "missing_args": [
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_loss_components_all_present",
+        "line": 296,
+        "missing_args": [
+          "grid_size",
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_loss_backpropagates",
+        "line": 354,
+        "missing_args": [
+          "grid_size",
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_optional_physics_terms",
+        "line": 379,
+        "missing_args": [
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_validate_poisson_perfect_case",
+        "line": 410,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_validate_gradient_perfect_case",
+        "line": 424,
+        "missing_args": [
+          "coordinate_grid"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_poisson_weight_scales_loss",
+        "line": 444,
+        "missing_args": [
+          "grid_size",
+          "batch_size",
+          "device"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_pinn_physics.py": [
+      {
+        "name": "test_deflection_symmetry",
+        "line": 21,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_zero_at_origin",
+        "line": 40,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_scales_with_mass",
+        "line": 53,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_analytical_comparison_regime1",
+        "line": 71,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_analytical_comparison_regime2",
+        "line": 87,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_analytical_comparison_regime3",
+        "line": 101,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_batch_processing",
+        "line": 116,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_differentiable",
+        "line": 136,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_loss_components",
+        "line": 159,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_physics_residual_zero_for_perfect_prediction",
+        "line": 188,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_model_variable_input_sizes",
+        "line": 242,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_model_forward_backward",
+        "line": 259,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "loss_fn",
+        "line": 138,
+        "missing_args": [
+          "mass",
+          "radius"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "mock_vmap",
+        "line": 216,
+        "missing_args": [
+          "c"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "loss_fn",
+        "line": 268,
+        "missing_args": [
+          "m",
+          "x",
+          "t_p",
+          "t_c",
+          "k"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__call__",
+        "line": 210,
+        "missing_args": [
+          "x"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_ray_tracing_backends.py": [
+      {
+        "name": "lens_system_cosmological",
+        "line": 37,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system_local",
+        "line": 43,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 49,
+        "missing_args": [
+          "lens_system_cosmological"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "solar_mass_lens",
+        "line": 56,
+        "missing_args": [
+          "lens_system_local"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_schwarzschild_rejects_high_redshift",
+        "line": 68,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_schwarzschild_no_warn_low_redshift",
+        "line": 73,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_thin_lens_accepts_all_redshifts",
+        "line": 81,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_solar_mass_schwarzschild_radius",
+        "line": 98,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_million_solar_mass_black_hole",
+        "line": 105,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_schwarzschild_scales_linearly",
+        "line": 112,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_weak_field_deflection_formula",
+        "line": 128,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_deflection_1919",
+        "line": 139,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_weak_field_convergence",
+        "line": 153,
+        "missing_args": [
+          "b_over_rs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_thin_lens_finds_einstein_ring",
+        "line": 176,
+        "missing_args": [
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_thin_lens_conserves_surface_brightness",
+        "line": 196,
+        "missing_args": [
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_thin_lens_returns_correct_structure",
+        "line": 214,
+        "missing_args": [
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_geodesic_integration_completes",
+        "line": 241,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_geodesic_weak_field_matches_formula",
+        "line": 253,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_geodesic_closest_approach",
+        "line": 266,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_geodesic_deflection_decreases_with_distance",
+        "line": 278,
+        "missing_args": [
+          "b_multiplier"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_comparison_function_structure",
+        "line": 308,
+        "missing_args": [
+          "solar_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_methods_agree_weak_field",
+        "line": 324,
+        "missing_args": [
+          "solar_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_point_mass_einstein_radius_formula",
+        "line": 345,
+        "missing_args": [
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_sie_einstein_radius_matches_theory",
+        "line": 363,
+        "missing_args": [
+          "lens_system_cosmological"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_zero_mass_gives_zero_deflection",
+        "line": 387,
+        "missing_args": [
+          "lens_system_cosmological"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_very_small_impact_parameter_schwarzschild",
+        "line": 396,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_speed_of_light",
+        "line": 417,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_gravitational_constant",
+        "line": 421,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_solar_mass",
+        "line": 425,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_arcsec_conversion",
+        "line": 429,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_full_ray_tracing_pipeline",
+        "line": 442,
+        "missing_args": [
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_thin_lens_performance",
+        "line": 478,
+        "missing_args": [
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_schwarzschild_performance",
+        "line": 494,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "run_trace",
+        "line": 480,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_time_delay.py": [
+      {
+        "name": "lens_system",
+        "line": 22,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass",
+        "line": 27,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_calculation_runs",
+        "line": 31,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_matrix_shape",
+        "line": 42,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_antisymmetric",
+        "line": 53,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_zero_diagonal",
+        "line": 63,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_scales_with_redshift",
+        "line": 73,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_reasonable_magnitude",
+        "line": 94,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_fermat_potential_array_length",
+        "line": 105,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 121,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass",
+        "line": 126,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_h0_inference_runs",
+        "line": 130,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_h0_recovery_noiseless",
+        "line": 149,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_h0_recovery_with_noise",
+        "line": 173,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_h0_uncertainty_positive",
+        "line": 197,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_posterior_normalized",
+        "line": 209,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_chi2_minimum_at_best_h0",
+        "line": 223,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 244,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "nfw_profile",
+        "line": 249,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_monte_carlo_runs",
+        "line": 253,
+        "missing_args": [
+          "nfw_profile"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_monte_carlo_samples_shape",
+        "line": 273,
+        "missing_args": [
+          "nfw_profile"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_monte_carlo_std_positive",
+        "line": 291,
+        "missing_args": [
+          "nfw_profile"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 312,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass",
+        "line": 317,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "cosmography",
+        "line": 322,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 326,
+        "missing_args": [
+          "cosmography"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_calculate_delays_method",
+        "line": 331,
+        "missing_args": [
+          "cosmography"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_infer_h0_method",
+        "line": 341,
+        "missing_args": [
+          "cosmography"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 359,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass",
+        "line": 364,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_single_image_pair",
+        "line": 368,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_many_images",
+        "line": 377,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_source_at_origin",
+        "line": 388,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 404,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass",
+        "line": 409,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_delay_scales_inversely_with_h0",
+        "line": 413,
+        "missing_args": [
+          "point_mass"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_larger_mass_gives_larger_delays",
+        "line": 437,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_performance.py": [
+      {
+        "name": "test_backend_initialization",
+        "line": 24,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_array_creation",
+        "line": 29,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_zeros_creation",
+        "line": 36,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_linspace",
+        "line": 43,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_meshgrid",
+        "line": 51,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_to_numpy",
+        "line": 60,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 71,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_block",
+        "line": 76,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_multiple_timings",
+        "line": 87,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_get_stats",
+        "line": 97,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_clear",
+        "line": 113,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_timer_decorator",
+        "line": 127,
+        "missing_args": [
+          "capsys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 146,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_vectorized_produces_correct_shape",
+        "line": 151,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_vectorized_produces_valid_values",
+        "line": 158,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_vectorized_matches_single_point",
+        "line": 170,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_different_grid_sizes",
+        "line": 188,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 200,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_benchmark_convergence_map",
+        "line": 205,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_benchmark_scaling",
+        "line": 219,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 235,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_cached_convergence",
+        "line": 241,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_cache_reuse",
+        "line": 247,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_cache_different_params",
+        "line": 255,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_clear_cache",
+        "line": 263,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_gpu_availability_flag",
+        "line": 276,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_gpu_backend",
+        "line": 282,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_fallback_to_cpu",
+        "line": 288,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_set_backend_cpu",
+        "line": 297,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_get_backend",
+        "line": 303,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 313,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_with_nfw_profile",
+        "line": 317,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_with_point_mass",
+        "line": 327,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_with_elliptical_nfw",
+        "line": 337,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "slow_function",
+        "line": 131,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_multi_plane_recursive.py": [
+      {
+        "name": "cosmology",
+        "line": 40,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_deflection",
+        "line": 46,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "sis_deflection",
+        "line": 74,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "deflection",
+        "line": 54,
+        "missing_args": [
+          "x",
+          "y",
+          "theta_E"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "deflection",
+        "line": 80,
+        "missing_args": [
+          "x",
+          "y",
+          "theta_E"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_distance_ratio_ordering",
+        "line": 104,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_distance_ratio_raises_for_wrong_order",
+        "line": 114,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_distance_ratio_known_values",
+        "line": 122,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_distance_ratio_scales_with_cosmology",
+        "line": 136,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_point_mass_single_plane",
+        "line": 156,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_sis_single_plane",
+        "line": 181,
+        "missing_args": [
+          "cosmology",
+          "sis_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_zero_deflection",
+        "line": 202,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_single_plane_round_trip",
+        "line": 231,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_two_plane_round_trip",
+        "line": 247,
+        "missing_args": [
+          "cosmology",
+          "sis_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_three_plane_round_trip",
+        "line": 268,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_two_planes_show_difference",
+        "line": 301,
+        "missing_args": [
+          "cosmology",
+          "sis_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_weak_lensing_small_difference",
+        "line": 331,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_single_position",
+        "line": 360,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_vectorized",
+        "line": 376,
+        "missing_args": [
+          "cosmology",
+          "sis_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_no_planes_returns_input",
+        "line": 397,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_converges_for_simple_case",
+        "line": 416,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_ring",
+        "line": 433,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 467,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_add_plane",
+        "line": 474,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_automatic_sorting",
+        "line": 488,
+        "missing_args": [
+          "cosmology",
+          "sis_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_trace",
+        "line": 501,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_backward_trace",
+        "line": 515,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_validate",
+        "line": 529,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_summary",
+        "line": 542,
+        "missing_args": [
+          "cosmology",
+          "sis_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_planes_not_sorted_raises",
+        "line": 564,
+        "missing_args": [
+          "cosmology",
+          "sis_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_plane_beyond_source_raises",
+        "line": 576,
+        "missing_args": [
+          "cosmology",
+          "sis_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_beta_shape_raises",
+        "line": 588,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_warning",
+        "line": 601,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_scales_with_mass",
+        "line": 626,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_direction",
+        "line": 654,
+        "missing_args": [
+          "cosmology",
+          "point_mass_deflection"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "alpha_func",
+        "line": 170,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "alpha_func",
+        "line": 193,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "zero_deflection",
+        "line": 207,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "weak_deflection",
+        "line": 334,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "oscillating_deflection",
+        "line": 604,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "deflection_mass1",
+        "line": 628,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "deflection_mass2",
+        "line": 634,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_ray_tracing_modes.py": [
+      {
+        "name": "test_enum_values",
+        "line": 25,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_thin_lens_always_valid",
+        "line": 30,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_schwarzschild_valid_for_local_lenses",
+        "line": 46,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_schwarzschild_raises_error_for_cosmological_lenses",
+        "line": 56,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_schwarzschild_error_message_content",
+        "line": 73,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "cosmology",
+        "line": 94,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_multi_plane_requires_positive_redshifts",
+        "line": 98,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_multi_plane_requires_positive_source_redshift",
+        "line": 116,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_multi_plane_accepts_valid_cosmological_setup",
+        "line": 132,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_multi_plane_error_suggests_schwarzschild_alternative",
+        "line": 151,
+        "missing_args": [
+          "cosmology"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_thin_lens_supports_literature_benchmarks",
+        "line": 174,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_schwarzschild_restricted_to_strong_field",
+        "line": 186,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_enum_has_docstring",
+        "line": 203,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_enum_provides_usage_guidance",
+        "line": 219,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "alpha_func",
+        "line": 100,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "alpha_func",
+        "line": 118,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "alpha_func",
+        "line": 134,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "alpha_func",
+        "line": 153,
+        "missing_args": [
+          "x",
+          "y"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_scientific_validation.py": [
+      {
+        "name": "sample_convergence_map",
+        "line": 479,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "sample_metrics",
+        "line": 492,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_relative_error_perfect_match",
+        "line": 56,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_relative_error_with_zeros",
+        "line": 65,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_chi_squared_perfect_fit",
+        "line": 75,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_rmse",
+        "line": 86,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_mae",
+        "line": 96,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_ssim_identical_images",
+        "line": 106,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_psnr_identical_images",
+        "line": 114,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_pearson_correlation_perfect",
+        "line": 122,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_fractional_bias_zero",
+        "line": 132,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_residuals",
+        "line": 141,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_confidence_interval",
+        "line": 156,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_normalized_cross_correlation",
+        "line": 166,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_all_metrics",
+        "line": 174,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_profiler_context",
+        "line": 208,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_time_profile_decorator",
+        "line": 217,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_memory_profile_decorator",
+        "line": 229,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_profile_function_decorator",
+        "line": 241,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_profile_block",
+        "line": 252,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_performance_benchmark",
+        "line": 259,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_compare_implementations",
+        "line": 279,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_analytic_nfw_convergence",
+        "line": 306,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_compare_with_analytic",
+        "line": 325,
+        "missing_args": [
+          "mock_model",
+          "mock_generate"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_benchmark_convergence_accuracy",
+        "line": 351,
+        "missing_args": [
+          "mock_compare"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_benchmark_inference_speed",
+        "line": 377,
+        "missing_args": [
+          "mock_prepare",
+          "mock_model",
+          "mock_generate"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_comprehensive_benchmark",
+        "line": 417,
+        "missing_args": [
+          "mock_accuracy",
+          "mock_speed",
+          "mock_analytic"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_json_serialization",
+        "line": 452,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_metrics_performance",
+        "line": 512,
+        "missing_args": [
+          "sample_convergence_map"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_analytic_nfw_performance",
+        "line": 525,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "slow_function",
+        "line": 221,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "memory_function",
+        "line": 233,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "combined_function",
+        "line": 245,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_func",
+        "line": 262,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "impl_a",
+        "line": 282,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "impl_b",
+        "line": 285,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_ml.py": [
+      {
+        "name": "test_model_initialization",
+        "line": 23,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_pass_shapes",
+        "line": 31,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_predict_method",
+        "line": 46,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_loss_computation",
+        "line": 70,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_lensing_pinn_forward",
+        "line": 103,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_nfw_pinn_forward",
+        "line": 116,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_alternative_dm.py": [
+      {
+        "name": "lens_system",
+        "line": 26,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 30,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_cdm_limit_infinite_mass",
+        "line": 42,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_cdm_limit_large_mass",
+        "line": 54,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_suppression_at_small_mass",
+        "line": 62,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_angle_positive",
+        "line": 72,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_positive",
+        "line": 81,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_decreases_with_radius",
+        "line": 90,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_transfer_function",
+        "line": 101,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_cdm_transfer_function",
+        "line": 117,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 129,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 133,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_cdm_limit_zero_cross_section",
+        "line": 145,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_core_radius_scales_with_cross_section",
+        "line": 161,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_core_flattens_density",
+        "line": 169,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_positive",
+        "line": 183,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_angle_positive",
+        "line": 194,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_modification_factor",
+        "line": 203,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 224,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "factory",
+        "line": 229,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_cdm_halo",
+        "line": 233,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_wdm_halo",
+        "line": 241,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_sidm_halo",
+        "line": 249,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_case_insensitive",
+        "line": 257,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_model_type",
+        "line": 265,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_random_halo",
+        "line": 270,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_random_with_custom_ranges",
+        "line": 278,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 300,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "factory",
+        "line": 305,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_cdm_mass_conservation",
+        "line": 309,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_wdm_mass_conservation",
+        "line": 317,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_sidm_mass_conservation",
+        "line": 324,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_validation_returns_correct_keys",
+        "line": 331,
+        "missing_args": [
+          "factory",
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 347,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_wdm_softer_than_cdm",
+        "line": 351,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_sidm_flatter_core_than_cdm",
+        "line": 359,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_all_profiles_same_at_large_radius",
+        "line": 375,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 396,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_wdm_zero_mass",
+        "line": 400,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_sidm_large_cross_section",
+        "line": 410,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_negative_mass_raises_error",
+        "line": 422,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_zero_concentration",
+        "line": 434,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_calibration.py": [
+      {
+        "name": "test_literature_values_loaded",
+        "line": 24,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_calibrator_initialization",
+        "line": 34,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_synthetic_analog",
+        "line": 40,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_analyze_convergence_map",
+        "line": 60,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_calibrate_system_einstein_cross",
+        "line": 88,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_calibrate_system_twin_quasar",
+        "line": 108,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_calibrate_unknown_system_raises",
+        "line": 118,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_apply_calibration",
+        "line": 125,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_calibration_table",
+        "line": 141,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_save_and_load_calibration",
+        "line": 162,
+        "missing_args": [
+          "tmp_path"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_full_calibration_suite",
+        "line": 182,
+        "missing_args": [
+          "capsys"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_calibration_improves_accuracy",
+        "line": 199,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_calibration_factors_reasonable",
+        "line": 214,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_multiple_calibrations_consistent",
+        "line": 228,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_pinn_adaptive.py": [
+      {
+        "name": "pinn_model",
+        "line": 20,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_pinn_accepts_64x64",
+        "line": 27,
+        "missing_args": [
+          "pinn_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_pinn_accepts_128x128",
+        "line": 41,
+        "missing_args": [
+          "pinn_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_pinn_accepts_256x256",
+        "line": 55,
+        "missing_args": [
+          "pinn_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_pinn_batch_consistency",
+        "line": 69,
+        "missing_args": [
+          "pinn_model"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_pinn_output_range",
+        "line": 93,
+        "missing_args": [
+          "pinn_model"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_api.py": [
+      {
+        "name": "test_root_endpoint",
+        "line": 36,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_health_check",
+        "line": 45,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_models_endpoint",
+        "line": 55,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_stats_endpoint",
+        "line": 64,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_nfw_basic",
+        "line": 81,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_elliptical_nfw",
+        "line": 113,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_different_grid_sizes",
+        "line": 130,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_profile_type",
+        "line": 146,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_mass_range",
+        "line": 159,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_grid_size",
+        "line": 172,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_single_inference",
+        "line": 193,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_mc_dropout_inference",
+        "line": 230,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_inference_with_different_sizes",
+        "line": 256,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_inference_invalid_shape",
+        "line": 274,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_submit_batch_job",
+        "line": 300,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_get_batch_status",
+        "line": 314,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_batch_status_not_found",
+        "line": 333,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_malformed_json",
+        "line": 346,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_missing_required_fields",
+        "line": 355,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_endpoint",
+        "line": 365,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_generate_and_infer_workflow",
+        "line": 378,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_generation_speed",
+        "line": 419,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_inference_speed",
+        "line": 438,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_concurrent_requests",
+        "line": 460,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "make_request",
+        "line": 464,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_transfer_learning.py": [
+      {
+        "name": "__init__",
+        "line": 31,
+        "missing_args": [
+          "input_size"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "forward",
+        "line": 53,
+        "missing_args": [
+          "x"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_default_config",
+        "line": 65,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_custom_config",
+        "line": 76,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_pass",
+        "line": 94,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_backward_gradient_reversal",
+        "line": 104,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_lambda_scaling",
+        "line": 120,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 143,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_shape",
+        "line": 149,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_binary_output",
+        "line": 158,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 172,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_without_domain",
+        "line": 180,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_with_features",
+        "line": 192,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_alpha_parameter",
+        "line": 203,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 221,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_same_distribution",
+        "line": 226,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_different_distributions",
+        "line": 239,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_symmetric",
+        "line": 251,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 267,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_same_distribution",
+        "line": 272,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_forward_different_covariances",
+        "line": 285,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_covariance_computation",
+        "line": 297,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 312,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_enable_dropout",
+        "line": 320,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_predict_with_uncertainty",
+        "line": 337,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_uncertainty_positive",
+        "line": 357,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_multiple_samples_variation",
+        "line": 369,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization_dann",
+        "line": 384,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization_mmd",
+        "line": 394,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization_coral",
+        "line": 403,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_compute_adaptation_loss_dann",
+        "line": 412,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_compute_adaptation_loss_mmd",
+        "line": 433,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_freeze_encoder",
+        "line": 449,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_fine_tune_mock",
+        "line": 460,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_create_pipeline",
+        "line": 496,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_compute_domain_discrepancy",
+        "line": 521,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_end_to_end_dann",
+        "line": 551,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_end_to_end_uncertainty",
+        "line": 568,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_end_to_end_trainer",
+        "line": 581,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "mock_criterion",
+        "line": 477,
+        "missing_args": [
+          "pred_params",
+          "pred_classes",
+          "true_params",
+          "true_classes"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "mock_criterion",
+        "line": 597,
+        "missing_args": [
+          "pred_params",
+          "pred_classes",
+          "true_params",
+          "true_classes"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_bayes_factor.py": [
+      {
+        "name": "test_log_bayes_factor",
+        "line": 12,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_savage_dickey_ratio",
+        "line": 18,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_track_eccentricity_correlation",
+        "line": 24,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_neural_ode.py": [
+      {
+        "name": "test_dynamics_node_forward",
+        "line": 16,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_analytic_fusing_node_forward",
+        "line": 29,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_api_security_integration.py": [
+      {
+        "name": "test_user",
+        "line": 32,
+        "missing_args": [
+          "db_session"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "auth_headers",
+        "line": 46,
+        "missing_args": [
+          "test_user"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "admin_user",
+        "line": 55,
+        "missing_args": [
+          "db_session"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "setup_test_database",
+        "line": 407,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_unauthenticated_request_rejected",
+        "line": 74,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_invalid_token_rejected",
+        "line": 80,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_expired_token_rejected",
+        "line": 86,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_valid_token_accepted",
+        "line": 98,
+        "missing_args": [
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_user_cannot_access_other_user_analysis",
+        "line": 112,
+        "missing_args": [
+          "db_session",
+          "test_user",
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_user_can_access_own_analysis",
+        "line": 145,
+        "missing_args": [
+          "db_session",
+          "test_user",
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_user_can_access_public_analysis",
+        "line": 167,
+        "missing_args": [
+          "db_session",
+          "test_user",
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_login_rate_limit_enforced",
+        "line": 206,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_rate_limit_resets_after_time",
+        "line": 223,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_validate_fits_file_extension",
+        "line": 250,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_validate_fits_file_size",
+        "line": 267,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_sanitize_xss_in_fits_headers",
+        "line": 285,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_email_redaction",
+        "line": 303,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_password_redaction",
+        "line": 313,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_token_redaction",
+        "line": 323,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_dict_sanitization",
+        "line": 333,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_health_endpoint_works",
+        "line": 359,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_synthetic_generation_works",
+        "line": 365,
+        "missing_args": [
+          "auth_headers"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_inference_works",
+        "line": 382,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_mass_profiles.py": [
+      {
+        "name": "setup_method",
+        "line": 16,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 22,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_radius_exists",
+        "line": 27,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_radius_matches_formula",
+        "line": 34,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_at_einstein_radius",
+        "line": 41,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_radial_symmetry",
+        "line": 52,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_vectorized",
+        "line": 70,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_scales_correctly",
+        "line": 82,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_positive",
+        "line": 93,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_surface_density_positive",
+        "line": 99,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_lensing_potential_computed",
+        "line": 105,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_no_crash_at_origin",
+        "line": 111,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 127,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 134,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_scale_radius_computed",
+        "line": 140,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_density_computed",
+        "line": 145,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_positive_radial",
+        "line": 150,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_deflection_vectorized",
+        "line": 161,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_positive",
+        "line": 173,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_decreases_with_radius",
+        "line": 183,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_surface_density_positive",
+        "line": 192,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_lensing_potential_computed",
+        "line": 198,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_no_crash_at_origin",
+        "line": 204,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_different_concentrations",
+        "line": 213,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "setup_method",
+        "line": 231,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_both_deflect_outward",
+        "line": 238,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_convergence_different_profiles",
+        "line": 250,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "tests/test_wave_optics.py": [
+      {
+        "name": "lens_system",
+        "line": 25,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 30,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "nfw_lens",
+        "line": 35,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 40,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_initialization",
+        "line": 44,
+        "missing_args": [
+          "wave_engine"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_compute_amplification_factor_runs",
+        "line": 49,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_amplitude_map_shape",
+        "line": 64,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_amplitude_map_positive",
+        "line": 78,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_phase_map_range",
+        "line": 90,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_wavelength_stored",
+        "line": 103,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_grid_coordinates_returned",
+        "line": 115,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 135,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 139,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 143,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_einstein_ring_interference",
+        "line": 146,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_off_axis_source",
+        "line": 163,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 182,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "nfw_lens",
+        "line": 186,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 190,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_nfw_wave_optics_runs",
+        "line": 193,
+        "missing_args": [
+          "wave_engine",
+          "nfw_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_nfw_extended_profile",
+        "line": 206,
+        "missing_args": [
+          "wave_engine",
+          "nfw_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 226,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 230,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 234,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_geometric_comparison_included",
+        "line": 237,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_geometric_comparison_excluded",
+        "line": 251,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_compare_with_geometric_method",
+        "line": 263,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_difference_map_shape",
+        "line": 280,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 301,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 305,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 309,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_long_wavelength_convergence",
+        "line": 312,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_short_wavelength_differs",
+        "line": 331,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 351,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 355,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 359,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_detect_fringes_runs",
+        "line": 362,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_fringe_spacing_positive",
+        "line": 382,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_fringe_contrast_range",
+        "line": 402,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_fringe_spacing_wavelength_scaling",
+        "line": 420,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 464,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 468,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 472,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_flux_conservation",
+        "line": 475,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 503,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 507,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 511,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_plot_interference_pattern",
+        "line": 514,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_plot_wave_vs_geometric",
+        "line": 528,
+        "missing_args": [
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "lens_system",
+        "line": 546,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "point_mass_lens",
+        "line": 550,
+        "missing_args": [
+          "lens_system"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wave_engine",
+        "line": 554,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_very_short_wavelength",
+        "line": 557,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_very_long_wavelength",
+        "line": 568,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_small_grid",
+        "line": 579,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "test_large_extent",
+        "line": 590,
+        "missing_args": [
+          "wave_engine",
+          "point_mass_lens"
+        ],
+        "missing_return": true
+      }
+    ],
+    "tests/test_source_models.py": [
+      {
+        "name": "test_gp_kernels",
+        "line": 16,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_pixelized_model_init",
+        "line": 30,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "test_linear_inversion_shapes",
+        "line": 37,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "api/analysis_routes.py": [
+      {
+        "name": "create_new_analysis",
+        "line": 128,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "list_analyses",
+        "line": 181,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "list_public_analyses",
+        "line": 229,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_analysis_by_id",
+        "line": 244,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "update_analysis_by_id",
+        "line": 274,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "delete_analysis_by_id",
+        "line": 326,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "list_jobs",
+        "line": 375,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_job_by_id",
+        "line": 413,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "list_results",
+        "line": 445,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_stats",
+        "line": 493,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "api/monitoring.py": [
+      {
+        "name": "record_auth_failure",
+        "line": 168,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "record_rate_limit_hit",
+        "line": 183,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "record_model_inference",
+        "line": 197,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "record_db_query",
+        "line": 214,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 238,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "add_issue",
+        "line": 242,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "clear_issues",
+        "line": 248,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "api/secure_logging.py": [
+      {
+        "name": "secure_log_decorator",
+        "line": 181,
+        "missing_args": [
+          "func"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 135,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "_log",
+        "line": 144,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "debug",
+        "line": 155,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "info",
+        "line": 159,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "warning",
+        "line": 163,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "error",
+        "line": 167,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "critical",
+        "line": 171,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "exception",
+        "line": 175,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wrapper",
+        "line": 196,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      }
+    ],
+    "api/auth_routes.py": [
+      {
+        "name": "register",
+        "line": 126,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "login",
+        "line": 172,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "refresh_token",
+        "line": 221,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_current_user_info",
+        "line": 276,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "update_current_user",
+        "line": 286,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "create_user_api_key",
+        "line": 336,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "revoke_user_api_key",
+        "line": 372,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "list_users",
+        "line": 406,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_user_by_id",
+        "line": 422,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "delete_user_by_id",
+        "line": 442,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "api/main.py": [
+      {
+        "name": "app_lifespan",
+        "line": 68,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "rate_limit_exception_handler",
+        "line": 114,
+        "missing_args": [
+          "request",
+          "exc"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "load_model_cached",
+        "line": 399,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "root",
+        "line": 420,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "journal_workbench_ui",
+        "line": 433,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "health_check",
+        "line": 442,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "generate_synthetic",
+        "line": 471,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "run_inference",
+        "line": 556,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "submit_batch_job",
+        "line": 715,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_batch_status",
+        "line": 754,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "list_models",
+        "line": 771,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_statistics",
+        "line": 793,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "process_batch",
+        "line": 814,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "http_exception_handler",
+        "line": 882,
+        "missing_args": [
+          "request",
+          "exc"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "get_slacs_validation",
+        "line": 899,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_calibration_results",
+        "line": 909,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_ablation_results",
+        "line": 919,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "general_exception_handler",
+        "line": 929,
+        "missing_args": [
+          "request",
+          "exc"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "validate_profile_type",
+        "line": 181,
+        "missing_args": [
+          "cls",
+          "v"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "validate_grid_size",
+        "line": 188,
+        "missing_args": [
+          "cls",
+          "v"
+        ],
+        "missing_return": true
+      }
+    ],
+    "scripts/benchmark_phase7.py": [
+      {
+        "name": "old_nested_loop_version",
+        "line": 39,
+        "missing_args": [
+          "lens_model",
+          "grid_size",
+          "extent"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "benchmark_old_vs_new",
+        "line": 64,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "benchmark_different_profiles",
+        "line": 99,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "benchmark_memory_efficiency",
+        "line": 134,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "benchmark_dataset_generation",
+        "line": 165,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "benchmark_gpu_if_available",
+        "line": 201,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 227,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/test_bayesian_uq.py": [
+      {
+        "name": "evaluate_bayesian_pinn_creation",
+        "line": 34,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_forward_pass",
+        "line": 57,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_uncertainty_estimation",
+        "line": 79,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_prediction_intervals",
+        "line": 109,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_convergence_with_uncertainty",
+        "line": 137,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_uncertainty_calibrator",
+        "line": 170,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_poorly_calibrated",
+        "line": 225,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_visualization",
+        "line": 261,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_real_nfw_validation",
+        "line": 307,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_comparison_with_without_uncertainty",
+        "line": 357,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 390,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/test_real_data.py": [
+      {
+        "name": "evaluate_validation_with_real_model",
+        "line": 142,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_bayesian_uq",
+        "line": 221,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_calibration",
+        "line": 314,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "generate_test_report",
+        "line": 388,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 491,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/check_config.py": [
+      {
+        "name": "print_header",
+        "line": 33,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "print_section",
+        "line": 40,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "print_summary",
+        "line": 305,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 350,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/sota_comparison.py": [
+      {
+        "name": "evaluate_method",
+        "line": 133,
+        "missing_args": [
+          "method_fn"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "generate_latex_table",
+        "line": 164,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 213,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/integrate_validator.py": [
+      {
+        "name": "load_trained_model",
+        "line": 27,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "generate_test_case",
+        "line": 49,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "validate_pinn_model",
+        "line": 82,
+        "missing_args": [
+          "model",
+          "inputs",
+          "ground_truth"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "print_validation_summary",
+        "line": 109,
+        "missing_args": [
+          "result"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "compare_validation_levels",
+        "line": 158,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 191,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/ablation_study.py": [
+      {
+        "name": "generate_latex_table",
+        "line": 295,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "generate_console_table",
+        "line": 348,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 373,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/uncertainty_calibration.py": [
+      {
+        "name": "generate_calibration_figure",
+        "line": 122,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 191,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/test_validator.py": [
+      {
+        "name": "generate_test_data",
+        "line": 30,
+        "missing_args": [
+          "grid_size"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_quick_validation",
+        "line": 58,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_standard_validation",
+        "line": 76,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_rigorous_validation",
+        "line": 112,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_different_profiles",
+        "line": 138,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_validation_levels",
+        "line": 167,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_edge_cases",
+        "line": 206,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "evaluate_with_existing_benchmarks",
+        "line": 248,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 285,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/scalability_benchmark.py": [
+      {
+        "name": "generate_scaling_plots",
+        "line": 139,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 197,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/mint_zenodo_doi.py": [
+      {
+        "name": "mint_doi",
+        "line": 96,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 152,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/validate_real_data.py": [
+      {
+        "name": "generate_comparison_figure",
+        "line": 248,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "generate_latex_table",
+        "line": 293,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "generate_radial_profile_figure",
+        "line": 335,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 367,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "scripts/init_db.py": [
+      {
+        "name": "main",
+        "line": 30,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "benchmarks/metrics.py": [
+      {
+        "name": "print_metrics_report",
+        "line": 323,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "benchmarks/runner.py": [
+      {
+        "name": "save_results",
+        "line": 34,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "run_accuracy_benchmark",
+        "line": 86,
+        "missing_args": [
+          "args"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "run_speed_benchmark",
+        "line": 111,
+        "missing_args": [
+          "args"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "run_analytic_benchmark",
+        "line": 141,
+        "missing_args": [
+          "args"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "run_all_benchmarks",
+        "line": 172,
+        "missing_args": [
+          "args"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "visualize_results",
+        "line": 186,
+        "missing_args": [
+          "args"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 207,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "convert_for_json",
+        "line": 46,
+        "missing_args": [
+          "obj"
+        ],
+        "missing_return": true
+      }
+    ],
+    "benchmarks/comparisons.py": [
+      {
+        "name": "print_benchmark_report",
+        "line": 456,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "convert_numpy",
+        "line": 438,
+        "missing_args": [
+          "obj"
+        ],
+        "missing_return": true
+      }
+    ],
+    "benchmarks/visualization.py": [
+      {
+        "name": "plot_convergence_comparison",
+        "line": 30,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "plot_accuracy_vs_grid_size",
+        "line": 87,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "plot_speed_benchmark",
+        "line": 127,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "plot_metrics_comparison",
+        "line": 176,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "plot_comprehensive_results",
+        "line": 243,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "create_publication_figure",
+        "line": 296,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "benchmarks/pinn_inference.py": [
+      {
+        "name": "save_results",
+        "line": 264,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "main",
+        "line": 274,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "benchmarks/profiler.py": [
+      {
+        "name": "profile_block",
+        "line": 146,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "compare_implementations",
+        "line": 237,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "print_comparison_report",
+        "line": 279,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 23,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__enter__",
+        "line": 31,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__exit__",
+        "line": 38,
+        "missing_args": [
+          "exc_type",
+          "exc_val",
+          "exc_tb"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wrapper",
+        "line": 73,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wrapper",
+        "line": 96,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "wrapper",
+        "line": 122,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__init__",
+        "line": 163,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "run_iteration",
+        "line": 167,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "run_iterations",
+        "line": 187,
+        "missing_args": [
+          "args",
+          "kwargs"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "print_report",
+        "line": 220,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "database/models.py": [
+      {
+        "name": "create_tables",
+        "line": 360,
+        "missing_args": [
+          "engine"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "drop_tables",
+        "line": 365,
+        "missing_args": [
+          "engine"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 94,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 130,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 174,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 219,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 255,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 286,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 316,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "__repr__",
+        "line": 352,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "database/database.py": [
+      {
+        "name": "set_sqlite_pragma",
+        "line": 64,
+        "missing_args": [
+          "dbapi_conn",
+          "connection_record"
+        ],
+        "missing_return": true
+      },
+      {
+        "name": "init_db",
+        "line": 76,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "drop_db",
+        "line": 81,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "get_db_context",
+        "line": 103,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "create_test_engine",
+        "line": 159,
+        "missing_args": [],
+        "missing_return": true
+      },
+      {
+        "name": "create_test_session",
+        "line": 170,
+        "missing_args": [],
+        "missing_return": true
+      }
+    ],
+    "database/crud.py": [
+      {
+        "name": "update_user",
+        "line": 83,
+        "missing_args": [
+          "kwargs"
+        ],
+        "missing_return": false
+      },
+      {
+        "name": "update_analysis",
+        "line": 172,
+        "missing_args": [
+          "kwargs"
+        ],
+        "missing_return": false
+      }
+    ]
+  }
+}

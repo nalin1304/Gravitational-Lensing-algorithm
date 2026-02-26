@@ -5,6 +5,14 @@ This module implements the ray shooting algorithm to find multiple images
 of a source lensed by a given mass distribution.
 """
 
+try:
+    import jax
+    import jax.numpy as jnp
+except ImportError:
+    jax = None
+    import numpy as np
+    jnp = np
+
 import numpy as np
 from typing import Tuple, Optional, Dict
 from scipy import interpolate
@@ -16,7 +24,8 @@ def ray_trace(source_position: Tuple[float, float],
               grid_extent: float = 3.0,
               grid_resolution: int = 300,
               threshold: float = 0.05,
-              return_maps: bool = True) -> Dict:
+              return_maps: bool = True,
+              wavelength_m: Optional[float] = None) -> Dict:
     """
     Perform ray tracing to find lensed images of a source.
     
@@ -71,9 +80,9 @@ def ray_trace(source_position: Tuple[float, float],
     source_x, source_y = source_position
     
     # Step 1: Create grid on image plane
-    x = np.linspace(-grid_extent, grid_extent, grid_resolution)
-    y = np.linspace(-grid_extent, grid_extent, grid_resolution)
-    xx, yy = np.meshgrid(x, y)
+    x = jnp.linspace(-grid_extent, grid_extent, grid_resolution)
+    y = jnp.linspace(-grid_extent, grid_extent, grid_resolution)
+    xx, yy = jnp.meshgrid(x, y)
     
     # Step 2: Compute deflection angles (vectorized)
     alpha_x, alpha_y = lens_model.deflection_angle(xx.ravel(), yy.ravel())
@@ -85,11 +94,12 @@ def ray_trace(source_position: Tuple[float, float],
     beta_y = yy - alpha_y
     
     # Step 4: Find pixels where |β - β_source| < threshold
-    distance_to_source = np.sqrt((beta_x - source_x)**2 + (beta_y - source_y)**2)
+    distance_to_source = jnp.sqrt((beta_x - source_x)**2 + (beta_y - source_y)**2)
     image_mask = distance_to_source < threshold
     
     # Step 5: Identify connected regions (separate images)
-    labeled_array, num_images = label(image_mask)
+    # label is not jittable, execute on CPU
+    labeled_array, num_images = label(np.array(image_mask))
     
     image_positions = []
     magnifications = []
@@ -100,15 +110,15 @@ def ray_trace(source_position: Tuple[float, float],
             img_pixels = labeled_array == img_id
             
             # Centroid in pixel coordinates
-            y_indices, x_indices = np.where(img_pixels)
+            y_indices, x_indices = jnp.where(jnp.array(img_pixels))
             
             if len(x_indices) > 0:
                 # Weighted centroid using inverse distance
                 weights = 1.0 / (distance_to_source[img_pixels] + 1e-10)
                 weights /= weights.sum()
                 
-                x_centroid = np.sum(x[x_indices] * weights)
-                y_centroid = np.sum(y[y_indices] * weights)
+                x_centroid = jnp.sum(x[x_indices] * weights)
+                y_centroid = jnp.sum(y[y_indices] * weights)
                 
                 # Refine position with subpixel interpolation
                 # Use local gradient to fine-tune
@@ -122,11 +132,11 @@ def ray_trace(source_position: Tuple[float, float],
     
     # Convert to arrays
     if len(image_positions) > 0:
-        image_positions = np.array(image_positions)
-        magnifications = np.array(magnifications)
+        image_positions = jnp.array(image_positions)
+        magnifications = jnp.array(magnifications)
     else:
-        image_positions = np.array([]).reshape(0, 2)
-        magnifications = np.array([])
+        image_positions = jnp.array([]).reshape(0, 2)
+        magnifications = jnp.array([])
     
     # Prepare results dictionary
     results = {
@@ -135,6 +145,28 @@ def ray_trace(source_position: Tuple[float, float],
         'grid_x': x,
         'grid_y': y
     }
+    
+    if wavelength_m is not None:
+        if hasattr(lens_model, 'M_vir'):
+            mass = lens_model.M_vir
+        elif hasattr(lens_model, 'M'):
+            mass = lens_model.M
+        elif hasattr(lens_model, 'mass'):
+            mass = lens_model.mass
+        else:
+            raise ValueError("Lens model must explicitly define a real mass attribute (M_vir, M, or mass) for wave optics limit calculations.")
+            
+        try:
+            mass = float(mass.item()) if hasattr(mass, 'item') else float(mass)
+        except Exception as e:
+            raise ValueError(f"Lens model mass must be evaluable to a float for wave optics computations. Error: {e}")
+            
+        R_s = 2.0 * 6.67430e-11 * (mass * 1.98847e30) / (299792458.0**2)
+        w = 2.0 * jnp.pi * R_s / (wavelength_m + 1e-10)
+        transmission = 1.0 - jnp.exp(-w)
+        
+        results['wave_transmission'] = transmission
+        results['wave_magnifications'] = jnp.array(magnifications) * transmission
     
     # Add maps if requested
     if return_maps:
@@ -220,14 +252,14 @@ def compute_magnification(x: float, y: float, lens_model, dx: float = 0.01) -> f
     det_A = A11 * A22 - A12 * A21
     
     # Magnification
-    if np.abs(det_A) < 1e-10:
+    if jnp.abs(det_A) < 1e-10:
         # Near critical curve - set to large value
-        mu = np.sign(det_A) * 1000.0
+        mu = jnp.sign(det_A) * 1000.0
     else:
         mu = 1.0 / det_A
     
     # Clip extreme values
-    mu = np.clip(mu, -1000, 1000)
+    mu = jnp.clip(mu, -1000, 1000)
     
     # Ensure it's a scalar float
     return float(np.asarray(mu).item())
@@ -328,10 +360,10 @@ def compute_time_delay(theta_x: float, theta_y: float,
     geometric_term = (dx**2 + dy**2) / 2
     
     # Lensing potential
-    psi = lens_model.lensing_potential(theta_x, theta_y)
-    # Handle array return
-    if isinstance(psi, np.ndarray):
-        psi = psi[0] if len(psi) > 0 else psi.item()
+    psi = lens_model.lensing_potential(jnp.array([theta_x]), jnp.array([theta_y]))
+    # Convert array-like outputs (NumPy/JAX/scalars) to a scalar consistently.
+    psi_arr = np.asarray(psi)
+    psi = psi_arr.reshape(-1)[0] if psi_arr.ndim > 0 else float(psi_arr)
     
     # Fermat potential
     fermat = geometric_term - psi
@@ -346,9 +378,9 @@ def compute_time_delay(theta_x: float, theta_y: float,
     factor = (1 + lens_sys.z_l) * D_l * D_s / (const.c * D_ls)
     
     # Convert arcsec² to radians²
-    if isinstance(fermat, np.ndarray):
-        fermat = fermat[0] if len(fermat) > 0 else fermat.item()
-    fermat_rad2 = float(fermat) * (u.arcsec.to(u.rad))**2
+    fermat_arr = np.asarray(fermat)
+    fermat_scalar = fermat_arr.reshape(-1)[0] if fermat_arr.ndim > 0 else float(fermat_arr)
+    fermat_rad2 = float(fermat_scalar) * (u.arcsec.to(u.rad))**2
     
     # Time delay in seconds
     time_delay_s = (factor * fermat_rad2).to(u.s).value

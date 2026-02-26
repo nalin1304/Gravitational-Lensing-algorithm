@@ -7,9 +7,10 @@ gravitational lenses, including point mass and NFW (Navarro-Frenk-White) profile
 
 import numpy as np
 from abc import ABC, abstractmethod
-from typing import Tuple, Union, Dict
+from typing import Tuple, Union, Dict, Optional
 from astropy import units as u
 from astropy import constants as const
+import hashlib
 
 
 class MassProfile(ABC):
@@ -322,12 +323,19 @@ class NFWProfile(MassProfile):
         
     Notes
     -----
-    The NFW profile is ρ(r) = ρ_s / [(r/r_s)(1 + r/r_s)²]
-    Deflection angles are computed using the analytical formulas from
-    Wright & Brainerd (2000, ApJ, 534, 34).
-    
-    For elliptical halos, we use the prescription from Golse & Kneib (2002)
-    where the circular radius is replaced by an elliptical radius.
+    The NFW density profile (Navarro, Frenk & White 1997, ApJ 490, 493):
+        ρ(r) = ρ_s / [(r/r_s)(1 + r/r_s)²]      — Eq. 1 in NFW (1997)
+
+    Convergence κ(ξ) uses the analytic closed-form from:
+        Wright & Brainerd (2000, ApJ, 534, 34), Eq. 11–13
+    where ξ = r/r_s is the dimensionless radius, with three branches
+    for ξ < 1, ξ = 1, and ξ > 1.
+
+    Deflection angle α(ξ) follows Bartelmann (1996, A&A, 313, 697), Eq. 13.
+
+    For elliptical halos, we use the prescription from Golse & Kneib
+    (2002, A&A, 390, 821) where the circular radius is replaced by
+    an elliptical radius: ξ_ell² = q·x² + y²/q.
     
     Subhalos are generated following Springel et al. (2008) mass function.
     
@@ -345,7 +353,8 @@ class NFWProfile(MassProfile):
     
     def __init__(self, M_vir: float, concentration: float, lens_system,
                  ellipticity: float = 0.0, ellipticity_angle: float = 0.0,
-                 include_subhalos: bool = False, subhalo_fraction: float = 0.05):
+                 include_subhalos: bool = False, subhalo_fraction: float = 0.05,
+                 random_seed: Optional[int] = None):
         """Initialize NFW profile."""
         if not np.isfinite(M_vir) or M_vir <= 0:
             raise ValueError(f"M_vir must be positive and finite, got {M_vir}")
@@ -365,6 +374,14 @@ class NFWProfile(MassProfile):
         self.include_subhalos = include_subhalos
         self.subhalo_fraction = np.clip(subhalo_fraction, 0.0, 0.2)
         self.subhalos = []
+        if random_seed is None:
+            seed_payload = (
+                f"{float(self.M_vir):.8e}|{float(self.c):.6f}|"
+                f"{float(self.lens_system.z_l):.6f}|{float(self.lens_system.z_s):.6f}"
+            )
+            random_seed = int(hashlib.sha256(seed_payload.encode("utf-8")).hexdigest()[:8], 16)
+        self.random_seed = int(random_seed)
+        self._rng = np.random.default_rng(self.random_seed)
         
         # Calculate scale radius and density
         self._compute_nfw_parameters()
@@ -375,9 +392,13 @@ class NFWProfile(MassProfile):
         
     def _compute_nfw_parameters(self):
         """Compute NFW scale radius and density."""
-        # Critical density of the universe at z=0
-        h = self.lens_system.cosmology.H0.value / 100.0
-        rho_crit = 2.775e11 * h**2  # Msun/Mpc³
+        # Critical density at lens redshift (M200c convention).
+        rho_crit = (
+            self.lens_system.cosmology
+            .critical_density(self.lens_system.z_l)
+            .to(u.Msun / u.Mpc**3)
+            .value
+        )  # Msun/Mpc³
         
         # Virial overdensity (Bryan & Norman 1998 for flat universe)
         Delta_vir = 200
@@ -436,19 +457,25 @@ class NFWProfile(MassProfile):
         N_sub = int(10 + 30 * (M_sub_total / 1e11)**0.5)  # Typical: 10-50 subhalos
         
         # Generate subhalo masses following power law
-        u = np.random.random(N_sub)
+        uniform_draws = self._rng.random(N_sub)
         if alpha != 1.0:
-            M_sub = ((M_max**(1-alpha) - M_min**(1-alpha)) * u + M_min**(1-alpha))**(1/(1-alpha))
+            M_sub = (
+                (M_max**(1-alpha) - M_min**(1-alpha)) * uniform_draws + M_min**(1-alpha)
+            )**(1/(1-alpha))
         else:
-            M_sub = M_min * (M_max/M_min)**u
+            M_sub = M_min * (M_max/M_min)**uniform_draws
         
         # Normalize so total mass = M_sub_total
         M_sub = M_sub * (M_sub_total / M_sub.sum())
         
         # Virial radius for spatial distribution
         D_l = self.lens_system.angular_diameter_distance_lens().to(u.Mpc).value
-        h = self.lens_system.cosmology.H0.value / 100.0
-        rho_crit = 2.775e11 * h**2
+        rho_crit = (
+            self.lens_system.cosmology
+            .critical_density(self.lens_system.z_l)
+            .to(u.Msun / u.Mpc**3)
+            .value
+        )
         r_vir_mpc = (3 * self.M_vir / (4 * np.pi * 200 * rho_crit))**(1/3)
         theta_vir = r_vir_mpc / D_l * (180/np.pi) * 3600  # arcsec
         
@@ -459,14 +486,14 @@ class NFWProfile(MassProfile):
             accepted = False
             while not accepted:
                 # Random position within virial radius
-                r = np.random.random() * theta_vir
-                angle = np.random.random() * 2 * np.pi
+                r = self._rng.random() * theta_vir
+                angle = self._rng.random() * 2 * np.pi
                 x = r * np.cos(angle)
                 y = r * np.sin(angle)
                 
                 # Acceptance probability ∝ NFW density
                 prob = 1.0 / ((r/self.r_s) * (1 + r/self.r_s)**2 + 1e-10)
-                if np.random.random() < prob / 10:  # Normalize acceptance
+                if self._rng.random() < prob / 10:  # Normalize acceptance
                     positions.append((x, y))
                     accepted = True
         
@@ -804,15 +831,62 @@ class NFWProfile(MassProfile):
         y = np.atleast_1d(y)
         
         r = np.sqrt(x**2 + y**2)
+        epsilon = 1e-4 * self.r_s
+        r = np.maximum(r, epsilon)
         
-        # Numerical integration of deflection angle
-        # ψ(r) = ∫₀ʳ α(r') r' dr' / r
-        # For simplicity, return approximate form
-        alpha_x, alpha_y = self.deflection_angle(x, y)
-        alpha_mag = np.sqrt(alpha_x**2 + alpha_y**2)
+        x_scaled = r / self.r_s
         
-        psi = alpha_mag * r / 2
+        # Lensing potential for circular NFW (Bartelmann 1996, Golse & Kneib 2002)
+        # psi(x) = 2 * kappa_s * r_s^2 * g(x)
+        g = np.zeros_like(x_scaled, dtype=float)
         
+        mask1 = x_scaled < 1
+        if np.any(mask1):
+            x1 = x_scaled[mask1]
+            g[mask1] = 0.5 * np.log(x1 / 2.0)**2 - 2.0 * np.arctanh(np.sqrt((1.0 - x1) / (1.0 + x1)))**2
+            
+        mask2 = x_scaled > 1
+        if np.any(mask2):
+            x2 = x_scaled[mask2]
+            g[mask2] = 0.5 * np.log(x2 / 2.0)**2 + 2.0 * np.arctan(np.sqrt((x2 - 1.0) / (x2 + 1.0)))**2
+            
+        mask3 = np.abs(x_scaled - 1.0) < 1e-6
+        if np.any(mask3):
+            g[mask3] = 0.5 * np.log(0.5)**2
+            
+        psi = 2.0 * self.kappa_s * self.r_s**2 * g
+        
+        if self.ellipticity > 0:
+            # Re-evaluate with elliptical radius
+            r_ell = self._elliptical_radius(x, y)
+            r_ell = np.maximum(r_ell, epsilon)
+            x_scaled_ell = r_ell / self.r_s
+            
+            g_ell = np.zeros_like(x_scaled_ell, dtype=float)
+            
+            mask1_ell = x_scaled_ell < 1
+            if np.any(mask1_ell):
+                x1_ell = x_scaled_ell[mask1_ell]
+                g_ell[mask1_ell] = 0.5 * np.log(x1_ell / 2.0)**2 - 2.0 * np.arctanh(np.sqrt((1.0 - x1_ell) / (1.0 + x1_ell)))**2
+                
+            mask2_ell = x_scaled_ell > 1
+            if np.any(mask2_ell):
+                x2_ell = x_scaled_ell[mask2_ell]
+                g_ell[mask2_ell] = 0.5 * np.log(x2_ell / 2.0)**2 + 2.0 * np.arctan(np.sqrt((x2_ell - 1.0) / (x2_ell + 1.0)))**2
+                
+            mask3_ell = np.abs(x_scaled_ell - 1.0) < 1e-6
+            if np.any(mask3_ell):
+                g_ell[mask3_ell] = 0.5 * np.log(0.5)**2
+                
+            psi = 2.0 * self.kappa_s * self.r_s**2 * g_ell
+            
+        # Add subhalo contributions
+        if self.include_subhalos and len(self.subhalos) > 0:
+            for subhalo in self.subhalos:
+                x_sub = x - subhalo.x_offset
+                y_sub = y - subhalo.y_offset
+                psi += subhalo.lensing_potential(x_sub, y_sub)
+                
         return psi
 
 

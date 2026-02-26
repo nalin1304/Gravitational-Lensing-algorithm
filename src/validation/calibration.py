@@ -140,6 +140,7 @@ class SyntheticDataCalibrator:
         synthetic_convergence: Optional[np.ndarray] = None,
         pixel_scale: float = 0.05,
         fov_arcsec: float = 10.0,
+        calibration_mode: str = "self",
     ) -> CalibrationResult:
         """
         Calibrate synthetic data against a known lensing system.
@@ -154,6 +155,10 @@ class SyntheticDataCalibrator:
             Pixel scale in arcsec/pixel (default: 0.05 for HST)
         fov_arcsec : float
             Field of view in arcseconds
+        calibration_mode : str
+            Calibration strategy:
+            - ``"self"``: system-specific factor from raw recovery (default)
+            - ``"leave_one_system_out"``: factors estimated from other systems only
             
         Returns
         -------
@@ -183,9 +188,19 @@ class SyntheticDataCalibrator:
             z_source=lit["z_source"],
         )
         
-        # Compute calibration factors
-        radius_factor = lit["einstein_radius_arcsec"] / raw_theta_e
-        mass_factor = lit["lens_mass_msun"] / raw_mass
+        if calibration_mode == "self":
+            radius_factor = float(lit["einstein_radius_arcsec"]) / max(float(raw_theta_e), 1e-12)
+            mass_factor = float(lit["lens_mass_msun"]) / max(float(raw_mass), 1e-12)
+        elif calibration_mode == "leave_one_system_out":
+            radius_factor, mass_factor = self._global_calibration_factors(
+                exclude_system_key=system_key,
+                pixel_scale=pixel_scale,
+                fov_arcsec=fov_arcsec,
+            )
+        else:
+            raise ValueError(
+                "Unknown calibration_mode. Use 'self' or 'leave_one_system_out'."
+            )
         
         # Apply calibration
         calibrated_theta_e = raw_theta_e * radius_factor
@@ -221,10 +236,66 @@ class SyntheticDataCalibrator:
             f"Calibration complete: {system_key}\n"
             f"  Raw error: {raw_radius_error:.2f}%\n"
             f"  Calibrated error: {cal_radius_error:.2f}%\n"
-            f"  Calibration factor: {radius_factor:.4f}"
+            f"  Radius factor ({calibration_mode}): {radius_factor:.4f}\n"
+            f"  Mass factor ({calibration_mode}): {mass_factor:.4f}"
         )
         
         return result
+
+    def _global_calibration_factors(
+        self,
+        exclude_system_key: str,
+        pixel_scale: float,
+        fov_arcsec: float,
+    ) -> Tuple[float, float]:
+        """
+        Estimate global calibration factors from all *other* literature systems.
+
+        This avoids calibrating a target directly against itself, which would
+        otherwise create an in-sample circular correction.
+        """
+        radius_factors: List[float] = []
+        mass_factors: List[float] = []
+
+        for anchor_key, anchor_lit in self.literature.items():
+            if anchor_key == exclude_system_key:
+                continue
+
+            anchor_convergence = self._generate_synthetic_analog(
+                anchor_lit, pixel_scale, fov_arcsec
+            )
+            anchor_theta_e, anchor_mass = self._analyze_convergence_map(
+                anchor_convergence,
+                pixel_scale=pixel_scale,
+                z_lens=anchor_lit["z_lens"],
+                z_source=anchor_lit["z_source"],
+            )
+
+            if np.isfinite(anchor_theta_e) and anchor_theta_e > 0:
+                radius_factors.append(
+                    float(anchor_lit["einstein_radius_arcsec"]) / float(anchor_theta_e)
+                )
+            if np.isfinite(anchor_mass) and anchor_mass > 0:
+                mass_factors.append(
+                    float(anchor_lit["lens_mass_msun"]) / float(anchor_mass)
+                )
+
+        if not radius_factors or not mass_factors:
+            logger.warning(
+                "Insufficient anchor systems for LOSO calibration; using neutral factors."
+            )
+            return 1.0, 1.0
+
+        radius_factor = float(np.median(radius_factors))
+        mass_factor = float(np.median(mass_factors))
+
+        # Keep calibration as a small correction, not a bulk re-scaling.
+        # Large factors indicate cross-system mismatch rather than numerical bias.
+        if not np.isfinite(radius_factor) or radius_factor < 0.8 or radius_factor > 1.25:
+            radius_factor = 1.0
+        if not np.isfinite(mass_factor) or mass_factor < 0.8 or mass_factor > 1.25:
+            mass_factor = 1.0
+        return radius_factor, mass_factor
     
     def _generate_synthetic_analog(
         self,
@@ -298,7 +369,7 @@ class SyntheticDataCalibrator:
                 theta_e_pixels = (crossing_idx - 1) + np.clip(frac, 0.0, 1.0)
             theta_e_arcsec = theta_e_pixels * pixel_scale
         except IndexError:
-            # If no crossing, use half-max as proxy
+            # If no crossing, use radial-gradient turnover as a deterministic proxy.
             max_kappa = np.max(convergence)
             half_max_indices = np.where(convergence > max_kappa / 2)
             if len(half_max_indices[0]) > 0:
@@ -306,7 +377,14 @@ class SyntheticDataCalibrator:
                 radius_pixels = np.sqrt(len(half_max_indices[0]) / np.pi)
                 theta_e_arcsec = radius_pixels * pixel_scale
             else:
-                theta_e_arcsec = 1.0  # Fallback
+                gradient_mag = np.abs(np.gradient(radial_profile))
+                if gradient_mag.size > 1:
+                    peak_idx = int(np.argmax(gradient_mag[1:])) + 1
+                    theta_e_arcsec = peak_idx * pixel_scale
+                else:
+                    theta_e_arcsec = pixel_scale
+
+        theta_e_arcsec = float(max(theta_e_arcsec, pixel_scale))
         
         # Estimate mass from Einstein radius
         # For SIS: θ_E = 4π (σ_v/c)² (D_LS/D_S)

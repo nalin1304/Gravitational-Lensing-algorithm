@@ -16,21 +16,6 @@ SECURITY_TEST_MODULES = {
 }
 
 
-def pytest_configure(config):
-    config.addinivalue_line(
-        "markers",
-        "benchmark: lightweight benchmark marker (fallback when pytest-benchmark is unavailable)",
-    )
-
-
-@pytest.fixture
-def benchmark():
-    """Fallback benchmark fixture compatible with simple benchmark-style tests."""
-
-    def _run(func, *args, **kwargs):
-        return func(*args, **kwargs)
-
-    return _run
 
 
 @pytest.fixture

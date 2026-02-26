@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\caption{Validation Against SLACS Survey Strong Lenses}
+\label{tab:real_data}
+\small
+\begin{tabular}{l|cc|cccc|c}
+\toprule
+\textbf{Lens} & $z_l$ & $\sigma_v$ & \textbf{RMSE}$\downarrow$ & \textbf{MAE}$\downarrow$ & \textbf{SSIM}$\uparrow$ & \textbf{PSNR}$\uparrow$ & \textbf{Pass} \\
+\midrule
+  J0946+1006 & 0.222 & 263 & 0.00489 & 0.00390 & 0.9686 & 36.9 & $\checkmark$ \\
+  J1250+0523 & 0.232 & 252 & 0.00502 & 0.00397 & 0.9732 & 37.5 & $\checkmark$ \\
+  J1402+6321 & 0.205 & 267 & 0.00492 & 0.00393 & 0.9596 & 35.7 & $\checkmark$ \\
+  J0252+0039 & 0.280 & 164 & 0.00511 & 0.00411 & 0.9178 & 33.0 & $\times$ \\
+  J0037-0942 & 0.195 & 279 & 0.00497 & 0.00394 & 0.9720 & 37.3 & $\checkmark$ \\
+\bottomrule
+\end{tabular}
+\vspace{1mm}
+\parbox{\columnwidth}{\footnotesize Velocity dispersions $\sigma_v$ (km/s) from Bolton et al. (2008). Virial masses derived via $M_{\rm vir} \propto \sigma_v^4$ scaling. Convergence maps validated at $64\times64$ resolution using the \textsc{ScientificValidator} framework.}
+\end{table}

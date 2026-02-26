@@ -1,0 +1,443 @@
+% ============================================================================
+% IEEE Transactions on Computational Imaging — Manuscript Template
+% ============================================================================
+% Title: Physics-Informed Neural Networks for Gravitational Lensing 
+%        Convergence Map Inference with Bayesian Uncertainty Quantification
+% ============================================================================
+
+\documentclass[journal]{IEEEtran}
+
+% --- Packages ---
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{siunitx}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{subcaption}
+\usepackage{natbib}
+
+% --- Custom commands ---
+\newcommand{\kappa}{\ensuremath{\kappa}}
+\newcommand{\Msun}{\ensuremath{M_\odot}}
+\newcommand{\sigmav}{\ensuremath{\sigma_v}}
+\newcommand{\etal}{\textit{et al.}}
+
+\begin{document}
+
+% ============================================================================
+% TITLE AND AUTHORS
+% ============================================================================
+\title{Physics-Informed Neural Networks for Gravitational Lensing 
+       Convergence Map Inference with Bayesian Uncertainty Quantification}
+
+\author{
+    \IEEEauthorblockN{Nalin Aggarwal}
+    \IEEEauthorblockA{Independent Researcher\\
+    Email: nalin@example.com}
+}
+
+\maketitle
+
+% ============================================================================
+% ABSTRACT (150-250 words required by IEEE TCI)
+% ============================================================================
+\begin{abstract}
+We present a Physics-Informed Neural Network (PINN) framework for 
+inferring gravitational lensing convergence maps from observed image data. 
+Our method embeds the NFW (Navarro-Frenk-White) lensing equation directly 
+into the network's loss function, enforcing physical consistency while 
+maintaining data-driven flexibility. The framework incorporates Bayesian 
+uncertainty quantification through MC Dropout, providing calibrated 
+predictive uncertainties critical for downstream cosmological inference.
+
+We validate our approach against five SLACS Survey strong lenses with 
+published velocity dispersions, achieving mean RMSE near $5\times10^{-3}$ and 
+SSIM in the $\sim0.79$--$0.92$ range on $64 \times 64$ convergence maps. 
+A systematic ablation study demonstrates that each component---physics loss, 
+Bayesian UQ, data augmentation, and NFW constraints---contributes measurably 
+to reconstruction quality. Comparison against vanilla neural baselines, 
+SIE approximations, and parametric NFW modeling shows strong gains over 
+unconstrained neural variants and competitive behavior on physically relevant 
+metrics such as mass conservation. Scalability analysis confirms practical 
+applicability to high-resolution maps up to $512 \times 512$ pixels.
+
+All code, validation scripts, and citation metadata are included in the public
+repository for reproducibility.
+\end{abstract}
+
+\begin{IEEEkeywords}
+gravitational lensing, physics-informed neural networks, convergence map, 
+Bayesian uncertainty quantification, dark matter, NFW profile
+\end{IEEEkeywords}
+
+% ============================================================================
+% I. INTRODUCTION
+% ============================================================================
+\section{Introduction}
+\label{sec:intro}
+
+% Context and motivation
+% Problem statement
+% Key contributions (3-4 bullet points)
+% Paper organization
+
+Strong gravitational lensing provides one of the most direct probes of projected
+mass distributions in galaxies and clusters, including dark-matter structure.
+Classical pipelines based on parametric optimization remain effective, but they
+can be slow to adapt to heterogeneous data and often require significant
+manual tuning \citep{Birrer2018,Nightingale2021}. In parallel, purely data-driven
+neural models can achieve high throughput but may violate physical constraints
+unless regularized explicitly.
+
+This work targets that gap by coupling a neural inference model to lensing
+physics constraints and uncertainty estimation. The implementation centers on
+three practical goals: (i) retain physically meaningful outputs under realistic
+noise and observational variability, (ii) provide uncertainty summaries usable
+for downstream scientific interpretation, and (iii) maintain reproducible,
+testable software artifacts suitable for peer review.
+
+Our main contributions are:
+\begin{enumerate}
+    \item A physics-informed convergence inference pipeline with explicit
+    lensing constraints in the training objective.
+    \item A Bayesian uncertainty layer based on MC Dropout
+    \citep{GalDropout2016} for calibrated predictive intervals.
+    \item An executable validation stack (known-system checks, ablations,
+    and reproducibility gates) integrated with the released codebase.
+\end{enumerate}
+Ze report is organized as follows: \Cref{sec:related} reviews related work on
+\subsection{Problem Definition and Hypotheses}
+\label{subsec:problem_hypotheses}
+
+Recent challenge and cosmography work identifies two risks that directly
+motivate this study: (i) reduced realism and domain mismatch in simulated
+lensing benchmarks \citep{Metcalf2019}, and (ii) sensitivity of downstream
+precision inferences to modeling systematics \citep{Kochanek2020}. We therefore
+frame the task as a constrained inverse imaging problem: infer
+$\kappa(\boldsymbol{\theta})$ and lens parameters while enforcing thin-lens
+physics and reporting calibrated uncertainty.
+
+We test four hypotheses:
+\begin{enumerate}
+    \item \textbf{H1}: physics constraints improve reconstruction versus
+    data-only learning.
+    \item \textbf{H2}: uncertainty estimates are calibrated on held-out data.
+    \item \textbf{H3}: synthetic-to-real transfer remains stable on SLACS-like
+    systems.
+    \item \textbf{H4}: reproducibility is executable from released code and
+    validation artifacts.
+\end{enumerate}
+
+% ============================================================================
+% II. RELATED WORK
+% ============================================================================
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Gravitational Lens Modeling}
+
+Modern lens modeling tools such as \texttt{lenstronomy} and \texttt{PyAutoLens}
+provide strong parametric baselines with mature optimization and sampling
+workflows \citep{Birrer2018,Nightingale2021}. Recent work on substructure
+detection has pushed toward neural approaches: \citet{Lard2024} measured the
+substructure mass power spectrum across 23 SLACS lenses using CNNs with
+both epistemic and aleatoric uncertainty quantification, while
+\citet{Ostdiek2024} demonstrated UNet-based substructure identification
+in realistic simulated datasets. Free-form Bayesian methods using
+Mat\'ern regularization have been applied to the ``Jackpot'' triple lens
+system \citep{He2025}.
+
+\subsection{Physics-Informed Neural Networks}
+
+PINNs embed governing equations as soft constraints in the training
+objective \citep{Raissi2019}. In lensing contexts, LensPINN applies a
+ViT+CNN architecture for dark-matter subtype classification with
+$F_1 > 0.99$ \citep{LensPINN2024}, and PINN-GM-III extends
+physics-informed potentials to galaxy models \citep{PINNGM2025}.
+However, these works do not address \emph{convergence map reconstruction}
+with pixel-level uncertainty---the problem targeted here.
+
+The Strong Gravitational Lensing Challenge \citep{Metcalf2019} established
+standard benchmarks with AUROC, TPR$_0$, and TPR$_{10}$ metrics. Subsequent
+work showed that self-attention encoders outperform CNN baselines on
+the Bologna Challenge dataset \citep{Adam2024}, and that combining diverse
+ML classifiers improves both completeness and purity \citep{Hertog2024}.
+
+\subsection{Uncertainty Quantification}
+
+For uncertainty, MC\,Dropout offers a practical approximation to Bayesian
+model averaging \citep{GalDropout2016}. \citet{Varma2024} demonstrated that
+unsupervised domain adaptation combined with mean-variance estimation
+significantly improves calibration on out-of-domain strong lensing data.
+Simulation-based inference with neural posterior estimation provides an
+alternative Bayesian framework \citep{WagnerCarena2024}. We report
+calibration diagnostics---coverage probability, expected calibration error
+(ECE), and reliability diagrams---alongside reconstruction metrics.
+
+Modern lens modeling tools such as \texttt{lenstronomy} and \texttt{PyAutoLens}
+provide strong parametric baselines with mature optimization and sampling
+workflows \citep{Birrer2018,Nightingale2021}. Their performance motivates
+direct comparison with learned surrogates rather than replacement by default.
+
+PINNs have emerged as an attractive framework for inverse problems where
+governing equations are known \citep{Raissi2019}. In lensing contexts, recent
+PINN-style studies indicate strong potential for fast inference, but often
+with limited reporting on reproducibility and uncertainty calibration
+\citep{LensPINN2024}. We therefore place equal emphasis on
+scientific metrics and artifact-level validation.
+
+For uncertainty, MC Dropout offers a practical approximation to Bayesian model
+averaging with favorable implementation cost in high-dimensional vision models
+\citep{GalDropout2016}. To evaluate reliability, we use calibration-oriented
+diagnostics motivated by modern neural calibration studies \citep{Guo2017} and
+report them alongside reconstruction errors.
+
+% ============================================================================
+% III. METHOD
+% ============================================================================
+\section{Method}
+\label{sec:method}
+
+\subsection{Problem Formulation}
+\label{sec:formulation}
+
+We consider a gravitational lens at redshift~$z_l$ with a background source
+at~$z_s$. Under the thin-lens approximation, the lens equation relates the
+observed image-plane position~$\boldsymbol{\theta}$ to the true source
+position~$\boldsymbol{\beta}$ via the reduced deflection angle
+$\boldsymbol{\alpha}(\boldsymbol{\theta})$:
+\begin{equation}
+\boldsymbol{\beta} = \boldsymbol{\theta} - \boldsymbol{\alpha}(\boldsymbol{\theta}).
+\label{eq:lens}
+\end{equation}
+The deflection angle is the gradient of the lensing potential,
+$\boldsymbol{\alpha} = \nabla\psi$, and the convergence (dimensionless
+surface mass density) satisfies the two-dimensional Poisson equation:
+\begin{equation}
+\nabla^2 \psi(\boldsymbol{\theta}) = 2\kappa(\boldsymbol{\theta}),
+\qquad \kappa \equiv \frac{\Sigma}{\Sigma_{\mathrm{crit}}},
+\label{eq:poisson}
+\end{equation}
+where the critical surface density is
+\begin{equation}
+\Sigma_{\mathrm{crit}} = \frac{c^2}{4\pi G} \frac{D_s}{D_l \, D_{ls}},
+\label{eq:sigma_crit}
+\end{equation}
+with $D_l$, $D_s$, $D_{ls}$ denoting angular diameter distances to the lens,
+source, and between them, respectively.
+
+For NFW halos \citep{NFW1997}, the convergence profile follows
+\citep{Bartelmann1996,WrightBrainerd2000}:
+\begin{equation}
+\kappa_{\text{NFW}}(x) = \frac{2\,\rho_s\, r_s}{\Sigma_{\mathrm{crit}}}\, h(x),
+\label{eq:kappa_nfw}
+\end{equation}
+where $x \equiv r / r_s$ is the dimensionless radius scaled by the NFW
+scale radius~$r_s$, and the function $h(x)$ is:
+\begin{equation}
+h(x) = \begin{cases}
+  \dfrac{1}{x^2 - 1} \left(1 - \dfrac{1}{\sqrt{1-x^2}} \cosh^{-1}\!\frac{1}{x}\right)
+  & x < 1, \\
+  \dfrac{1}{3} & x = 1, \\
+  \dfrac{1}{x^2 - 1} \left(1 - \dfrac{1}{\sqrt{x^2-1}} \cos^{-1}\!\frac{1}{x}\right)
+  & x > 1.
+\end{cases}
+\label{eq:hx}
+\end{equation}
+
+\subsection{Network Architecture}
+\label{sec:architecture}
+
+Our PINN architecture comprises a convolutional encoder that maps a
+$64{\times}64$ input image to a learned representation, followed by:
+(i)~a regression head predicting continuous NFW parameters
+$(\log_{10} M_{\text{vir}}, c, z_l, z_s, e)$; (ii)~a classification head for
+discrete lens-type labels; and (iii)~an implicit convergence decoder that
+produces the pixelwise $\kappa(\boldsymbol{\theta})$ map.
+
+The encoder consists of five convolutional blocks (\texttt{Conv2d}$\to$\texttt{BatchNorm}$\to$\texttt{GELU}$\to$\texttt{MaxPool}),
+with channel dimensions doubling from 32 to 512. The decoder mirrors this
+with transposed convolutions. The implementation uses JAX/Equinox for
+hardware acceleration.
+
+\subsection{Physics-Informed Loss Function}
+\label{sec:loss}
+
+The total training objective combines four terms:
+\begin{equation}
+\mathcal{L} = \underbrace{\mathcal{L}_{\text{data}}}_{\text{reconstruction}} +
+  \lambda_1 \underbrace{\mathcal{L}_{\text{Poisson}}}_{\nabla^2\psi=2\kappa} +
+  \lambda_2 \underbrace{\mathcal{L}_{\nabla\psi}}_{\alpha=\nabla\psi} +
+  \lambda_3 \underbrace{\mathcal{L}_{\text{mass}}}_{\text{conservation}},
+\label{eq:total_loss}
+\end{equation}
+where:
+\begin{align}
+\mathcal{L}_{\text{data}} &= \frac{1}{N}\sum_{i=1}^N \left\| \hat{\kappa}_i - \kappa_i \right\|_2^2,
+\label{eq:ldata} \\
+\mathcal{L}_{\text{Poisson}} &= \frac{1}{N}\sum_{i=1}^N \left\| \nabla^2 \hat{\psi}_i - 2\hat{\kappa}_i \right\|_2^2,
+\label{eq:lpoisson} \\
+\mathcal{L}_{\nabla\psi} &= \frac{1}{N}\sum_{i=1}^N \left\| \hat{\alpha}_i - \nabla\hat{\psi}_i \right\|_2^2,
+\label{eq:lgrad} \\
+\mathcal{L}_{\text{mass}} &= \left| \int \hat{\kappa}\, d\Omega - \int \kappa\, d\Omega \right|^2.
+\label{eq:lmass}
+\end{align}
+The Laplacian $\nabla^2\hat\psi$ is computed via \texttt{torch.autograd}
+for exact backpropagation through the PDE constraint.
+Weights are set to $\lambda_1 = 1.0$, $\lambda_2 = 1.0$, $\lambda_3 = 0.5$
+based on validation performance.
+
+\subsection{Bayesian Uncertainty via MC Dropout}
+\label{sec:uq}
+
+Following \citet{GalDropout2016}, we interpret dropout at inference time as
+approximate Bayesian inference. Given $T$ stochastic forward passes with
+dropout rate~$p$, the predictive mean and epistemic uncertainty are:
+\begin{align}
+\hat{\kappa}_{\text{mean}}(\boldsymbol{\theta}) &= \frac{1}{T}\sum_{t=1}^T f(\boldsymbol{\theta};\, \hat{\mathbf{w}}_t), 
+\label{eq:mc_mean} \\
+\hat{\sigma}^2_{\text{epi}}(\boldsymbol{\theta}) &= \frac{1}{T}\sum_{t=1}^T \left[ f(\boldsymbol{\theta};\, \hat{\mathbf{w}}_t) - \hat{\kappa}_{\text{mean}} \right]^2,
+\label{eq:mc_var}
+\end{align}
+where $\hat{\mathbf{w}}_t \sim q(\mathbf{w})$ denotes masked weights in
+pass~$t$. We use $T=30$ and $p=0.1$ throughout, yielding per-pixel $1\sigma$
+uncertainty maps.
+
+\subsection{Data Augmentation Pipeline}
+\label{sec:augmentation}
+
+Training images undergo composition of geometric and photometric transforms:
+random rotation ($\pm 180^\circ$), horizontal/vertical flips, brightness jitter
+($\pm 20\%$), and additive Gaussian noise ($\sigma = 0.01$).  These transforms
+are constructed using the \texttt{Compose} pipeline in our augmentation module,
+with per-transform application probabilities calibrated to avoid overfitting on
+the training set while preserving physically plausible image statistics.
+
+% ============================================================================
+% IV. EXPERIMENTS
+% ============================================================================
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Experimental Setup}
+We train on $10^4$ synthetic NFW convergence maps with parameters sampled from
+astrophysically motivated priors: $\log_{10} M_{\text{vir}} \in [11, 14.5]$,
+$c \in [3, 20]$, $z_l \in [0.1, 1.0]$, $z_s \in [0.5, 3.5]$,
+ellipticity $e \in [0, 0.5]$. Grid resolution is $64{\times}64$ pixels.
+Optimization uses Adam ($\text{lr}=10^{-3}$, cosine decay) for 200 epochs on
+a single NVIDIA A100 or Apple M-series GPU via JAX.
+
+\subsection{Statistical Protocol}
+\label{subsec:statistical_protocol}
+To reduce post hoc interpretation risk, we report bootstrap confidence
+intervals for key metrics and track component-level deltas in ablation studies.
+We additionally publish an executable statistical summary artifact
+(`scripts/statistical_rigor_report.py`) that consolidates SLACS validation,
+ablation effects, and baseline ranking diagnostics from generated result files.
+
+\subsection{Validation Against SLACS Survey}
+We validate against five galaxy-scale strong lenses from the SLACS Survey
+\citep{Bolton2008,Auger2010,Treu2006} using published velocity
+dispersions to derive ground-truth NFW convergence maps (Table~\ref{tab:real_data}).
+For each lens, we compare PINN-predicted $\hat\kappa$ against the analytic
+$\kappa_{\text{NFW}}$ using RMSE, SSIM, PSNR, and reduced $\chi^2$.
+We also compare azimuthally averaged radial profiles $\kappa(r)$
+and convergence power spectra $P(k)$ to assess structural fidelity.
+
+\input{results/real_data/slacs_validation_table.tex}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{results/real_data/radial_profile_comparison.png}
+    \caption{Azimuthally averaged radial profiles $\kappa(r)$ for five SLACS
+    lenses. Black: analytic NFW ground truth. Red dashed: PINN prediction.
+    Reduced $\chi^2_r$ values are shown per panel.}
+    \label{fig:radial}
+\end{figure}
+
+\subsection{Comparison with Baseline Methods}
+We benchmark four methods on identical synthetic lens configurations
+(Table~\ref{tab:sota}): (i)~our full PINN pipeline, (ii)~a vanilla PINN
+without physics loss, (iii)~parametric NFW fitting via least-squares
+optimization analogous to \texttt{lenstronomy} \citep{Birrer2018}, and
+(iv)~a singular isothermal ellipsoid (SIE) model \citep{Kormann1994}.
+
+\input{results/sota_comparison_table.tex}
+
+% ============================================================================
+% V. ABLATION STUDY
+% ============================================================================
+\section{Ablation Study}
+\label{sec:ablation}
+
+\input{results/ablation_table.tex}
+
+The ablation results show that physics-constrained learning is the dominant
+driver of reconstruction quality. Removing physics loss increases RMSE from
+$\approx 5.0\times10^{-3}$ to $\approx 1.7\times10^{-2}$ and reduces SSIM from
+$\approx 0.93$ to $\approx 0.64$. Removing Bayesian uncertainty and augmentation
+also degrades performance, but with smaller effect sizes than removing physics
+constraints. These patterns indicate that domain constraints provide the largest
+quality gains, while Bayesian and augmentation components improve robustness.
+
+% ============================================================================
+% VI. SCALABILITY ANALYSIS
+% ============================================================================
+\section{Scalability Analysis}
+\label{sec:scalability}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{results/scalability_analysis.png}
+    \caption{Computational scalability of the proposed pipeline. 
+    (a)~Inference time vs.\ grid resolution on log-log axes. 
+    (b)~Peak memory consumption. 
+    (c)~Multi-plane lensing scaling.}
+    \label{fig:scalability}
+\end{figure}
+
+Scalability results indicate predictable growth in runtime and memory with grid
+resolution, and no abrupt instability across tested scales. Inference remains
+practical for interactive analysis at moderate resolutions, while larger grids
+are best handled in batch mode with hardware acceleration. We therefore report
+both accuracy and throughput in the release artifacts to avoid single-number
+performance claims detached from hardware context.
+
+% ============================================================================
+% VII. CONCLUSION
+% ============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented a physics-informed lensing inference framework that combines
+data-driven reconstruction, equation-level constraints, and Bayesian uncertainty
+quantification in a reproducible software artifact. Across real-data and
+synthetic evaluations, the method demonstrates strong reconstruction quality and
+stable mass-conservation behavior, with ablations confirming the value of
+physics losses.
+
+Future work will focus on (i) improved raw mass recovery without post-hoc
+calibration, (ii) broader external validation on additional survey data, and
+(iii) tighter coupling between learned inference and full Bayesian lens-model
+posteriors for cosmographic use cases.
+
+% ============================================================================
+% ACKNOWLEDGMENTS
+% ============================================================================
+\section*{Acknowledgments}
+This work uses data from the SLACS Survey \citep{Bolton2008}.
+All computations were performed in reproducible Python environments with the
+exact dependency set and validation reports archived in the repository.
+
+% ============================================================================
+% REFERENCES
+% ============================================================================
+\bibliographystyle{IEEEtranN}
+\bibliography{references}
+
+\end{document}

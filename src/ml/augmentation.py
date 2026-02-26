@@ -83,8 +83,17 @@ class RandomFlip:
 
 class RandomBrightness:
     """
-    Randomly adjust image brightness.
-    Simulates different exposure times or signal-to-noise ratios.
+    Randomly adjust convergence map amplitude.
+
+    Simulates different exposure times or mass normalisation uncertainty.
+
+    Note on clipping
+    ----------------
+    Convergence κ = Σ/Σ_crit is dimensionless surface mass density.  For
+    massive NFW halos, the core can have κ >> 1 (e.g. κ ~ 2-5 for galaxy
+    clusters).  Clipping to [0, 1] would corrupt the training labels and
+    bias the network toward underestimating mass.  We therefore enforce
+    only the physical lower bound κ ≥ 0.
     """
     
     def __init__(self, brightness_range: Tuple[float, float] = (0.8, 1.2), p: float = 0.5):
@@ -92,28 +101,26 @@ class RandomBrightness:
         Parameters
         ----------
         brightness_range : tuple
-            Range of brightness multipliers (min, max)
+            Range of amplitude multipliers (min, max)
         p : float
-            Probability of applying brightness adjustment
+            Probability of applying amplitude adjustment
         """
         self.brightness_range = brightness_range
         self.p = p
     
     def __call__(self, image: Union[np.ndarray, torch.Tensor]) -> Union[np.ndarray, torch.Tensor]:
-        """Apply random brightness adjustment"""
+        """Apply random amplitude adjustment.  Only non-negativity is enforced."""
         if np.random.random() > self.p:
             return image
         
-        # Random brightness factor
+        # Random amplitude factor
         factor = np.random.uniform(*self.brightness_range)
         
         if isinstance(image, torch.Tensor):
-            result = image * factor
-            # Clip to valid range [0, 1] if normalized
-            result = torch.clamp(result, 0.0, 1.0)
+            # Enforce κ ≥ 0 (physically mandated); no upper bound clipping.
+            result = torch.clamp(image * factor, min=0.0)
         else:
-            result = image * factor
-            result = np.clip(result, 0.0, 1.0)
+            result = np.clip(image * factor, a_min=0.0, a_max=None)
         
         return result
 
@@ -121,6 +128,11 @@ class RandomBrightness:
 class RandomNoise:
     """
     Add random Gaussian noise to simulate observational uncertainty.
+
+    Note on clipping
+    ----------------
+    As for RandomBrightness, only the physical lower bound κ ≥ 0 is
+    enforced.  Clipping to 1 would bias the network away from high-κ cores.
     """
     
     def __init__(self, noise_std: float = 0.01, p: float = 0.3):
@@ -128,7 +140,7 @@ class RandomNoise:
         Parameters
         ----------
         noise_std : float
-            Standard deviation of Gaussian noise
+            Standard deviation of Gaussian noise in units of κ
         p : float
             Probability of applying noise
         """
@@ -136,18 +148,16 @@ class RandomNoise:
         self.p = p
     
     def __call__(self, image: Union[np.ndarray, torch.Tensor]) -> Union[np.ndarray, torch.Tensor]:
-        """Add random Gaussian noise"""
+        """Add random Gaussian noise; enforce κ ≥ 0 only."""
         if np.random.random() > self.p:
             return image
         
         if isinstance(image, torch.Tensor):
             noise = torch.randn_like(image) * self.noise_std
-            result = image + noise
-            result = torch.clamp(result, 0.0, 1.0)
+            result = torch.clamp(image + noise, min=0.0)
         else:
             noise = np.random.randn(*image.shape) * self.noise_std
-            result = image + noise
-            result = np.clip(result, 0.0, 1.0)
+            result = np.clip(image + noise, a_min=0.0, a_max=None)
         
         return result
 
@@ -273,6 +283,8 @@ class Normalize:
 if __name__ == '__main__':
     # Test augmentations
     import matplotlib.pyplot as plt
+    
+    np.random.seed(42)  # Reproducible demo output
     
     # Create synthetic image
     test_image = np.random.rand(1, 64, 64)

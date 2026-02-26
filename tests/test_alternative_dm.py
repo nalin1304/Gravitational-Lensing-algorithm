@@ -384,9 +384,11 @@ class TestProfileComparison:
         kappa_wdm = wdm.convergence(r_large, 0.0)
         kappa_sidm = sidm.convergence(r_large, 0.0)
         
-        # Should be within factor of 2 at large radii
-        assert np.isclose(kappa_wdm, kappa_cdm, rtol=1.0)
-        assert np.isclose(kappa_sidm, kappa_cdm, rtol=1.0)
+        # At large radii, profile differences should remain moderate.
+        # Empirically a 35% tolerance keeps this sensitive while avoiding
+        # physically acceptable false failures from model family mismatch.
+        assert np.isclose(kappa_wdm, kappa_cdm, rtol=0.35)
+        assert np.isclose(kappa_sidm, kappa_cdm, rtol=0.35)
 
 
 class TestEdgeCases:

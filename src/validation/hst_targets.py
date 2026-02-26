@@ -226,7 +226,9 @@ class HSTValidation:
         raise FileNotFoundError(
             f"No real HST asset found for target '{target_name}' (dataset_id={target.dataset_id}). "
             f"Expected local files in {candidate_dirs}: "
-            f"{[name + ext for name in candidate_names for ext in ['.npy', '.fits']]}"
+            f"{[name + ext for name in candidate_names for ext in ['.npy', '.fits']]}. "
+            f"Use `from src.data.mast_downloader import MASTDownloader` to auto-download "
+            f"SLACS lens data from the MAST archive."
         )
     
     def compare_with_hst(

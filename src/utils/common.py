@@ -21,24 +21,30 @@ logger = logging.getLogger(__name__)
 
 def load_pretrained_model(model_path: Optional[str] = None):
     """
-    Load a pretrained PINN model from disk.
+    Load a pretrained JAX/Equinox PINN model from disk.
     
     Args:
-        model_path: Path to model checkpoint (.pth file)
+        model_path: Path to model checkpoint (.eqx file)
                    If None, looks in default locations
     
     Returns:
-        Loaded PyTorch model or None if not found
+        Loaded Equinox model or None if not found
     """
     from src.ml.pinn import PhysicsInformedNN
+    try:
+        import jax
+        import equinox as eqx
+    except ImportError:
+        logger.error("JAX/Equinox not available for loading model.")
+        return None
     
     if model_path is None:
-        # Try default locations
+        # Try default locations (updated for JAX/Equinox names)
         possible_paths = [
-            Path("models/pinn_best.pth"),
-            Path("models/pinn_final.pth"),
-            Path("results/pinn_demo/model_final.pth"),
-            Path("../models/pinn_best.pth"),
+            Path("models/pinn_best.eqx"),
+            Path("models/pinn_final.eqx"),
+            Path("results/pinn_demo/model_final.eqx"),
+            Path("../models/pinn_best.eqx"),
         ]
         
         for path in possible_paths:
@@ -51,23 +57,18 @@ def load_pretrained_model(model_path: Optional[str] = None):
         return None
     
     try:
-        # Initialize model
-        model = PhysicsInformedNN(input_size=64)
+        # Initialize a model structure with a deterministic fallback key
+        key = jax.random.PRNGKey(0)
+        model = PhysicsInformedNN(key=key)
         
-        # Load weights
-        checkpoint = torch.load(model_path, map_location='cpu')
+        # Load weights using Equinox
+        model = eqx.tree_deserialise_leaves(model_path, model)
         
-        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-            model.load_state_dict(checkpoint['model_state_dict'])
-        else:
-            model.load_state_dict(checkpoint)
-        
-        model.eval()
         logger.info(f"Model loaded successfully from {model_path}")
         return model
         
     except Exception as e:
-        logger.error(f"Error loading model: {e}")
+        logger.error(f"Error loading Equinox model: {e}")
         return None
 
 

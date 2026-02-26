@@ -384,6 +384,8 @@ def plot_to_tensorboard_image(fig) -> torch.Tensor:
 
 
 if __name__ == '__main__':
+    np.random.seed(42)  # Reproducible demo output
+    
     # Test logger
     logger = PINNLogger(log_dir='./test_runs', experiment_name='test')
     

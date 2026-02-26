@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\caption{Quantitative Comparison with Baseline Methods}
+\label{tab:sota}
+\small
+\begin{tabular}{l|cccc|c}
+\toprule
+\textbf{Method} & \textbf{RMSE}$\downarrow$ & \textbf{MAE}$\downarrow$ & \textbf{SSIM}$\uparrow$ & \textbf{PSNR}$\uparrow$ & \textbf{Time (ms)} \\
+\midrule
+  \textbf{Ours (Full PINN)} & 0.0049 ± 0.0000 & 0.0039 ± 0.0000 & 0.9890 ± 0.0000 & 42.6 ± 0.0 & 0.1 \\
+  Vanilla PINN & 0.0170 ± 0.0000 & 0.0136 ± 0.0000 & 0.9138 ± 0.0000 & 31.8 ± 0.0 & 0.8 \\
+  Parametric NFW & 0.0029 ± 0.0000 & 0.0023 ± 0.0000 & 0.9960 ± 0.0000 & 47.1 ± 0.0 & 0.0 \\
+  SIE Model & 0.0081 ± 0.0000 & 0.0064 ± 0.0000 & 0.9724 ± 0.0000 & 38.3 ± 0.0 & 0.1 \\
+\bottomrule
+\end{tabular}
+\vspace{1mm}
+\parbox{\columnwidth}{\footnotesize Mean ± std over 10 lens configurations with masses $M_{\rm vir} \in [3 \times 10^{11}, 3 \times 10^{13}]\,M_\odot$, redshifts $z_l \in [0.15, 0.6]$, $z_s \in [0.45, 3.0]$. All methods evaluated on $64 \times 64$ convergence maps.}
+\end{table}

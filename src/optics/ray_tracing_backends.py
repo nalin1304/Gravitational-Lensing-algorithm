@@ -17,6 +17,16 @@ References:
     - Misner, Thorne & Wheeler (1973): "Gravitation"
 """
 
+try:
+    import jax
+    import jax.numpy as jnp
+    import equinox as eqx
+except ImportError:
+    jax = None
+    import numpy as np
+    jnp = np
+    eqx = None
+
 import numpy as np
 from typing import Tuple, Optional, Dict, Literal, Callable
 from scipy.ndimage import label
@@ -249,9 +259,9 @@ def thin_lens_ray_trace(
         validate_method_compatibility("thin_lens", z_l, z_s)
     
     # Step 1: Create image plane grid
-    x = np.linspace(-grid_extent, grid_extent, grid_resolution)
-    y = np.linspace(-grid_extent, grid_extent, grid_resolution)
-    xx, yy = np.meshgrid(x, y)
+    x = jnp.linspace(-grid_extent, grid_extent, grid_resolution)
+    y = jnp.linspace(-grid_extent, grid_extent, grid_resolution)
+    xx, yy = jnp.meshgrid(x, y)
     
     # Step 2: Compute deflection angles (vectorized)
     # Uses cosmological distances from lens_model.lens_system
@@ -264,7 +274,7 @@ def thin_lens_ray_trace(
     beta_y = yy - alpha_y
     
     # Step 4: Find pixels where |β - β_source| < threshold
-    distance_to_source = np.sqrt((beta_x - source_x)**2 + (beta_y - source_y)**2)
+    distance_to_source = jnp.sqrt((beta_x - source_x)**2 + (beta_y - source_y)**2)
     image_mask = distance_to_source < threshold
     
     # Step 5: Identify connected regions (separate images)
@@ -277,17 +287,17 @@ def thin_lens_ray_trace(
         dx = x[1] - x[0]
         for img_id in range(1, num_images + 1):
             img_pixels = labeled_array == img_id
-            y_indices, x_indices = np.where(img_pixels)
+            y_indices, x_indices = jnp.where(img_pixels)
             
             if len(x_indices) > 0:
                 # Weighted centroid
                 weights = 1.0 / (distance_to_source[img_pixels] + 1e-10)
                 weights /= weights.sum()
                 
-                x_centroid = np.sum(x[x_indices] * weights)
-                y_centroid = np.sum(y[y_indices] * weights)
-                r_weighted = np.sum(np.sqrt(x[x_indices]**2 + y[y_indices]**2) * weights)
-                r_centroid = np.sqrt(x_centroid**2 + y_centroid**2)
+                x_centroid = jnp.sum(x[x_indices] * weights)
+                y_centroid = jnp.sum(y[y_indices] * weights)
+                r_weighted = jnp.sum(jnp.sqrt(x[x_indices]**2 + y[y_indices]**2) * weights)
+                r_centroid = jnp.sqrt(x_centroid**2 + y_centroid**2)
                 # Annular solutions (Einstein rings) have centroid ~0 even when
                 # physically located at finite radius; keep a representative point
                 # on the ring to avoid collapsing to the origin.
@@ -296,8 +306,8 @@ def thin_lens_ray_trace(
                         angle = 0.0
                     else:
                         angle = np.arctan2(source_y, source_x)
-                    x_centroid = r_weighted * np.cos(angle)
-                    y_centroid = r_weighted * np.sin(angle)
+                    x_centroid = r_weighted * jnp.cos(angle)
+                    y_centroid = r_weighted * jnp.sin(angle)
                 
                 # Compute magnification via Jacobian
                 mag = _compute_magnification_jacobian(
@@ -309,11 +319,11 @@ def thin_lens_ray_trace(
     
     # Convert to arrays
     if len(image_positions) > 0:
-        image_positions = np.array(image_positions)
-        magnifications = np.array(magnifications)
+        image_positions = jnp.array(image_positions)
+        magnifications = jnp.array(magnifications)
     else:
-        image_positions = np.array([]).reshape(0, 2)
-        magnifications = np.array([])
+        image_positions = jnp.array([]).reshape(0, 2)
+        magnifications = jnp.array([])
     
     # Assemble results
     results = {
@@ -394,8 +404,8 @@ def _compute_magnification_jacobian(
     det_A = A11 * A22 - A12 * A21
     
     # Handle critical curves
-    if np.abs(det_A) < 1e-10:
-        mu = np.sign(det_A) * 1000.0
+    if jnp.abs(det_A) < 1e-10:
+        mu = jnp.sign(det_A) * 1000.0
     else:
         mu = 1.0 / det_A
     
@@ -474,35 +484,72 @@ def schwarzschild_geodesic_trace(
     r_s = schwarzschild_radius(mass_kg)
     b_over_rs = impact_parameter / r_s
     r_initial = max_radius * r_s
-    b_crit_over_rs = 1.5 * np.sqrt(3.0)  # Photon-capture threshold
+    b_crit_over_rs = 1.5 * jnp.sqrt(3.0)  # Photon-capture threshold
 
     logger.info(
         f"Schwarzschild geodesic: M={mass_kg/M_SUN_KG:.2e} M☉, "
         f"b={b_over_rs:.2f} r_s"
     )
 
-    if b_over_rs <= b_crit_over_rs:
-        # Capture/near-capture regime: no asymptotically escaping null geodesic.
-        # Return a large finite angle to represent strong bending.
+    from scipy.integrate import solve_ivp
+    
+    # We work in dimensionless units x = r_s / r to ensure ODE scale invariance
+    def deriv(phi, y):
+        # y[0] = x = r_s/r, y[1] = dx/dphi
+        return [y[1], 1.5 * y[0]**2 - y[0]]
+
+    def periapsis(phi, y):
+        return y[1]
+    periapsis.terminal = True
+    periapsis.direction = -1
+
+    def capture(phi, y):
+        return y[0] - 1.0
+    capture.terminal = True
+
+    y0 = [0.0, r_s / impact_parameter]
+
+    sol = solve_ivp(
+        deriv, [0.0, 10.0 * np.pi], y0,
+        events=[periapsis, capture],
+        rtol=1e-11, atol=1e-13,
+        dense_output=True
+    )
+
+    if sol.status == 1 and len(sol.t_events[0]) > 0:
+        # Photon escaped, reached periapsis and goes back to infinity
+        phi_max = sol.t_events[0][0]
+        closest_approach = r_s / sol.y_events[0][0][0]
+        deflection_angle = float(2.0 * phi_max - np.pi)
+
+        # Build full symmetric trajectory around periapsis
+        phi_half = np.linspace(0, phi_max, 300)
+        x_half = sol.sol(phi_half)[0]
+        
+        # Center the trajectory so phi=0 is periapsis
+        phi_trajectory = np.concatenate([-phi_half[::-1], phi_half[1:]])
+        x_trajectory = np.concatenate([x_half[::-1], x_half[1:]])
+        
+        r_trajectory = r_s / np.maximum(x_trajectory, 1e-15)
+        r_trajectory = np.clip(r_trajectory, closest_approach, r_initial)
+        
+    elif sol.status == 1 and len(sol.t_events[1]) > 0:
+        # Photon captured by horizon
         deflection_angle = float(np.pi)
         closest_approach = 1.5 * r_s
-        phi_trajectory = np.linspace(0.0, 2.5 * np.pi, 400)
-        r_trajectory = np.linspace(r_initial, 1.01 * r_s, phi_trajectory.size)
+        
+        phi_trap = sol.t_events[1][0]
+        phi_trajectory = np.linspace(0.0, phi_trap, 600)
+        x_trajectory = sol.sol(phi_trajectory)[0]
+        
+        r_trajectory = r_s / np.maximum(x_trajectory, 1e-15)
+        r_trajectory = np.clip(r_trajectory, 1.01 * r_s, r_initial)
+        
     else:
-        # Weak-field GR limit:
-        # α = 4GM/(c²b) = 2 r_s / b
+        # Fallback to weak field assumption
         deflection_angle = float(4.0 * G_CONST * mass_kg / (C_LIGHT**2 * impact_parameter))
-
-        # Turning point from null geodesic radial equation:
-        # r^3/b^2 - r + r_s = 0  ->  x^3 - p^2 x + p^2 = 0, x=r/r_s, p=b/r_s
-        coeff = [1.0, 0.0, -b_over_rs**2, b_over_rs**2]
-        roots = np.roots(coeff)
-        positive_real = [root.real for root in roots if abs(root.imag) < 1e-10 and root.real > 0]
-        if positive_real:
-            closest_approach = max(positive_real) * r_s
-        else:
-            closest_approach = impact_parameter
-
+        closest_approach = impact_parameter
+        
         phi_max = 0.5 * (np.pi + deflection_angle)
         phi_trajectory = np.linspace(-phi_max, phi_max, 600)
         sin_phi = np.maximum(np.abs(np.sin(phi_trajectory)), 1e-8)
@@ -670,7 +717,7 @@ def compare_methods_weak_field(
     alpha_x_thin, alpha_y_thin = lens_model.deflection_angle(
         impact_parameter_arcsec, 0.0
     )
-    alpha_thin_arcsec = _as_scalar(np.sqrt(alpha_x_thin**2 + alpha_y_thin**2))
+    alpha_thin_arcsec = _as_scalar(jnp.sqrt(alpha_x_thin**2 + alpha_y_thin**2))
     
     # Schwarzschild deflection
     if mass_kg is None:
@@ -698,10 +745,12 @@ def compare_methods_weak_field(
     alpha_schw_arcsec = float(alpha_schw_rad * reduction_factor * RAD_TO_ARCSEC)
     
     # Compare
-    if abs(alpha_thin_arcsec) < 1e-20:
+    if abs(alpha_schw_arcsec) < 1e-20:
         relative_diff = float('inf')
     else:
-        relative_diff = float(abs(alpha_thin_arcsec - alpha_schw_arcsec) / abs(alpha_thin_arcsec))
+        relative_diff = float(
+            abs(alpha_schw_arcsec - alpha_thin_arcsec) / abs(alpha_schw_arcsec)
+        )
     agreement = relative_diff < 0.05  # 5% tolerance
     
     return {

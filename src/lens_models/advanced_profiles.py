@@ -224,26 +224,62 @@ class EllipticalNFWProfile(NFWProfile):
         This is an approximation. For precise calculations, use numerical
         integration of the convergence profile.
         """
-        # Transform to elliptical coordinates
-        x_rot, r_ell = self._transform_coordinates(x, y)
+        x_rot, y_rot = self._transform_coordinates(x, y)
         
-        # Get circular deflection at elliptical radius
-        alpha_circ = super().deflection_angle(r_ell, np.zeros_like(r_ell))[0]
+        from scipy.integrate import quad
+        import warnings
         
-        # Approximate elliptical deflection
-        # Scale by local gradient direction
-        if np.isscalar(r_ell):
-            r_ell = np.array([r_ell])
-            x_rot = np.array([x_rot])
+        # Keeton 2001, Eq. 33 & 34 for general elliptical mass distributions:
+        # alpha_x = 2 * x * q * int_0^1 kappa(xi(u)) / (1 - (1-q^2)u) du
+        # alpha_y = 2 * y * q * int_0^1 kappa(xi(u)) / sqrt(1 - (1-q^2)u) du
+        # where xi(u) = sqrt(u * (x^2 + y^2 / (1 - (1-q^2)u)))
         
-        # Avoid division by zero
-        r_safe = np.where(r_ell > 1e-10, r_ell, 1e-10)
+        # We need kappa as a function of the elliptical radius xi
+        # We can reuse our own convergence method but force it to treat the input
+        # as already being an elliptical radius (i.e., on the major axis)
+        def kappa_ell(xi):
+            # For xi on the major axis, x=xi, y=0. kappa() internally calculates r_ell = xi.
+            return self.convergence(np.array([xi]), np.array([0.0]))[0]
+
+        x_flat = np.atleast_1d(x_rot).flatten()
+        y_flat = np.atleast_1d(y_rot).flatten()
         
-        # Deflection in rotated frame
-        alpha_x_rot = alpha_circ * x_rot / r_safe
-        alpha_y_rot = alpha_circ * (x - self.center_x - x_rot * np.cos(self.phi)) / (r_safe * self.q)
+        alpha_x_rot = np.zeros_like(x_flat, dtype=float)
+        alpha_y_rot = np.zeros_like(y_flat, dtype=float)
+        omega = 1.0 - self.q**2
         
-        # Rotate back to original frame
+        # Ensure we don't suppress integration warnings if numerical issues arise
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for i in range(x_flat.size):
+                vx = x_flat[i]
+                vy = y_flat[i]
+                
+                if abs(vx) < 1e-10 and abs(vy) < 1e-10:
+                    continue
+                    
+                def integrand_x(u):
+                    if u < 1e-15: return 0.0
+                    f = 1.0 - omega * u
+                    xi = np.sqrt(u * (vx**2 + vy**2 / f))
+                    return kappa_ell(xi) / f
+                    
+                def integrand_y(u):
+                    if u < 1e-15: return 0.0
+                    f = 1.0 - omega * u
+                    xi = np.sqrt(u * (vx**2 + vy**2 / f))
+                    return kappa_ell(xi) / np.sqrt(f)
+                    
+                res_x, _ = quad(integrand_x, 0.0, 1.0, limit=100)
+                res_y, _ = quad(integrand_y, 0.0, 1.0, limit=100)
+                
+                alpha_x_rot[i] = 2.0 * vx * self.q * res_x
+                alpha_y_rot[i] = 2.0 * vy * self.q * res_y
+
+        alpha_x_rot = alpha_x_rot.reshape(np.shape(x))
+        alpha_y_rot = alpha_y_rot.reshape(np.shape(y))
+        
+        # Rotate back to the original un-rotated coordinate frame
         cos_phi = np.cos(self.phi)
         sin_phi = np.sin(self.phi)
         
@@ -275,14 +311,25 @@ class EllipticalNFWProfile(NFWProfile):
         For elliptical profiles, shear calculation is more complex.
         This implementation provides an approximation.
         """
-        # Get circular shear at elliptical radius
-        _, r_ell = self._transform_coordinates(x, y)
-        gamma1_circ, gamma2_circ = super().shear(r_ell, np.zeros_like(r_ell))
+        # Compute exact shear via numerical differentiation of the deflection field
+        # \gamma_1 = 0.5 * (\partial\alpha_x/\partial x - \partial\alpha_y/\partial y)
+        # \gamma_2 = 0.5 * (\partial\alpha_x/\partial y + \partial\alpha_y/\partial x)
         
-        # Modify by ellipticity
-        # This is simplified; proper calculation requires derivatives
-        gamma1 = gamma1_circ * (1 + self.ellipticity)
-        gamma2 = gamma2_circ * (1 - self.ellipticity)
+        dx = 1e-6
+        alpha_x_plus_dx, alpha_y_plus_dx = self.deflection_angle(x + dx, y)
+        alpha_x_minus_dx, alpha_y_minus_dx = self.deflection_angle(x - dx, y)
+        
+        alpha_x_plus_dy, alpha_y_plus_dy = self.deflection_angle(x, y + dx)
+        alpha_x_minus_dy, alpha_y_minus_dy = self.deflection_angle(x, y - dx)
+        
+        dalpha_x_dx = (alpha_x_plus_dx - alpha_x_minus_dx) / (2.0 * dx)
+        dalpha_y_dy = (alpha_y_plus_dy - alpha_y_minus_dy) / (2.0 * dx)
+        
+        dalpha_x_dy = (alpha_x_plus_dy - alpha_x_minus_dy) / (2.0 * dx)
+        dalpha_y_dx = (alpha_y_plus_dx - alpha_y_minus_dx) / (2.0 * dx)
+        
+        gamma1 = 0.5 * (dalpha_x_dx - dalpha_y_dy)
+        gamma2 = 0.5 * (dalpha_x_dy + dalpha_y_dx)
         
         return gamma1, gamma2
 
@@ -460,12 +507,29 @@ class SersicProfile(MassProfile):
         y = np.atleast_1d(y)
         r = np.sqrt(x**2 + y**2)
         
-        # Compute mean convergence within radius using approximation
-        # <κ>(< r) ≈ κ(r/2) for smooth profiles
-        kappa_mean = self.convergence(r/2, np.zeros_like(r))
+        from scipy.integrate import quad
+        import warnings
         
-        # Deflection angle magnitude: α = 2 * <κ> * θ
-        alpha_mag = 2.0 * kappa_mean * r
+        alpha_mag = np.zeros_like(r, dtype=float)
+        
+        # Ensure we don't suppress integration warnings if numerical issues arise
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for i in range(r.size):
+                r_val = r.flat[i]
+                if r_val < 1e-10:
+                    alpha_mag.flat[i] = 0.0
+                    continue
+                
+                # integrand: kappa(r') * r'
+                def integrand(rp):
+                    # self.convergence expects (x, y) arrays, we pass (rp, 0)
+                    return self.convergence(np.array([rp]), np.array([0.0]))[0] * rp
+                    
+                res, _ = quad(integrand, 0.0, r_val, limit=100)
+                alpha_mag.flat[i] = 2.0 * res / r_val
+        
+        alpha_mag = alpha_mag.reshape(x.shape)
         
         # Avoid division by zero
         r_safe = np.where(r > 1e-10, r, 1.0)
@@ -503,39 +567,58 @@ class SersicProfile(MassProfile):
     
     def lensing_potential(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
-        Compute lensing potential for Sérsic profile.
-        
-        Uses approximation: ψ(θ) ≈ 2 ∫₀^θ α(θ') dθ'
-        where α is the deflection angle magnitude.
-        
+        Compute lensing potential for Sérsic profile via exact 1D radial integration.
+
+        For a circularly symmetric profile, the lensing potential satisfies
+        ψ(θ) = 2 ∫₀^θ α(θ') dθ'
+        where α(θ') is the scalar (radial) deflection angle magnitude at θ'.
+        This follows directly from α = ∇ψ for circularly symmetric lenses.
+
         Parameters
         ----------
         x : np.ndarray
             X coordinate in arcseconds
         y : np.ndarray
             Y coordinate in arcseconds
-        
+
         Returns
         -------
         psi : np.ndarray
-            Lensing potential (dimensionless)
-        
+            Lensing potential in arcsec²
+
         Notes
         -----
-        This is an approximation suitable for most applications.
-        For precise calculations, use numerical integration of
-        the convergence profile.
+        Uses scipy.integrate.quad with limit=150 for high-accuracy integration.
+        Near-origin values (r < 1e-10) are set to zero by continuity.
         """
+        from scipy.integrate import quad
+        import warnings
+
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
         r = np.sqrt(x**2 + y**2)
-        
-        # Approximate potential from convergence
-        # ψ ≈ κ(r) × r²
-        kappa = self.convergence(x, y)
-        psi = kappa * r**2
-        
-        return psi
+
+        psi = np.zeros_like(r, dtype=float)
+
+        def alpha_radial(rp: float) -> float:
+            """Scalar deflection angle magnitude at radius rp (arcsec)."""
+            if rp < 1e-10:
+                return 0.0
+            ax, ay = self.deflection_angle(np.array([rp]), np.array([0.0]))
+            return float(np.sqrt(ax[0]**2 + ay[0]**2))
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for i in range(r.size):
+                r_val = float(r.flat[i])
+                if r_val < 1e-10:
+                    psi.flat[i] = 0.0
+                    continue
+                # ψ(r) = 2 ∫₀^r α(r') dr'
+                val, _ = quad(alpha_radial, 0.0, r_val, limit=150)
+                psi.flat[i] = 2.0 * val
+
+        return psi.reshape(x.shape)
     
     def total_luminosity(self) -> float:
         """

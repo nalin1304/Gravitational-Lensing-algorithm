@@ -113,3 +113,13 @@ tmp/
 docs/_build/
 docs/.doctrees/
 site/
+
+# Agent/Temporary files
+CODEBASE_COMPLETE_SCIENTIFIC_AUDIT.md
+JOURNAL_PUBLICATION_READINESS.md
+GEMNI.md
+find_stubs.py
+find_physics_stubs.py
+test_solve.py
+test_profile_integration.py
+test_rigor_api.py

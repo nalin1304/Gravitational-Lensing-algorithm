@@ -139,7 +139,7 @@ def generate_test_dataset(n_samples: int = 10, grid_size: int = 64) -> Dict:
     return dataset
 
 
-def test_validation_with_real_model(model: PhysicsInformedNN, dataset: Dict):
+def evaluate_validation_with_real_model(model: PhysicsInformedNN, dataset: Dict):
     """Test scientific validation with trained PINN model."""
     print(f"\n{'='*70}")
     print(f"TEST 1: SCIENTIFIC VALIDATION WITH TRAINED MODEL")
@@ -218,7 +218,7 @@ def test_validation_with_real_model(model: PhysicsInformedNN, dataset: Dict):
     return results
 
 
-def test_bayesian_uq(dataset: Dict):
+def evaluate_bayesian_uq(dataset: Dict):
     """Test Bayesian uncertainty quantification."""
     print(f"\n{'='*70}")
     print(f"TEST 2: BAYESIAN UNCERTAINTY QUANTIFICATION")
@@ -311,7 +311,7 @@ def test_bayesian_uq(dataset: Dict):
     return results
 
 
-def test_calibration(n_points: int = 500):
+def evaluate_calibration(n_points: int = 500):
     """Test uncertainty calibration on larger dataset."""
     print(f"\n{'='*70}")
     print(f"TEST 3: CALIBRATION ANALYSIS")
@@ -489,6 +489,10 @@ END OF REPORT
 
 
 def main():
+    # Enforce deterministic random generation for reproducible scientific validation
+    torch.manual_seed(42)
+    np.random.seed(42)
+    
     """Main testing pipeline."""
     print(f"\n{'='*70}")
     print(f"PHASE 15 PART B: TEST WITH REAL DATA")
@@ -508,13 +512,13 @@ def main():
         dataset = generate_test_dataset(n_samples=n_test_samples, grid_size=grid_size)
         
         # Step 3: Test validation
-        validation_results = test_validation_with_real_model(model, dataset)
+        validation_results = evaluate_validation_with_real_model(model, dataset)
         
         # Step 4: Test Bayesian UQ
-        uq_results = test_bayesian_uq(dataset)
+        uq_results = evaluate_bayesian_uq(dataset)
         
         # Step 5: Test calibration
-        calibration_results = test_calibration(n_points=500)
+        calibration_results = evaluate_calibration(n_points=500)
         
         # Step 6: Generate report
         report = generate_test_report(

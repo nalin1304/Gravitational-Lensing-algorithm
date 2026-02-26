@@ -354,9 +354,10 @@ class PSFModel:
     
     def __init__(
         self,
-        fwhm: float,
-        pixel_scale: float,
-        model_type: str = 'gaussian'
+        fwhm: float = 0.1,
+        pixel_scale: float = 0.05,
+        model_type: str = 'gaussian',
+        empirical_psf: Optional[np.ndarray] = None
     ):
         """
         Initialize PSF model.
@@ -368,16 +369,22 @@ class PSFModel:
         pixel_scale : float
             Pixel scale in arcseconds/pixel
         model_type : str
-            PSF model type: 'gaussian', 'moffat', or 'airy'
-            (currently only 'gaussian' implemented)
+            PSF model type: 'gaussian', 'moffat', 'airy', or 'empirical'
+        empirical_psf : np.ndarray, optional
+            2D array containing empirical PSF (required if model_type='empirical')
         """
         self.fwhm = fwhm
         self.pixel_scale = pixel_scale
         self.model_type = model_type
         
-        # Convert FWHM to sigma (for Gaussian)
-        # FWHM = 2 * sqrt(2 * ln(2)) * sigma ≈ 2.355 * sigma
-        self.sigma_pixels = (fwhm / pixel_scale) / 2.355
+        if model_type == 'empirical':
+            if empirical_psf is None:
+                raise ValueError("empirical_psf must be provided for 'empirical' model type")
+            self.empirical_psf = empirical_psf / np.sum(empirical_psf)
+        else:
+            # Convert FWHM to sigma (for Gaussian)
+            # FWHM = 2 * sqrt(2 * ln(2)) * sigma ≈ 2.355 * sigma
+            self.sigma_pixels = (fwhm / pixel_scale) / 2.355
     
     def generate_psf(self, size: int = 25) -> np.ndarray:
         """
@@ -394,6 +401,9 @@ class PSFModel:
         psf : np.ndarray
             Normalized PSF kernel
         """
+        if self.model_type == 'empirical':
+            return self.empirical_psf
+
         if size % 2 == 0:
             size += 1  # Make odd
         
@@ -448,7 +458,7 @@ class PSFModel:
         else:
             raise NotImplementedError(
                 f"PSF model '{self.model_type}' not yet implemented. "
-                f"Supported models: 'gaussian', 'airy', 'moffat'"
+                f"Supported models: 'gaussian', 'airy', 'moffat', 'empirical'"
             )
         
         # Normalize

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: "Computational Imaging Research Platform for Gravitational Lensing"
+message: "If you use this repository in research, please cite it using this metadata."
+type: software
+authors:
+  - family-names: Aggarwal
+    given-names: Nalin
+repository-code: "https://github.com/nalin1304/Gravitational-Lensing-algorithm"
+url: "https://github.com/nalin1304/Gravitational-Lensing-algorithm"
+license: MIT
+version: "2.0.0"
+date-released: "2026-02-26"
+keywords:
+  - gravitational lensing
+  - computational imaging
+  - physics-informed neural networks
+  - cosmography
+  - astrophysics

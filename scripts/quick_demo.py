@@ -9,6 +9,9 @@ from pathlib import Path
 # Add project root
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import numpy as np
+np.random.seed(42)  # Reproducible demo output
+
 print("\n" + "="*70)
 print("PHASE 15 QUICK DEMO")
 print("="*70)
@@ -50,21 +53,21 @@ try:
 except Exception as e:
     print(f"❌ Bayesian PINN test failed: {e}")
 
-# Test 4: Check Streamlit app
-print("\n[4/4] Checking Streamlit app...")
+# Test 4: Check API server
+print("\n[4/4] Checking API server...")
 try:
-    app_path = Path(__file__).parent.parent / "app" / "main.py"
-    if app_path.exists():
-        with open(app_path, 'r') as f:
+    api_path = Path(__file__).parent.parent / "api" / "main.py"
+    if api_path.exists():
+        with open(api_path, 'r') as f:
             content = f.read()
-            if 'show_validation_page' in content and 'show_bayesian_uq_page' in content:
-                print("✅ Streamlit app enhanced with Phase 15 pages")
+            if 'generate_synthetic' in content and 'inference' in content:
+                print("✅ API server has required endpoints")
             else:
-                print("⚠️  Streamlit app may need updates")
+                print("⚠️  API server may need updates")
     else:
-        print("❌ Streamlit app not found")
+        print("❌ API server not found")
 except Exception as e:
-    print(f"❌ Streamlit check failed: {e}")
+    print(f"❌ API check failed: {e}")
 
 print("\n" + "="*70)
 print("QUICK DEMO COMPLETE")
@@ -73,17 +76,14 @@ print("="*70)
 print("\n📊 Summary:")
 print("  ✅ Phase 15 modules installed")
 print("  ✅ Basic functionality working")
-print("  ✅ Streamlit app ready")
+print("  ✅ API server ready")
 
 print("\n🚀 Next steps:")
 print("  1. Run full test suite:")
 print("     python scripts/test_validator.py")
 print("     python scripts/test_bayesian_uq.py")
 print("")
-print("  2. Launch Streamlit dashboard:")
-print("     streamlit run app/main.py")
-print("")
-print("  3. Navigate to new pages:")
-print("     - ✅ Scientific Validation")
-print("     - 🎯 Bayesian UQ")
+print("  2. Launch web UI:")
+print("     uvicorn api.main:app --reload")
+print("     # open http://localhost:8000/ui")
 print("")
