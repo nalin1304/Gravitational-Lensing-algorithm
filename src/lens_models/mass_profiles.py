@@ -491,9 +491,13 @@ class NFWProfile(MassProfile):
                 x = r * np.cos(angle)
                 y = r * np.sin(angle)
                 
-                # Acceptance probability ∝ NFW density
+                # NFW acceptance probability ∝ ρ_NFW(r) ∝ 1/[(r/r_s)(1+r/r_s)²].
+                # Divided by 10 to keep acceptance rate in the ~10–50% regime for
+                # typical virial-radius grids (pure NFW peaks sharply at r→0 so
+                # without normalisation the sampler would reject nearly all proposals
+                # outside the inner ~10% of r_vir).
                 prob = 1.0 / ((r/self.r_s) * (1 + r/self.r_s)**2 + 1e-10)
-                if self._rng.random() < prob / 10:  # Normalize acceptance
+                if self._rng.random() < prob / 10:
                     positions.append((x, y))
                     accepted = True
         
@@ -1163,10 +1167,20 @@ class SIDMProfile(NFWProfile):
     def deflection_angle(self, x: Union[float, np.ndarray],
                         y: Union[float, np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Calculate deflection angle for SIDM profile.
-        
-        The deflection is computed from the modified convergence profile.
-        
+        Calculate deflection angle for SIDM profile via Abel transform of
+        the modified convergence.
+
+        The deflection angle is an integral over the projected surface-mass
+        density (convergence), not a local function of radius.  Multiplying
+        the NFW deflection by a local suppression factor would violate mass
+        conservation.  Instead we use the general relation (Schneider 1992,
+        §4.2):
+
+            α(R) = (2 / R) ∫₀^R κ_SIDM(R') R' dR'
+
+        where κ_SIDM = κ_NFW × _sidm_modification, and then decompose into
+        x/y components by the direction cosines (x/R, y/R).
+
         Parameters
         ----------
         x : float or np.ndarray
@@ -1181,23 +1195,48 @@ class SIDMProfile(NFWProfile):
         alpha_y : np.ndarray
             y-component of deflection angle in arcseconds
         """
-        x = np.atleast_1d(x)
-        y = np.atleast_1d(y)
+        x = np.atleast_1d(np.asarray(x, dtype=float))
+        y = np.atleast_1d(np.asarray(y, dtype=float))
         r = np.sqrt(x**2 + y**2)
-        
-        # Get base NFW deflection
-        alpha_x_nfw, alpha_y_nfw = super().deflection_angle(x, y)
-        
-        # Apply SIDM modification - same as convergence for consistency
-        if self.sigma_SIDM > 0:
-            mod = self._sidm_modification(r)
-            # Multiplication to suppress deflection in core
-            alpha_x = alpha_x_nfw * mod
-            alpha_y = alpha_y_nfw * mod
-        else:
-            alpha_x = alpha_x_nfw
-            alpha_y = alpha_y_nfw
-        
+
+        if self.sigma_SIDM == 0:
+            # CDM limit: use exact NFW deflection
+            return super().deflection_angle(x, y)
+
+        # Compute the SIDM deflection magnitude α(R) via numerical quadrature
+        # of the modified convergence profile.  Uses scipy.integrate.quad for
+        # per-radius integrals to ensure mass conservation.
+        from scipy.integrate import quad
+
+        def _kappa_sidm_radial(R_prime: float) -> float:
+            """κ_SIDM at projected radius R_prime (scalar, arcsec)."""
+            # Evaluate parent NFW convergence at a ring of radius R_prime
+            # along x-axis (radially symmetric integrand)
+            kappa_val = super(SIDMProfile, self).convergence(
+                np.array([R_prime]), np.array([0.0])
+            )
+            mod_val = self._sidm_modification(np.array([R_prime]))
+            return float(kappa_val[0]) * float(mod_val[0])
+
+        alpha_mag = np.zeros_like(r)
+        for i, R in enumerate(r):
+            if R < 1e-8:
+                alpha_mag[i] = 0.0
+                continue
+            integral, _ = quad(_kappa_sidm_radial, 0.0, R, limit=100)
+            # α(R) = (2/R) ∫₀^R κ_SIDM(R') R' dR'  [arcsec]
+            # quad integrates f(R'), so we wrap with an extra R' factor:
+            # Re-integrate with R' weight
+            def _integrand(R_prime):
+                return _kappa_sidm_radial(R_prime) * R_prime
+            integral_w, _ = quad(_integrand, 0.0, R, limit=100)
+            alpha_mag[i] = 2.0 * integral_w / R
+
+        # Decompose into (x, y) components
+        r_safe = np.where(r > 1e-8, r, 1.0)
+        alpha_x = alpha_mag * x / r_safe
+        alpha_y = alpha_mag * y / r_safe
+
         return alpha_x, alpha_y
     
     def __repr__(self):
@@ -1293,6 +1332,7 @@ class DarkMatterFactory:
     def generate_random_halo(model_type: str, lens_system,
                             mass_range: Tuple[float, float] = (1e11, 1e13),
                             concentration_range: Tuple[float, float] = (5, 15),
+                            seed: Optional[int] = None,
                             **kwargs) -> MassProfile:
         """
         Generate a random dark matter halo for Monte Carlo simulations.
@@ -1307,6 +1347,9 @@ class DarkMatterFactory:
             Range for log10(M_vir/Msun) (default: 1e11 to 1e13)
         concentration_range : tuple of float, optional
             Range for concentration (default: 5 to 15)
+        seed : int, optional
+            RNG seed for reproducibility.  If None, an unpredictable seed is used.
+            Set explicitly for reproducible Monte Carlo chains (AGENTS.md §6).
         **kwargs : dict
             Model-specific parameter ranges
             
@@ -1315,12 +1358,13 @@ class DarkMatterFactory:
         halo : MassProfile
             Randomly generated halo
         """
-        # Random mass (log-uniform)
+        rng = np.random.default_rng(seed)
+        # Random mass (log-uniform over mass_range)
         log_m_min, log_m_max = np.log10(mass_range[0]), np.log10(mass_range[1])
-        M_vir = 10**np.random.uniform(log_m_min, log_m_max)
+        M_vir = 10 ** rng.uniform(log_m_min, log_m_max)
         
-        # Random concentration (uniform)
-        concentration = np.random.uniform(*concentration_range)
+        # Random concentration (uniform over concentration_range)
+        concentration = rng.uniform(*concentration_range)
         
         return DarkMatterFactory.create_halo(
             model_type, M_vir, concentration, lens_system, **kwargs

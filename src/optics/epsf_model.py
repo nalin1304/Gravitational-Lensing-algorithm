@@ -45,6 +45,7 @@ Usage
 
 from __future__ import annotations
 
+import math
 import warnings
 from typing import Dict, List, Optional, Tuple
 
@@ -75,10 +76,10 @@ def _radial_zernike(n: int, m: int, rho: np.ndarray) -> np.ndarray:
     m_abs = abs(m)
     R = np.zeros_like(rho)
     for s in range((n - m_abs) // 2 + 1):
-        coeff = ((-1) ** s * np.math.factorial(n - s) /
-                 (np.math.factorial(s) *
-                  np.math.factorial((n + m_abs) // 2 - s) *
-                  np.math.factorial((n - m_abs) // 2 - s)))
+        coeff = ((-1) ** s * math.factorial(n - s) /
+                 (math.factorial(s) *
+                  math.factorial((n + m_abs) // 2 - s) *
+                  math.factorial((n - m_abs) // 2 - s)))
         R += coeff * rho ** (n - 2 * s)
     return R
 

@@ -337,8 +337,10 @@ class GeodesicIntegrator:
             alpha_rad = float(2.0 * phi_max - np.pi)
             return alpha_rad
         elif sol.status == 1 and len(sol.t_events[1]) > 0:
-            # Captured by the black hole horizon
-            return float(np.pi)
+            # Photon captured by the black hole (crossed the event horizon).
+            # A captured photon has no asymptotic deflection angle — returning
+            # a finite value would silently corrupt downstream analyses.
+            return float('nan')
         else:
             raise RuntimeError("Geodesic integration failed to converge or find periapsis.")
     

@@ -452,15 +452,15 @@ def monte_carlo_h0_uncertainty(
     - Kinematic constraints
     """
     h0_samples = np.full(n_realizations, np.nan, dtype=float)
-    rng = np.random.RandomState(random_seed) if random_seed is not None else np.random
+    rng = np.random.default_rng(random_seed)
     failed_realizations = 0
     
     for i in range(n_realizations):
         # Draw random lens parameters
         if hasattr(lens_model, 'M_vir'):
             # NFW-like profile
-            M_vir_sample = lens_model.M_vir + rng.randn() * lens_uncertainties.get('M_vir', 0)
-            c_sample = lens_model.c + rng.randn() * lens_uncertainties.get('c', 0)
+            M_vir_sample = lens_model.M_vir + rng.standard_normal() * lens_uncertainties.get('M_vir', 0)
+            c_sample = lens_model.c + rng.standard_normal() * lens_uncertainties.get('c', 0)
             
             # Ensure positive values
             M_vir_sample = max(M_vir_sample, 1e10)
@@ -501,7 +501,7 @@ def monte_carlo_h0_uncertainty(
                 
         elif hasattr(lens_model, 'M'):
             # Point mass
-            mass_sample = lens_model.M + rng.randn() * lens_uncertainties.get('mass', 0)
+            mass_sample = lens_model.M + rng.standard_normal() * lens_uncertainties.get('mass', 0)
             mass_sample = max(mass_sample, 1e10)
             
             lens_sys = LensSystem(lens_model.lens_system.z_l,
@@ -512,8 +512,8 @@ def monte_carlo_h0_uncertainty(
             raise ValueError("Unsupported lens model type")
         
         # Perturb source position
-        source_x = source_position[0] + rng.randn() * lens_uncertainties.get('source_x', 0)
-        source_y = source_position[1] + rng.randn() * lens_uncertainties.get('source_y', 0)
+        source_x = source_position[0] + rng.standard_normal() * lens_uncertainties.get('source_x', 0)
+        source_y = source_position[1] + rng.standard_normal() * lens_uncertainties.get('source_y', 0)
         source_sample = (source_x, source_y)
         
         # Infer H0 for this realization

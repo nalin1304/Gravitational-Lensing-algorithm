@@ -201,7 +201,10 @@ def compute_nfw_deflection(
     G = _G_KPC3_PER_MSUN_S2  # kpc^3 / (M_sun s^2)
     c_kpc = _C_KPC_PER_S  # kpc / s
     
-    M_vir_solar = M_vir * 1e12
+    # M_vir is in raw solar masses (as stored/predicted by the training pipeline).
+    # No unit rescaling — training data in generate_dataset.py samples M_vir in
+    # [1e11, 5e12] M_sun directly.
+    M_vir_solar = M_vir
     
     D_l_val, D_s_val, D_ls_val = _angular_diameter_distances_kpc(z_l, z_s, H0, Omega_m)
     D_l = jnp.array(D_l_val)
@@ -241,7 +244,19 @@ def compute_nfw_deflection(
     
     Sigma_crit = (c_kpc**2 / (4.0 * jnp.pi * G)) * (D_s / (D_l * D_ls + 1e-8))
     
-    c_nfw = 10.0
+    # Compute the NFW concentration from M_vir and r_s.
+    # The virial radius r_vir is defined by M(r_vir) = (4π/3)×200×ρ_crit(z_l)×r_vir³.
+    # From M_vir = 4π ρ_s r_s³ f(c) and r_vir = c × r_s we derive:
+    #   ρ_crit(z_l) [M_sun/kpc³] using the Friedmann equation at z_l.
+    # H(z_l) = H0 × sqrt(Omega_m(1+z_l)³ + (1-Omega_m))  [km/s/Mpc]
+    H_z_kpc_s = (H0 * jnp.sqrt(Omega_m * (1.0 + z_l)**3 + (1.0 - Omega_m))
+                 / 3085.677581e+16)   # km/s/Mpc → 1/s; 1 Mpc = 3.0857e+19 km → in kpc: /3085.677581e16
+    rho_crit_kpc = 3.0 * H_z_kpc_s**2 / (8.0 * jnp.pi * G)   # M_sun / kpc³
+    # r_vir [kpc]: (M_vir / (4π/3 × 200 × ρ_crit))^(1/3)
+    r_vir_kpc = (M_vir_solar / (4.0 * jnp.pi / 3.0 * 200.0 * rho_crit_kpc + 1e-30)) ** (1.0 / 3.0)
+    c_nfw = r_vir_kpc / (r_s + 1e-8)
+    # Clamp to physically reasonable range (concentration 2–100)
+    c_nfw = jnp.clip(c_nfw, 2.0, 100.0)
     f_c = jnp.log(1.0 + c_nfw) - c_nfw / (1.0 + c_nfw)
     rho_s = M_vir_solar / (4.0 * jnp.pi * r_s**3 * f_c + 1e-8)
     

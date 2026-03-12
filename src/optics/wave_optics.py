@@ -21,7 +21,7 @@ except ImportError:
 
 import numpy as np
 from typing import Tuple, Dict, Optional
-import matplotlib.pyplot as plt
+# matplotlib is imported lazily (inside plotting methods) to avoid headless-env warnings.
 from astropy import constants as const
 from astropy import units as u
 from scipy.ndimage import label, gaussian_filter
@@ -356,7 +356,7 @@ class WaveOpticsEngine:
         wave_result: Dict,
         figsize: Tuple[int, int] = (12, 10),
         save_path: Optional[str] = None
-    ) -> plt.Figure:
+    ):
         """
         Create publication-quality figure of wave optics results.
         
@@ -371,9 +371,10 @@ class WaveOpticsEngine:
             
         Returns
         -------
-        fig : matplotlib.Figure
+        fig : matplotlib.figure.Figure
             The created figure
         """
+        import matplotlib.pyplot as plt
         fig, axes = plt.subplots(2, 2, figsize=figsize, facecolor='#1a1a1a')
         fig.suptitle(
             f'Wave Optics: λ = {wave_result["wavelength"]:.0f} nm',
@@ -485,7 +486,7 @@ def plot_wave_vs_geometric(
     grid_size: int = 512,
     grid_extent: float = 3.0,
     save_path: Optional[str] = None
-) -> plt.Figure:
+):
     """
     Create side-by-side comparison of wave vs geometric optics.
     
@@ -506,9 +507,10 @@ def plot_wave_vs_geometric(
         
     Returns
     -------
-    fig : matplotlib.Figure
+    fig : matplotlib.figure.Figure
         The comparison figure
     """
+    import matplotlib.pyplot as plt
     # Compute wave optics
     engine = WaveOpticsEngine()
     wave_result = engine.compute_amplification_factor(

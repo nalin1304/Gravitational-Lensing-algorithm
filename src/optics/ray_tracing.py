@@ -161,12 +161,25 @@ def ray_trace(source_position: Tuple[float, float],
         except Exception as e:
             raise ValueError(f"Lens model mass must be evaluable to a float for wave optics computations. Error: {e}")
             
-        R_s = 2.0 * 6.67430e-11 * (mass * 1.98847e30) / (299792458.0**2)
-        w = 2.0 * jnp.pi * R_s / (wavelength_m + 1e-10)
-        transmission = 1.0 - jnp.exp(-w)
+        # Dimensionless wave-optics frequency parameter (Nakamura & Deguchi 1999, Eq. 4.2):
+        #   ω = 8π G M f / c³  (for EM waves at frequency f = c / λ)
+        #     = 8π G M / (c² λ)
+        # When ω >> 1: geometric optics valid.  When ω ≪ 1: wave effects important.
+        # NOTE: Full diffraction integral F(ω) for an arbitrary lens requires
+        #       WaveOpticsEngine.compute_amplification_factor().  Here we compute ω
+        #       only and raise an error if the caller requests a wave magnification
+        #       without using the dedicated engine — avoids a physically wrong
+        #       heuristic factor from silently corrupting results.
+        G = 6.67430e-11          # m³ kg⁻¹ s⁻²
+        c = 299792458.0           # m s⁻¹
+        M_kg = mass * 1.98847e30  # solar mass → kg
+        omega_w = 8.0 * jnp.pi * G * M_kg / (c**2 * (wavelength_m + 1e-30))
         
-        results['wave_transmission'] = transmission
-        results['wave_magnifications'] = jnp.array(magnifications) * transmission
+        results['wave_frequency_parameter'] = float(omega_w)
+        results['wave_optics_regime'] = 'geometric' if float(omega_w) > 1e3 else 'wave'
+        # wave_magnifications is intentionally NOT set here.  For physical wave-optics
+        # magnification, call WaveOpticsEngine.compute_amplification_factor() which
+        # evaluates the Nakamura & Deguchi (1999) diffraction integral on a grid.
     
     # Add maps if requested
     if return_maps:

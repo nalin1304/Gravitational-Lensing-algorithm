@@ -116,8 +116,12 @@ class EllipticalNFWProfile(NFWProfile):
         self.center_x = center_x
         self.center_y = center_y
         
-        # Compute derived quantities
-        self.q = (1.0 - ellipticity) / (1.0 + ellipticity)  # Axis ratio b/a
+        # Axis ratio convention: q = (1 - e) / (1 + e)  (WL/shape-measurement
+        # convention where e = (1-q)/(1+q), i.e. reduced shear notation).
+        # Note: NFWProfile in mass_profiles.py uses q = 1 - e instead — these
+        # two conventions give different q for the same e.  EllipticalNFWProfile
+        # follows the WL convention consistently across its coordinate transforms.
+        self.q = (1.0 - ellipticity) / (1.0 + ellipticity)  # Axis ratio b/a (WL convention)
         self.phi = np.radians(position_angle)  # Convert to radians
     
     def _transform_coordinates(

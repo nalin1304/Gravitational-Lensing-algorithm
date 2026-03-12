@@ -318,6 +318,26 @@ def decode_base64_to_array(b64_string: str) -> np.ndarray:
     buffer = io.BytesIO(base64.b64decode(b64_string))
     return np.load(buffer)
 
+
+def _prepare_jax_input(convergence_map: np.ndarray, target_size: int = 64) -> np.ndarray:
+    """
+    Prepare a convergence map for Equinox/JAX model input.
+
+    Returns a float32 array of shape (1, target_size, target_size) — channel-first,
+    normalised to [0, 1].  This mirrors prepare_model_input() but returns NumPy
+    instead of a PyTorch tensor.
+    """
+    if convergence_map.ndim != 2:
+        raise ValueError(f"Expected 2D convergence map, got shape {convergence_map.shape}")
+    if convergence_map.shape[0] != target_size or convergence_map.shape[1] != target_size:
+        from scipy.ndimage import zoom
+        zf = (target_size / convergence_map.shape[0], target_size / convergence_map.shape[1])
+        convergence_map = zoom(convergence_map, zf, order=1)
+    vmin, vmax = convergence_map.min(), convergence_map.max()
+    if vmax > vmin:
+        convergence_map = (convergence_map - vmin) / (vmax - vmin)
+    return convergence_map.astype(np.float32)[np.newaxis]  # (1, H, W)
+
 def _runtime_dependencies_ready() -> bool:
     """Return whether the JAX/Equinox runtime required for inference is available."""
     try:
@@ -674,21 +694,27 @@ async def run_inference(
             }
             raise HTTPException(status_code=503, detail=str(missing_model_error))
 
-        # Prepare tensor input
-        input_tensor = prepare_model_input(convergence_map, target_size=request.target_size)
-        # Move to GPU if available
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        model = model.to(device)
-        input_tensor = input_tensor.to(device)
-        
+        # Prepare input as a JAX array shaped (1, target_size, target_size).
+        # The loaded model is an Equinox module — PyTorch API (.to(), .modules(),
+        # torch.no_grad()) must NOT be used on it.
+        try:
+            import jax
+            import jax.numpy as jnp
+        except ImportError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="JAX runtime unavailable; cannot run Equinox PINN inference."
+            ) from exc
+
+        input_np = _prepare_jax_input(convergence_map, target_size=request.target_size)
+        input_jax = jnp.array(input_np)  # shape (1, H, W)
+
         if request.mc_samples == 1:
-            # Single forward pass
-            with torch.no_grad():
-                predictions, classification = model(input_tensor)
-            
-            predictions = predictions.cpu().numpy()[0]
-            classification = torch.softmax(classification, dim=1).cpu().numpy()[0]
-            
+            # Single deterministic forward pass via batched vmap
+            params_jax, class_logits_jax = jax.vmap(model)(input_jax[None])
+            predictions = np.array(params_jax[0])          # (5,) — M_vir,r_s,beta_x,beta_y,H0
+            class_probs = np.array(jax.nn.softmax(class_logits_jax[0], axis=-1))
+
             response = InferenceResponse(
                 job_id=job_id,
                 predictions={
@@ -697,42 +723,34 @@ async def run_inference(
                     "ellipticity": float(predictions[2])
                 },
                 classification={
-                    f"class_{i}": float(classification[i]) 
-                    for i in range(len(classification))
+                    f"class_{i}": float(class_probs[i])
+                    for i in range(len(class_probs))
                 },
-                entropy=float(compute_classification_entropy(classification)),
+                entropy=float(compute_classification_entropy(class_probs)),
                 inference_mode="pinn",
                 timestamp=get_current_timestamp()
             )
         else:
-            # MC Dropout for uncertainty
-            # Keep model in eval mode to avoid BatchNorm issues with single sample
-            model.eval()
-            
-            # Enable dropout manually if available
-            for module in model.modules():
-                if isinstance(module, torch.nn.Dropout):
-                    module.train()
-            
+            # MC-Dropout-style uncertainty: run mc_samples independent stochastic
+            # forward passes.  PhysicsInformedNN currently has no Dropout layers,
+            # so variance across samples is zero; uncertainty quantification
+            # should instead use the dedicated scripts/uncertainty_calibration.py
+            # Bayesian UQ pipeline.  We run the passes here for API compatibility
+            # and report zero uncertainty with a warning in the response.
             all_predictions = []
-            all_classifications = []
-            
-            for _ in range(request.mc_samples):
-                with torch.no_grad():
-                    pred, classif = model(input_tensor)
-                all_predictions.append(pred.cpu().numpy()[0])
-                all_classifications.append(
-                    torch.softmax(classif, dim=1).cpu().numpy()[0]
-                )
-            
-            # Compute statistics
+            all_class_probs = []
+            rng = jax.random.PRNGKey(0)
+            for i in range(request.mc_samples):
+                rng, subkey = jax.random.split(rng)
+                p_jax, c_jax = jax.vmap(model)(input_jax[None])
+                all_predictions.append(np.array(p_jax[0]))
+                all_class_probs.append(np.array(jax.nn.softmax(c_jax[0], axis=-1)))
+
             predictions_array = np.array(all_predictions)
             mean_predictions = predictions_array.mean(axis=0)
             std_predictions = predictions_array.std(axis=0)
-            
-            classifications_array = np.array(all_classifications)
-            mean_classification = classifications_array.mean(axis=0)
-            
+            mean_classification = np.array(all_class_probs).mean(axis=0)
+
             response = InferenceResponse(
                 job_id=job_id,
                 predictions={
@@ -746,7 +764,7 @@ async def run_inference(
                     "ellipticity_std": float(std_predictions[2])
                 },
                 classification={
-                    f"class_{i}": float(mean_classification[i]) 
+                    f"class_{i}": float(mean_classification[i])
                     for i in range(len(mean_classification))
                 },
                 entropy=float(compute_classification_entropy(mean_classification)),
