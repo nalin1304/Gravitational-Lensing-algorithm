@@ -285,10 +285,10 @@ class TestGPUSupport:
         assert "GPU" in backend.backend_name
     
     @pytest.mark.skipif(GPU_AVAILABLE, reason="CuPy is available")
-    def test_fallback_to_cpu(self):
-        """Test fallback to CPU when GPU not available."""
-        backend = ArrayBackend(use_gpu=True)
-        assert backend.backend_name == "NumPy (CPU)"
+    def test_gpu_requires_cupy(self):
+        """Test GPU backend requires CuPy when unavailable."""
+        with pytest.raises(ImportError):
+            ArrayBackend(use_gpu=True)
 
 
 class TestBackendSwitching:

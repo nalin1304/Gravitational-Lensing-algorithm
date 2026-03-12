@@ -51,10 +51,10 @@ export function render() {
       <table class="data-table">
         <thead><tr><th>Script</th><th>Purpose</th><th>Output</th></tr></thead>
         <tbody>
-          <tr><td><code>ablation_study.py</code></td><td>Component-level ablation (6 configs)</td><td>results/ablation_table.tex</td></tr>
-          <tr><td><code>validate_real_data.py</code></td><td>SLACS lens validation (--use-real)</td><td>results/real_data/</td></tr>
-          <tr><td><code>sota_comparison.py</code></td><td>SOTA benchmark (4 methods)</td><td>results/sota_comparison_table.tex</td></tr>
-          <tr><td><code>uncertainty_calibration.py</code></td><td>Reliability diagram, ECE, coverage</td><td>results/uncertainty_calibration.png</td></tr>
+          <tr><td><code>ablation_study.py</code></td><td>Checkpoint-backed component study (5 configs)</td><td>results/ablation_table.tex</td></tr>
+          <tr><td><code>validate_real_data.py</code></td><td>SLACS image-space diagnostic (--use-real)</td><td>results/real_data/</td></tr>
+          <tr><td><code>sota_comparison.py</code></td><td>Checkpoint-backed neural vs analytic benchmark (4 methods)</td><td>results/sota_comparison_table.tex</td></tr>
+          <tr><td><code>uncertainty_calibration.py</code></td><td>Reliability diagram, ECE, coverage on held-out synthetic analogs</td><td>results/uncertainty_calibration.png</td></tr>
           <tr><td><code>scalability_benchmark.py</code></td><td>Grid scaling (16→512)</td><td>results/scalability_analysis.png</td></tr>
           <tr><td><code>reproduce.sh</code></td><td>One-command full reproducibility</td><td>All results/</td></tr>
         </tbody>
@@ -82,25 +82,43 @@ export async function init() {
       el.innerHTML = models.models.map(m => `
         <div class="metric-row">
           <span class="metric-key">${P.esc(m.name || m.model_name || 'PINN')}</span>
-          <span class="badge badge-info">${P.esc(m.status || 'available')}</span>
+          <span class="badge ${m.supports_inference ? 'badge-success' : 'badge-warning'}">${P.esc(m.status || 'unknown')}</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-key">Inference readiness</span>
+          <span class="metric-val">${m.supports_inference ? 'checkpoint + runtime ready' : 'checkpoint/runtime unavailable'}</span>
         </div>
       `).join("");
     } else {
-      el.innerHTML = `<div class="metric-row"><span class="metric-key">Physics-Informed Neural Network</span><span class="badge badge-info">Physics Fallback Active</span></div>`;
+      el.innerHTML = `<p class="section-desc" style="color:var(--text-muted)">No model metadata available</p>`;
     }
   } catch { document.getElementById("dModels").innerHTML = `<p class="section-desc" style="color:var(--text-muted)">Could not load models</p>`; }
 
   try {
     const stats = await P.api("/api/v1/stats", { auth: false });
     const el = document.getElementById("dStats");
-    const rows = Object.entries(stats).map(([k, v]) =>
+    const rows = Object.entries(stats).filter(([, v]) => typeof v !== "object" || v === null).map(([k, v]) =>
       `<div class="metric-row"><span class="metric-key">${P.esc(k.replace(/_/g, ' '))}</span><span class="metric-val">${typeof v === 'number' ? P.fmtSci(v) : P.esc(String(v))}</span></div>`
     ).join("");
     el.innerHTML = rows || `<p class="section-desc">No stats available</p>`;
     const tcEl = document.getElementById("dTestCount");
     const tmEl = document.getElementById("dTestMeta");
-    if (tcEl) tcEl.textContent = "481";
-    if (tmEl) tmEl.textContent = `35 skipped · 0 failed · API jobs: ${stats.total_jobs ?? '—'}`;
+    const regression = stats.regression_summary || {};
+    if (tcEl) {
+      if (regression.passed != null) {
+        tcEl.textContent = String(regression.passed);
+      } else if (regression.checks_passed != null && regression.checks_total != null) {
+        tcEl.textContent = `${regression.checks_passed}/${regression.checks_total}`;
+      } else {
+        tcEl.textContent = "—";
+      }
+    }
+    if (tmEl) {
+      if (regression.passed != null) {
+        tmEl.textContent = `${regression.skipped ?? '—'} skipped · ${regression.failed ?? '—'} failed · API jobs: ${stats.total_jobs ?? '—'}`;
+      } else {
+        tmEl.textContent = `${regression.publication_gate_passed ? 'Gate PASS' : 'Gate status unavailable'} · API jobs: ${stats.total_jobs ?? '—'}`;
+      }
+    }
   } catch { document.getElementById("dStats").innerHTML = `<p class="section-desc" style="color:var(--text-muted)">Could not load stats</p>`; }
 }
-

@@ -4,7 +4,7 @@ Operational context for humans and coding agents working in this repository.
 Use this as the working source-of-truth for architecture, validation workflow,
 and current branch/release state.
 
-Last updated: 2026-02-26
+Last updated: 2026-03-11
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-02-26
 
 - Project: **Computational Imaging Research Platform (IEEE TCI / MNRAS)**
 - Upstream repo: `https://github.com/nalin1304/Gravitational-Lensing-algorithm`
-- Local workspace:
+- Local workspace:    
   - `/Users/nalinaggarwal/Downloads/Gravitational-Lensing-algorithm-master`
 
 Current VCS state in this workspace:
@@ -26,25 +26,27 @@ Current VCS state in this workspace:
 ## 2) Runtime + Verified Baseline
 
 Observed local runtime:
-- Python: `3.9.6`
+- Python: `3.14.3`
 - JAX backend: auto-detected via `src/ml/__init__.BACKEND`
 
-Verified on 2026-02-26:
+Verified on 2026-03-11:
 
 ```bash
 python3 -m pytest tests/ -q
-# 481 passed, 35 skipped   (run Feb 26 2026)
+# 513 passed, 38 skipped   (latest aggregate baseline in results/regression_summary.json)
 
-python3 -m mypy src/ --ignore-missing-imports
-# Success: no issues found in 50+ source files
+python3 scripts/publication_gate.py --quick
+# Publication Gate: PASS
 ```
 
 Additional check:
 - `LensSystem` defaults match Planck constants (`H0=67.4`, `Om0=0.315`).
 - NFW profile uses `critical_density(z_l)` at lens redshift (M200c convention).
+- API/UI inference now reports `checkpoint_missing` explicitly instead of using heuristic stand-ins.
+- SLACS validation artifacts are normalized to booleans and tagged as `image_space_diagnostic`.
 
 Expected non-fatal local warning:
-- `urllib3` warns about LibreSSL/OpenSSL mismatch in this Python build.
+- `slowapi` may emit a Python 3.14 deprecation warning from `asyncio.iscoroutinefunction`.
 
 ---
 
@@ -75,14 +77,16 @@ Expected non-fatal local warning:
   - `source_models.py`: Non-parametric pixelized source model with GP regularization
     (RBF and Matérn kernels), linear inversion, and log-evidence computation.
   - `physics_constrained_loss.py`: `L_Poisson`, `L_gradient`, `L_mass` constraints.
-  - `lens_finder.py`: LenNet-style object-detection head for automated discovery in wide-field FITS.
+  - `lens_finder.py`: LenNet-style object-detection head for automated discovery in wide-field FITS. Requires a trained checkpoint; no heuristic/random fallback detections.
   - `joint_survey.py`: Multi-resolution likelihood engine for joint ground+space deblending.
 - `src/data/`: FITS/real-data loading and preprocessing.
-  - `mast_downloader.py`: Three-tier HST/ACS download (cache → MAST → synthetic FITS).
+  - `mast_downloader.py`: Cache/MAST-backed HST/ACS loader. Synthetic FITS generation is explicit opt-in for demo/smoke-test workflows only.
     Deterministic noise via `hashlib.sha256` seed.
   - `pixel_covariance.py`: Drizzled image correlated pixel covariance and Cholesky whitening.
 - `src/validation/`: calibration and scientific validation routines.
   - `hst_targets.py`: SLACS lens catalog and HST data loader.
+  - `observational_diagnostics.py`: annular HST forward-model fitting with
+    PSF-convolved lensed Sersic sources and image-space rigor thresholds.
   - `kinematics.py`: Stellar kinematics module — Jeans equation solver, velocity
     dispersion prediction, mass-sheet degeneracy test, joint lensing+kinematics
     constraint (Treu & Koopmans 2004, Birrer et al. 2020).
@@ -119,10 +123,10 @@ Expected non-fatal local warning:
 - Alembic setup: `migrations/`, `alembic.ini`
 
 ### Benchmark scripts (`scripts/`)
-- `scripts/ablation_study.py`: Proxy sensitivity ablation (6 configs; controlled perturbation surrogates) → `results/ablation_table.tex`
+- `scripts/ablation_study.py`: Checkpoint-backed component study (released checkpoints + analytic fits) → `results/ablation_table.tex`
 - `scripts/validate_real_data.py`: SLACS validation with `--use-real`; enforce all-observational mode via `--strict-observational` → `results/real_data/`
-- `scripts/sota_comparison.py`: Proxy SOTA sensitivity benchmark (4 surrogate methods) → `results/sota_comparison_table.tex`
-- `scripts/uncertainty_calibration.py`: Reliability diagram, ECE, coverage → `results/uncertainty_calibration.png`
+- `scripts/sota_comparison.py`: Checkpoint-backed neural-vs-analytic benchmark (released checkpoints + explicit profile fits) → `results/sota_comparison_table.tex`
+- `scripts/uncertainty_calibration.py`: Checkpoint-backed MC-dropout calibration on held-out synthetic NFW analogs; current artifact mean ECE `0.062`, coverage@90 `0.936` → `results/uncertainty_calibration.png`
 - `scripts/scalability_benchmark.py`: Grid scaling (16→512) → `results/scalability_analysis.png`
 - `scripts/pareto_benchmark.py`: **Time-to-Solution vs κ-RMSE Pareto front** with MCMC reference → `results/pareto_front.png`, `results/pareto_table.tex`
 - `scripts/multi_messenger_demo.py`: **Optical + GW multi-messenger consistency** → `results/multi_messenger_consistency.png`
@@ -130,7 +134,7 @@ Expected non-fatal local warning:
 - `scripts/reproduce.sh`: One-command reproducibility (6 steps)
 - `scripts/publication_gate.py`: Executable publication gate
 - `scripts/statistical_rigor_report.py`: Statistical rigor report generator
-- Proxy scripts include explicit mode metadata in outputs (`evaluation_mode`, `prediction_mode`) for downstream rigor checks.
+- Benchmark and validation scripts include explicit mode metadata in outputs (`evaluation_mode`, `prediction_mode`) for downstream rigor checks.
 
 ### Paper (`paper/`)
 - `paper/main.tex`: IEEE TCI manuscript (15 numbered equations, 23 BibTeX refs)
@@ -138,7 +142,7 @@ Expected non-fatal local warning:
 - `paper/TIER1_TOPIC_AND_RIGOR.md`: Topic and rigor framing artifact
 
 ### Quality + ops
-- Tests: `tests/` (481 passing tests, 35 skipped — verified Feb 26 2026)
+- Tests: `tests/` (513 passing tests, 38 skipped — verified Mar 10 2026)
 - Benchmarks: `benchmarks/`
 - Validation/readiness docs:
   - `IEEE_SUBMISSION_CHECKLIST.md`
@@ -155,8 +159,9 @@ Every backend endpoint is wired to a UI page:
 | `/health` | GET | Dashboard | System status, GPU, version |
 | `/api/v1/models` | GET | Dashboard | Loaded model list |
 | `/api/v1/stats` | GET | Dashboard + Validation | API job stats + live test count |
+| `/api/v1/survey/finder/status` | GET | Stage IV Survey | Detector checkpoint/runtime availability |
 | `/api/v1/synthetic` | POST | Workbench | Generate NFW convergence map |
-| `/api/v1/inference` | POST | Workbench | PINN inference + MC Dropout UQ |
+| `/api/v1/inference` | POST | Workbench | PINN inference with checkpoint-gated MC-dropout parameter uncertainty |
 | `/api/v1/batch` | POST | Workbench (Batch panel) | Submit aggregated batch job |
 | `/api/v1/batch/{id}/status` | GET | Workbench (Poll button) | Poll batch job status |
 | `/api/v1/validation/slacs` | GET | Validation | SLACS lens results |
@@ -185,7 +190,7 @@ Every backend endpoint is wired to a UI page:
 4. Hardware-agnostic backend:
 - Check `from src.ml import BACKEND` to determine available compute.
 - All `src/ml/` submodules use `try/except ImportError` guards for JAX/Equinox.
-- Functions fall back to `None` when JAX is unavailable (not `ImportError` at import time).
+- Functions report unavailable capability rather than silently substituting heuristic scientific outputs.
 
 ---
 
@@ -227,7 +232,7 @@ Key source files link code to published equations:
   - `L_Poisson`: ∇²ψ = 2κ
   - `L_gradient`: α = ∇ψ
   - `L_mass`: integrated mass conservation
-- MC Dropout uncertainty: T=30 forward passes, p=0.1 dropout rate.
+- Workbench inference is checkpoint-gated; if no trained model is deployed the API returns `503` and the frontend disables the control.
 
 ### Bayesian model selection
 - Nested sampling in `src/ml/nested_sampling.py` (Skilling 2004).
@@ -240,19 +245,34 @@ Key source files link code to published equations:
 - Joint lensing+kinematics constraint with inverse-variance weighting.
 
 ### MAST data pipeline
-- `src/data/mast_downloader.py`: three-tier strategy (cache → MAST → synthetic FITS).
-- SLACS catalog: 5 lenses with RA/Dec, proposal IDs (10886, 10494), velocity dispersions.
+- `src/data/mast_downloader.py`: cache-first, then MAST. Synthetic FITS fallback requires explicit opt-in.
+- SLACS catalog: 9 ACS/F814W systems with RA/Dec, proposal IDs (10174, 10494, 10886), velocity dispersions.
+- Local cache manifest: `data/hst_cache/manifest.json` (currently 9/9 archived cutouts cached as of March 11, 2026).
 - Deterministic noise via `hashlib.sha256` seed from lens name.
-- Used by `scripts/validate_real_data.py --use-real`.
+- Used by `scripts/validate_real_data.py --use-real --strict-observational`.
+
+### Real-data SLACS validation
+- `scripts/validate_real_data.py --use-real` no longer compares HST intensity against a convergence map.
+- The observational branch now:
+  1. fixes the lens model from published SLACS parameters,
+  2. fits a PSF-convolved lensed Sersic source model in the Einstein-ring annulus,
+  3. reports image-space metrics (`NRMSE`, `SSIM`, ring correlation, annular flux ratio).
+- Current validated observational artifact:
+  - `results/real_data/slacs_validation_results.json`
+  - `5/5` quantitative SLACS systems passed the image-space thresholds on March 11, 2026.
 
 ### Augmentation pipeline (important physics constraint)
 - `RandomBrightness` and `RandomNoise` clip to `max(0, x)` ONLY — κ ≥ 0 only.
 - Upper-bound clip removed: κ can exceed 1.0 in massive halo cores (galaxy clusters κ ~ 2–5).
 
 ### Uncertainty calibration
-- `scripts/uncertainty_calibration.py` now requires `--model <checkpoint.pt>` for
-  publication-valid MC Dropout results.  Without `--model`, it runs in smoke-test mode
-  with a `UserWarning` that explicitly marks results as invalid for publication.
+- `scripts/uncertainty_calibration.py` trains or loads `models/bayesian_uq_synthetic.pt`
+  and evaluates MC-dropout calibration on held-out synthetic NFW analog systems.
+- Default publication configuration uses `seed=21`, `dropout_rate=0.04`, and
+  50% shrinkage of empirical interval quantiles toward Gaussian z-scores to
+  prevent overfitting the small validation split.
+- Output scope is explicitly synthetic (`evaluation_mode=synthetic_held_out_nfw_analogs`);
+  do not relabel it as observational posterior calibration in manuscripts or UI text.
 
 ---
 
@@ -267,8 +287,8 @@ Key source files link code to published equations:
 
 ### One-click demos
 - Can request `builtin:*` assets in YAML configs.
-- If built-in demo assets are missing from `assets/demos/`, app fallback generates
-  physics-based synthetic observation from config instead of hard-failing.
+- Built-in demo assets may synthesize observations, but publication workflows must
+  use explicit real-data or checkpoint-backed paths.
 
 ---
 
@@ -286,8 +306,8 @@ python3 -m py_compile <changed_files>
 3. Full regression before handoff:
 ```bash
 uv run python -m pytest tests/ -q
-python3 -m mypy src/ --ignore-missing-imports
 python3 scripts/publication_gate.py --quick
+python3 -m mypy src/ --ignore-missing-imports  # when mypy is installed
 ```
 
 4. One-command reproducibility:
@@ -359,7 +379,7 @@ Benchmark scripts:
 - `scripts/multi_messenger_demo.py`
 - `scripts/reproduce.sh`
 - `scripts/mint_zenodo_doi.py`
-- `scripts/validation_gate.py`
+- `scripts/publication_gate.py`
 
 Web UI:
 - `web_ui/index.html`
@@ -419,8 +439,8 @@ uvicorn api.main:app --reload
 Regression:
 ```bash
 uv run python -m pytest tests/ -q
-python3 -m mypy src/ --ignore-missing-imports
 python3 scripts/publication_gate.py
+python3 -m mypy src/ --ignore-missing-imports  # optional dev-tool check
 python3 scripts/statistical_rigor_report.py
 ```
 
@@ -431,9 +451,9 @@ bash scripts/reproduce.sh
 
 # Individual benchmarks
 python3 scripts/ablation_study.py --grid 64 --n-trials 3
-python3 scripts/validate_real_data.py --grid 64 --use-real
+python3 scripts/validate_real_data.py --grid 64 --use-real --strict-observational
 python3 scripts/sota_comparison.py --grid 64 --n-lenses 10
-python3 scripts/uncertainty_calibration.py --grid 64 --n-samples 30
+python3 scripts/uncertainty_calibration.py --grid 64 --n-samples 30 --model models/bayesian_uq_synthetic.pt
 python3 scripts/scalability_benchmark.py
 python3 scripts/pareto_benchmark.py --outdir results
 python3 scripts/multi_messenger_demo.py --outdir results

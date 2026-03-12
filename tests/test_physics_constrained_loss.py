@@ -12,9 +12,6 @@ Author: IEEE TCI - Task 3
 
 import pytest
 import torch
-import torch.nn as nn
-import numpy as np
-from typing import Tuple
 
 from src.ml.physics_constrained_loss import (
     PhysicsConstrainedPINNLoss,
@@ -109,9 +106,9 @@ class TestPoissonEquation:
         # Expected convergence
         kappa_expected = torch.full_like(psi, 2.0)  # ∇²ψ / 2 = 4 / 2 = 2
         
-        # Compute Laplacian
+        # Compute Laplacian (autograd)
         loss_fn = PhysicsConstrainedPINNLoss(use_autograd=True)
-        laplacian = loss_fn.compute_laplacian_finite_diff(psi)
+        laplacian = loss_fn.compute_laplacian_autograd(psi, coordinate_grid)
         
         # Should be approximately 4 everywhere
         assert torch.allclose(laplacian, torch.full_like(laplacian, 4.0), atol=0.5), \
@@ -126,8 +123,8 @@ class TestPoissonEquation:
         psi = 0.5 * (x**2 + y**2)
         kappa = torch.ones_like(psi)  # ∇²ψ = 2, so κ = 1
         
-        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=False)
-        loss = loss_fn.poisson_loss(psi, kappa, grid_coords=None)
+        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=True)
+        loss = loss_fn.poisson_loss(psi, kappa, grid_coords=coordinate_grid)
         
         # Loss should be small
         assert loss.item() < 1.0, f"Expected small loss, got {loss.item():.4f}"
@@ -142,8 +139,8 @@ class TestPoissonEquation:
         # WRONG convergence (should be 2, we use 5)
         kappa_wrong = torch.full_like(psi, 5.0)
         
-        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=False)
-        loss = loss_fn.poisson_loss(psi, kappa_wrong, grid_coords=None)
+        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=True)
+        loss = loss_fn.poisson_loss(psi, kappa_wrong, grid_coords=coordinate_grid)
         
         # Loss should be large
         assert loss.item() > 1.0, f"Expected large loss for inconsistent case"
@@ -157,7 +154,7 @@ class TestPoissonEquation:
         psi = 2.0 * x + 3.0 * y
         
         loss_fn = PhysicsConstrainedPINNLoss()
-        laplacian = loss_fn.compute_laplacian_finite_diff(psi)
+        laplacian = loss_fn.compute_laplacian_autograd(psi, coordinate_grid)
         
         # Should be approximately zero
         assert torch.allclose(laplacian, torch.zeros_like(laplacian), atol=0.1), \
@@ -187,9 +184,10 @@ class TestGradientConsistency:
         alpha_expected_y = 2.0 * y
         alpha_expected = torch.cat([alpha_expected_x, alpha_expected_y], dim=1)
         
-        # Compute gradient using finite differences
-        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=False)
-        alpha_computed = loss_fn._compute_gradient_finite_diff(psi)
+        # Compute gradient using autograd
+        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=True)
+        alpha_computed_x, alpha_computed_y = loss_fn.compute_gradient_autograd(psi, coordinate_grid)
+        alpha_computed = torch.cat([alpha_computed_x, alpha_computed_y], dim=1)
         
         # Should be close
         assert torch.allclose(alpha_computed, alpha_expected, atol=0.3), \
@@ -203,8 +201,8 @@ class TestGradientConsistency:
         psi = x**2 + y**2
         alpha = torch.cat([2.0 * x, 2.0 * y], dim=1)  # Correct gradient
         
-        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=False)
-        loss = loss_fn.gradient_consistency_loss(psi, alpha, grid_coords=None)
+        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=True)
+        loss = loss_fn.gradient_consistency_loss(psi, alpha, grid_coords=coordinate_grid)
         
         assert loss.item() < 1.0, f"Loss should be small for consistent gradient"
     
@@ -216,8 +214,8 @@ class TestGradientConsistency:
         psi = x**2 + y**2
         alpha_wrong = torch.cat([5.0 * x, 5.0 * y], dim=1)  # WRONG (should be 2x, 2y)
         
-        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=False)
-        loss = loss_fn.gradient_consistency_loss(psi, alpha_wrong, grid_coords=None)
+        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=True)
+        loss = loss_fn.gradient_consistency_loss(psi, alpha_wrong, grid_coords=coordinate_grid)
         
         assert loss.item() > 1.0, "Loss should be large for wrong gradient"
 
@@ -313,7 +311,7 @@ class TestCombinedLoss:
             lambda_gradient=1.0,
             lambda_conservation=0.5,
             lambda_reg=0.01,
-            use_autograd=False  # Use finite diff for speed
+            use_autograd=True
         )
         
         # Compute loss
@@ -325,7 +323,7 @@ class TestCombinedLoss:
             psi_pred=psi,
             kappa_pred=kappa,
             alpha_pred=alpha,
-            grid_coords=None
+            grid_coords=create_coordinate_grid(h, w, batch_size, device, requires_grad=True)
         )
         
         # Check all components are present
@@ -360,7 +358,7 @@ class TestCombinedLoss:
         classes_pred = torch.randn(batch_size, 3, device=device, requires_grad=True)
         classes_true = torch.randint(0, 3, (batch_size,), device=device)
         
-        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=False)
+        loss_fn = PhysicsConstrainedPINNLoss(use_autograd=True)
         
         total_loss, _ = loss_fn(
             params_pred=params_pred,
@@ -453,17 +451,19 @@ class TestLambdaWeights:
         kappa = torch.rand(batch_size, 1, h, w, device=device)
         
         # Low weight
-        loss_fn_low = PhysicsConstrainedPINNLoss(lambda_poisson=0.1, use_autograd=False)
+        loss_fn_low = PhysicsConstrainedPINNLoss(lambda_poisson=0.1, use_autograd=True)
         total_low, _ = loss_fn_low(
             params_pred, params_true, classes_pred, classes_true,
-            psi_pred=psi, kappa_pred=kappa
+            psi_pred=psi, kappa_pred=kappa,
+            grid_coords=create_coordinate_grid(h, w, batch_size, device, requires_grad=True)
         )
         
         # High weight
-        loss_fn_high = PhysicsConstrainedPINNLoss(lambda_poisson=10.0, use_autograd=False)
+        loss_fn_high = PhysicsConstrainedPINNLoss(lambda_poisson=10.0, use_autograd=True)
         total_high, _ = loss_fn_high(
             params_pred, params_true, classes_pred, classes_true,
-            psi_pred=psi, kappa_pred=kappa
+            psi_pred=psi, kappa_pred=kappa,
+            grid_coords=create_coordinate_grid(h, w, batch_size, device, requires_grad=True)
         )
         
         # High lambda should give higher total loss (Poisson contribution larger)

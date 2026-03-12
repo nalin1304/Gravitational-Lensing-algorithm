@@ -105,7 +105,10 @@ class SurveyObservation:
         if self.psf_kernel is None:
             return model
         if not _HAS_SCIPY:
-            return model  # fallback: no convolution
+            raise ImportError(
+                "SciPy is required for PSF convolution. "
+                "Install scipy to use non-delta PSF kernels."
+            )
         return fftconvolve(model, self.psf_kernel, mode="same")
 
 

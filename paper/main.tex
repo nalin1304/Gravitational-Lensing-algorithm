@@ -1,8 +1,7 @@
 % ============================================================================
 % IEEE Transactions on Computational Imaging — Manuscript Template
 % ============================================================================
-% Title: Physics-Informed Neural Networks for Gravitational Lensing 
-%        Convergence Map Inference with Bayesian Uncertainty Quantification
+% Title: Physics-Constrained Gravitational Lensing Research Platform
 % ============================================================================
 
 \documentclass[journal]{IEEEtran}
@@ -32,8 +31,9 @@
 % ============================================================================
 % TITLE AND AUTHORS
 % ============================================================================
-\title{Physics-Informed Neural Networks for Gravitational Lensing 
-       Convergence Map Inference with Bayesian Uncertainty Quantification}
+\title{Physics-Constrained Gravitational Lensing Research Platform:\\
+       Synthetic Convergence Inference, Observational Diagnostics, and\\
+       Checkpoint-Backed Uncertainty Calibration}
 
 \author{
     \IEEEauthorblockN{Nalin Aggarwal}
@@ -47,32 +47,33 @@
 % ABSTRACT (150-250 words required by IEEE TCI)
 % ============================================================================
 \begin{abstract}
-We present a Physics-Informed Neural Network (PINN) framework for 
-inferring gravitational lensing convergence maps from observed image data. 
-Our method embeds the NFW (Navarro-Frenk-White) lensing equation directly 
-into the network's loss function, enforcing physical consistency while 
-maintaining data-driven flexibility. The framework incorporates Bayesian 
-uncertainty quantification through MC Dropout, providing calibrated 
-predictive uncertainties critical for downstream cosmological inference.
+We present a gravitational-lensing research platform organized around explicit
+physics contracts, executable validation, and artifact-level reproducibility.
+The codebase couples thin-lens and multi-plane lensing modules, cosmological
+distance calculations, known-system calibration, observational HST/SLACS
+diagnostics, and browser-exposed validation surfaces. Rather than claiming a
+single end-to-end observational posterior engine, the released artifact makes
+its evaluation regimes explicit: analytic known-system checks, held-out
+synthetic NFW analogs, and image-space observational diagnostics.
 
-We validate our approach against five SLACS Survey strong lenses with 
-published velocity dispersions, achieving mean RMSE near $5\times10^{-3}$ and 
-SSIM in the $\sim0.79$--$0.92$ range on $64 \times 64$ convergence maps. 
-A systematic ablation study demonstrates that each component---physics loss, 
-Bayesian UQ, data augmentation, and NFW constraints---contributes measurably 
-to reconstruction quality. Comparison against vanilla neural baselines, 
-SIE approximations, and parametric NFW modeling shows strong gains over 
-unconstrained neural variants and competitive behavior on physically relevant 
-metrics such as mass conservation. Scalability analysis confirms practical 
-applicability to high-resolution maps up to $512 \times 512$ pixels.
+The current archived uncertainty workflow is checkpoint-backed and uses
+MC Dropout on a Bayesian surrogate trained on synthetic NFW systems. On the
+held-out synthetic analog benchmark shipped with this repository, it attains
+mean RMSE $6.1\times10^{-3}$, mean expected calibration error $6.20\times10^{-2}$,
+and mean 90\% empirical coverage of 0.936. Separately, the known-system
+validation path reproduces Einstein-radius scales for canonical systems within
+roughly 2.3\% raw error. The SLACS/HST module is retained as an observational
+image-space diagnostic with explicit provenance tagging; it is not interpreted
+as direct convergence-map ground truth.
 
-All code, validation scripts, and citation metadata are included in the public
-repository for reproducibility.
+All scripts, validation artifacts, and machine-readable gate reports are
+included in the public repository so that reviewers can reproduce the current
+claims directly from code.
 \end{abstract}
 
 \begin{IEEEkeywords}
-gravitational lensing, physics-informed neural networks, convergence map, 
-Bayesian uncertainty quantification, dark matter, NFW profile
+gravitational lensing, computational imaging, convergence map,
+physics-informed learning, uncertainty calibration, reproducibility
 \end{IEEEkeywords}
 
 % ============================================================================
@@ -103,14 +104,15 @@ testable software artifacts suitable for peer review.
 
 Our main contributions are:
 \begin{enumerate}
-    \item A physics-informed convergence inference pipeline with explicit
-    lensing constraints in the training objective.
-    \item A Bayesian uncertainty layer based on MC Dropout
-    \citep{GalDropout2016} for calibrated predictive intervals.
-    \item An executable validation stack (known-system checks, ablations,
-    and reproducibility gates) integrated with the released codebase.
+    \item A physics-constrained lensing software stack with explicit
+    cosmology, mass-profile, and validation contracts.
+    \item A checkpoint-backed MC-Dropout surrogate for synthetic NFW-analog
+    uncertainty calibration with machine-readable reliability artifacts.
+    \item An executable validation stack (known-system checks, observational
+    diagnostics, ablations, and publication gates) integrated with the
+    released codebase.
 \end{enumerate}
-Ze report is organized as follows: \Cref{sec:related} reviews related work on
+The report is organized as follows: \Cref{sec:related} reviews related work on
 \subsection{Problem Definition and Hypotheses}
 \label{subsec:problem_hypotheses}
 
@@ -126,9 +128,10 @@ We test four hypotheses:
 \begin{enumerate}
     \item \textbf{H1}: physics constraints improve reconstruction versus
     data-only learning.
-    \item \textbf{H2}: uncertainty estimates are calibrated on held-out data.
-    \item \textbf{H3}: synthetic-to-real transfer remains stable on SLACS-like
-    systems.
+    \item \textbf{H2}: checkpoint-backed uncertainty estimates are informative
+    and calibratable on held-out synthetic systems.
+    \item \textbf{H3}: observational diagnostics remain traceable and clearly
+    distinguished from synthetic convergence-map benchmarks.
     \item \textbf{H4}: reproducibility is executable from released code and
     validation artifacts.
 \end{enumerate}
@@ -183,19 +186,6 @@ Modern lens modeling tools such as \texttt{lenstronomy} and \texttt{PyAutoLens}
 provide strong parametric baselines with mature optimization and sampling
 workflows \citep{Birrer2018,Nightingale2021}. Their performance motivates
 direct comparison with learned surrogates rather than replacement by default.
-
-PINNs have emerged as an attractive framework for inverse problems where
-governing equations are known \citep{Raissi2019}. In lensing contexts, recent
-PINN-style studies indicate strong potential for fast inference, but often
-with limited reporting on reproducibility and uncertainty calibration
-\citep{LensPINN2024}. We therefore place equal emphasis on
-scientific metrics and artifact-level validation.
-
-For uncertainty, MC Dropout offers a practical approximation to Bayesian model
-averaging with favorable implementation cost in high-dimensional vision models
-\citep{GalDropout2016}. To evaluate reliability, we use calibration-oriented
-diagnostics motivated by modern neural calibration studies \citep{Guo2017} and
-report them alongside reconstruction errors.
 
 % ============================================================================
 % III. METHOD
@@ -253,17 +243,15 @@ h(x) = \begin{cases}
 \subsection{Network Architecture}
 \label{sec:architecture}
 
-Our PINN architecture comprises a convolutional encoder that maps a
-$64{\times}64$ input image to a learned representation, followed by:
-(i)~a regression head predicting continuous NFW parameters
-$(\log_{10} M_{\text{vir}}, c, z_l, z_s, e)$; (ii)~a classification head for
-discrete lens-type labels; and (iii)~an implicit convergence decoder that
-produces the pixelwise $\kappa(\boldsymbol{\theta})$ map.
-
-The encoder consists of five convolutional blocks (\texttt{Conv2d}$\to$\texttt{BatchNorm}$\to$\texttt{GELU}$\to$\texttt{MaxPool}),
-with channel dimensions doubling from 32 to 512. The decoder mirrors this
-with transposed convolutions. The implementation uses JAX/Equinox for
-hardware acceleration.
+The released platform contains two inference families rather than one monolith.
+The primary application surface uses JAX/Equinox modules for physics-informed
+inference and frontend/API integration when checkpoints are available. The
+uncertainty-calibration artifact uses a compact Bayesian multilayer perceptron
+that maps
+$(x, y, r, \log_{10} M_{\text{vir}}, c, z_l, z_s)$ to $\kappa$ on synthetic
+NFW analog systems. This separation is intentional: production UI/API
+checkpoint loading and synthetic uncertainty calibration are validated through
+different executable paths and should not be conflated in reported results.
 
 \subsection{Physics-Informed Loss Function}
 \label{sec:loss}
@@ -287,17 +275,20 @@ where:
 \mathcal{L}_{\text{mass}} &= \left| \int \hat{\kappa}\, d\Omega - \int \kappa\, d\Omega \right|^2.
 \label{eq:lmass}
 \end{align}
-The Laplacian $\nabla^2\hat\psi$ is computed via \texttt{torch.autograd}
-for exact backpropagation through the PDE constraint.
-Weights are set to $\lambda_1 = 1.0$, $\lambda_2 = 1.0$, $\lambda_3 = 0.5$
-based on validation performance.
+The released code expresses these physics terms in backend-specific form:
+JAX/Equinox implementations are used in the main inference modules, while some
+auxiliary ML utilities use PyTorch. The important contract is the equation
+content itself---Poisson, gradient consistency, and mass conservation---rather
+than a single autodiff backend.
 
 \subsection{Bayesian Uncertainty via MC Dropout}
 \label{sec:uq}
 
 Following \citet{GalDropout2016}, we interpret dropout at inference time as
-approximate Bayesian inference. Given $T$ stochastic forward passes with
-dropout rate~$p$, the predictive mean and epistemic uncertainty are:
+approximate Bayesian inference. In the current archived artifact, this is
+implemented in a checkpoint-backed synthetic surrogate rather than in the
+observational SLACS diagnostic pipeline. Given $T$ stochastic forward passes
+with dropout rate~$p$, the predictive mean and epistemic uncertainty are:
 \begin{align}
 \hat{\kappa}_{\text{mean}}(\boldsymbol{\theta}) &= \frac{1}{T}\sum_{t=1}^T f(\boldsymbol{\theta};\, \hat{\mathbf{w}}_t), 
 \label{eq:mc_mean} \\
@@ -305,8 +296,8 @@ dropout rate~$p$, the predictive mean and epistemic uncertainty are:
 \label{eq:mc_var}
 \end{align}
 where $\hat{\mathbf{w}}_t \sim q(\mathbf{w})$ denotes masked weights in
-pass~$t$. We use $T=30$ and $p=0.1$ throughout, yielding per-pixel $1\sigma$
-uncertainty maps.
+pass~$t$. The archived calibration artifact uses $T=30$ and $p=0.05$, followed
+by validation-set interval-width calibration on held-out synthetic systems.
 
 \subsection{Data Augmentation Pipeline}
 \label{sec:augmentation}
@@ -325,12 +316,13 @@ the training set while preserving physically plausible image statistics.
 \label{sec:experiments}
 
 \subsection{Experimental Setup}
-We train on $10^4$ synthetic NFW convergence maps with parameters sampled from
-astrophysically motivated priors: $\log_{10} M_{\text{vir}} \in [11, 14.5]$,
-$c \in [3, 20]$, $z_l \in [0.1, 1.0]$, $z_s \in [0.5, 3.5]$,
-ellipticity $e \in [0, 0.5]$. Grid resolution is $64{\times}64$ pixels.
-Optimization uses Adam ($\text{lr}=10^{-3}$, cosine decay) for 200 epochs on
-a single NVIDIA A100 or Apple M-series GPU via JAX.
+The shipped uncertainty artifact trains on synthetic galaxy-scale NFW analogs
+parameterized by velocity-dispersion-derived masses, concentrations sampled in
+$[5, 12]$, $z_l \in [0.10, 0.40]$, and $z_s - z_l \in [0.25, 1.20]$. The
+checkpoint distributed in the repository metadata is generated with 32 training
+systems and 10 validation systems at $24{\times}24$ training resolution, and
+is evaluated at $64{\times}64$ resolution. Optimization uses Adam
+($\text{lr}=10^{-3}$, cosine decay) for 18 epochs.
 
 \subsection{Statistical Protocol}
 \label{subsec:statistical_protocol}
@@ -340,22 +332,27 @@ We additionally publish an executable statistical summary artifact
 (`scripts/statistical_rigor_report.py`) that consolidates SLACS validation,
 ablation effects, and baseline ranking diagnostics from generated result files.
 
-\subsection{Validation Against SLACS Survey}
-We validate against five galaxy-scale strong lenses from the SLACS Survey
-\citep{Bolton2008,Auger2010,Treu2006} using published velocity
-dispersions to derive ground-truth NFW convergence maps (Table~\ref{tab:real_data}).
-For each lens, we compare PINN-predicted $\hat\kappa$ against the analytic
-$\kappa_{\text{NFW}}$ using RMSE, SSIM, PSNR, and reduced $\chi^2$.
-We also compare azimuthally averaged radial profiles $\kappa(r)$
-and convergence power spectra $P(k)$ to assess structural fidelity.
+\subsection{Observational Diagnostics on the SLACS Survey}
+We include five galaxy-scale strong lenses from the SLACS Survey
+\citep{Bolton2008,Auger2010,Treu2006} as observational diagnostics with real
+HST provenance. In the current code release, these results should be
+interpreted as image-space diagnostic comparisons rather than direct
+convergence-map ground truth. The observational pipeline fixes the literature
+lens parameters, fits a PSF-convolved lensed S\'ersic source in the Einstein-ring
+annulus, and reports image-space NRMSE, SSIM, ring correlation, annular flux
+ratio, and reduced $\chi^2$ as observational consistency indicators, while
+keeping synthetic held-out calibration and known-system tests separate. The
+repository cache now also includes four additional ACS/F814W SLACS holdout
+cutouts for future external-validation expansion.
 
 \input{results/real_data/slacs_validation_table.tex}
 
 \begin{figure}[t]
     \centering
     \includegraphics[width=\columnwidth]{results/real_data/radial_profile_comparison.png}
-    \caption{Azimuthally averaged radial profiles $\kappa(r)$ for five SLACS
-    lenses. Black: analytic NFW ground truth. Red dashed: PINN prediction.
+    \caption{Azimuthally averaged annular intensity profiles for five SLACS
+    lenses. Black: foreground-suppressed HST ring signal. Red dashed:
+    PSF-convolved forward-model fit at fixed literature lens parameters.
     Reduced $\chi^2_r$ values are shown per panel.}
     \label{fig:radial}
 \end{figure}
@@ -377,13 +374,15 @@ optimization analogous to \texttt{lenstronomy} \citep{Birrer2018}, and
 
 \input{results/ablation_table.tex}
 
-The ablation results show that physics-constrained learning is the dominant
-driver of reconstruction quality. Removing physics loss increases RMSE from
-$\approx 5.0\times10^{-3}$ to $\approx 1.7\times10^{-2}$ and reduces SSIM from
-$\approx 0.93$ to $\approx 0.64$. Removing Bayesian uncertainty and augmentation
-also degrades performance, but with smaller effect sizes than removing physics
-constraints. These patterns indicate that domain constraints provide the largest
-quality gains, while Bayesian and augmentation components improve robustness.
+The current ablation artifact is checkpoint-backed rather than proxy-driven:
+it compares the released full and vanilla neural checkpoints against an
+uncalibrated decoder readout and explicit analytic reference fits. The most
+consistent degradation comes from removing the affine decoder calibration,
+which increases RMSE by more than a factor of four relative to the calibrated
+full checkpoint. The analytic NFW and SIE-like fits remain stronger on these
+synthetic NFW maps, so the learned checkpoint should be interpreted as a
+reproducible baseline artifact rather than a dominance claim over tailored
+analytic refits.
 
 % ============================================================================
 % VI. SCALABILITY ANALYSIS
@@ -414,17 +413,18 @@ performance claims detached from hardware context.
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented a physics-informed lensing inference framework that combines
-data-driven reconstruction, equation-level constraints, and Bayesian uncertainty
-quantification in a reproducible software artifact. Across real-data and
-synthetic evaluations, the method demonstrates strong reconstruction quality and
-stable mass-conservation behavior, with ablations confirming the value of
-physics losses.
+We presented a physics-constrained lensing research platform whose primary
+contribution is methodological rigor in code: explicit cosmology and lensing
+contracts, executable validation gates, known-system calibration, observational
+diagnostic provenance, and checkpoint-backed synthetic uncertainty calibration.
+The current release supports defensible claims in those regimes and exposes its
+remaining gaps machine-readably rather than hiding them behind heuristics.
 
-Future work will focus on (i) improved raw mass recovery without post-hoc
-calibration, (ii) broader external validation on additional survey data, and
-(iii) tighter coupling between learned inference and full Bayesian lens-model
-posteriors for cosmographic use cases.
+Future work should prioritize (i) a fully checkpoint-backed observational
+posterior pipeline, (ii) stronger calibration on held-out synthetic systems,
+(iii) broader external validation beyond the current SLACS diagnostic set, and
+(iv) direct coupling between learned inference and formally sampled Bayesian
+lens-model posteriors for cosmography.
 
 % ============================================================================
 % ACKNOWLEDGMENTS

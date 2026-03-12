@@ -6,18 +6,14 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-import numpy as np
-
 try:
     import jax  # type: ignore
     import jax.numpy as jnp  # type: ignore
-
-    HAS_JAX = True
-except ImportError:  # pragma: no cover - optional dependency fallback
-    jax = None  # type: ignore
-    import numpy as jnp  # type: ignore
-
-    HAS_JAX = False
+except ImportError as exc:  # pragma: no cover - hard requirement
+    raise ImportError(
+        "JAX is required for ImageProbModel. "
+        "Install JAX to enable probabilistic image likelihoods."
+    ) from exc
 
 from src.ml.pinn import compute_nfw_deflection
 
@@ -84,15 +80,5 @@ class ImageProbModel:
         """
         Vectorized batched log-likelihood evaluation.
         """
-        if HAS_JAX:
-            vmapped_ll = jax.vmap(self.log_likelihood_single)
-            return vmapped_ll(batch_lens, batch_source)
-
-        # NumPy fallback for environments without JAX.
-        batch_size = len(next(iter(batch_lens.values())))
-        values = []
-        for idx in range(batch_size):
-            lens_params = {key: float(np.asarray(value)[idx]) for key, value in batch_lens.items()}
-            source_params = {key: float(np.asarray(value)[idx]) for key, value in batch_source.items()}
-            values.append(float(self.log_likelihood_single(lens_params, source_params)))
-        return np.asarray(values)
+        vmapped_ll = jax.vmap(self.log_likelihood_single)
+        return vmapped_ll(batch_lens, batch_source)

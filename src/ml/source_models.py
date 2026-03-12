@@ -6,18 +6,14 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-import numpy as np
-
 try:
     import jax  # type: ignore
     import jax.numpy as jnp  # type: ignore
-
-    HAS_JAX = True
-except ImportError:  # pragma: no cover - optional dependency fallback
-    jax = None  # type: ignore
-    import numpy as jnp  # type: ignore
-
-    HAS_JAX = False
+except ImportError as exc:  # pragma: no cover - hard requirement
+    raise ImportError(
+        "JAX is required for PixelizedSourceModel. "
+        "Install JAX to enable GP-regularized inversion."
+    ) from exc
 
 
 ArrayLike = Any
@@ -96,13 +92,7 @@ class PixelizedSourceModel:
         design_matrix = (operator.T @ operator) / noise_var + lambda_reg * source_cov_inv
         rhs = (operator.T @ observed_image.ravel()) / noise_var
 
-        if HAS_JAX:
-            source_intensity = jax.scipy.linalg.solve(design_matrix, rhs, assume_a="pos")
-        else:  # pragma: no cover - optional fallback path
-            source_intensity = np.linalg.solve(
-                np.asarray(design_matrix),
-                np.asarray(rhs),
-            )
+        source_intensity = jax.scipy.linalg.solve(design_matrix, rhs, assume_a="pos")
 
         source_intensity = jnp.clip(source_intensity, 0.0, None)
         model_image = (operator @ source_intensity).reshape(observed_image.shape)

@@ -1,283 +1,368 @@
-"""
-State-of-the-Art Comparison Benchmarks
+"""Checkpoint-backed comparison against analytic gravitational-lens baselines.
 
-Compares the PINN-based gravitational lensing pipeline against published
-baseline methods on identical test data.
+This benchmark evaluates the released neural checkpoints and explicit analytic
+profile fits on the same synthetic NFW test suite. It does not inject proxy
+noise or fabricate method outputs.
 
-Baselines:
-  1. Parametric NFW (analytic) — Bartelmann (1996)
-  2. Vanilla PINN (no physics loss, no Bayesian UQ)
-  3. Lenstronomy-equivalent forward model
-  4. SIE (Singular Isothermal Ellipsoid) — Kormann et al. (1994)
-
-All methods operate on the same synthetic lens configurations and are
-evaluated using identical metrics (RMSE, MAE, SSIM, PSNR, mass conservation).
-
-Outputs:
-  - Console comparison table
-  - LaTeX table for manuscript (Table 2)
-  - JSON results
-
-Scientific note:
-  This script is a proxy sensitivity benchmark. Method outputs are generated
-  via controlled perturbation surrogates on analytic maps, not by loading and
-  executing trained model checkpoints.
-
-Usage:
-  python scripts/sota_comparison.py [--grid 64] [--n-lenses 10] [--outdir results]
-
-Author: Gravitational Lensing Research Platform
+Methods
+-------
+1. Ours (Full PINN): released checkpoint with affine decoder calibration
+   fitted on a disjoint synthetic calibration split.
+2. Vanilla PINN: released ablated checkpoint with the same calibration
+   protocol.
+3. Parametric NFW Fit: coarse-to-fine grid search over ``(M_vir, c)`` with
+   known redshifts.
+4. SIE Approximation: thin-lens SIE-like fit with second-moment ellipticity.
 """
 
+from __future__ import annotations
+
+import argparse
+import json
+import os
 import sys
 import time
-import json
-import argparse
+import tempfile
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Callable
 
 import numpy as np
 
 project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(project_root))
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
-from src.validation import ScientificValidator, ValidationLevel
-from src.lens_models.mass_profiles import NFWProfile
+mpl_cache_dir = Path(tempfile.gettempdir()) / "gravitational_lensing_matplotlib"
+mpl_cache_dir.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(mpl_cache_dir))
+
 from src.lens_models.lens_system import LensSystem
+from src.lens_models.mass_profiles import NFWProfile
+from src.ml.checkpoint_benchmarks import (
+    DEFAULT_ABLATION_CHECKPOINTS,
+    fit_affine_decoder_calibration,
+    fit_parametric_nfw_profile,
+    fit_sie_like_profile,
+    generate_sie_like_convergence,
+    load_ablation_checkpoint_model,
+    predict_calibrated_decoder_map,
+)
 from src.ml.generate_dataset import generate_convergence_map_vectorized
+from src.validation import ScientificValidator, ValidationLevel
 
 
-# ================================================================
-# Test lens configurations spanning realistic parameter space
-# ================================================================
-def generate_test_suite(n_lenses: int, rng: np.random.RandomState) -> List[Dict]:
-    """Generate a diverse set of test lens configurations."""
-    configs = []
-    for i in range(n_lenses):
-        M_vir = 10 ** rng.uniform(11.5, 13.5)   # 3e11 to 3e13 M_sun
-        z_lens = rng.uniform(0.15, 0.6)
-        z_source = z_lens + rng.uniform(0.3, 1.5)
-        concentration = rng.uniform(5.0, 15.0)
-        configs.append({
-            "id": i,
-            "M_vir": M_vir,
-            "z_lens": z_lens,
-            "z_source": min(z_source, 3.0),
-            "concentration": concentration,
-        })
-    return configs
+@dataclass(frozen=True)
+class BenchmarkCase:
+    """One synthetic benchmark system."""
+
+    system_id: int
+    mass_msun: float
+    concentration: float
+    z_lens: float
+    z_source: float
+    extent_arcsec: float
+    ground_truth: np.ndarray
 
 
-def compute_ground_truth(config: Dict, grid_size: int) -> np.ndarray:
-    """Compute analytic NFW ground truth for a test configuration."""
-    lens_sys = LensSystem(z_lens=config["z_lens"], z_source=config["z_source"])
-    lens = NFWProfile(
-        M_vir=config["M_vir"],
-        concentration=config["concentration"],
-        lens_system=lens_sys,
-    )
-    return generate_convergence_map_vectorized(lens, grid_size=grid_size, extent=2.0)
-
-
-# ================================================================
-# Baseline methods
-# ================================================================
-
-def method_pinn_full(gt: np.ndarray, rng: np.random.RandomState) -> np.ndarray:
-    """Full PINN: physics loss + Bayesian UQ + augmentation + NFW constraint.
-    Simulated noise level: 0.005 (calibrated from validation experiments).
-    """
-    noise = rng.normal(0, 0.005, gt.shape)
-    return np.maximum(gt + noise, 0)
-
-
-def method_pinn_vanilla(gt: np.ndarray, rng: np.random.RandomState) -> np.ndarray:
-    """Vanilla PINN: no physics loss, no Bayesian UQ.
-    Higher noise (0.015) + systematic radial bias.
-    """
-    x = np.linspace(-2, 2, gt.shape[0])
-    X, Y = np.meshgrid(x, x)
-    R = np.sqrt(X**2 + Y**2)
-    noise = rng.normal(0, 0.015, gt.shape)
-    bias = 0.02 * np.exp(-R / 1.5)
-    return np.maximum(gt + noise + bias, 0)
-
-
-def method_parametric_nfw(gt: np.ndarray, rng: np.random.RandomState) -> np.ndarray:
-    """Parametric NFW forward model (Lenstronomy-equivalent).
-    Near-exact but subject to parameter estimation uncertainty (0.003).
-    """
-    noise = rng.normal(0, 0.003, gt.shape)
-    return np.maximum(gt + noise, 0)
-
-
-def method_sie(gt: np.ndarray, rng: np.random.RandomState) -> np.ndarray:
-    """SIE approximation — different mass profile model.
-    Systematic deviation in radial profile + moderate noise.
-    """
-    x = np.linspace(-2, 2, gt.shape[0])
-    X, Y = np.meshgrid(x, x)
-    R = np.sqrt(X**2 + Y**2) + 1e-6
-    # SIE has κ ∝ 1/R profile, NFW has logarithmic core
-    sie_bias = 0.01 * (1.0 / (1.0 + R) - np.exp(-R))  # Model mismatch
-    noise = rng.normal(0, 0.008, gt.shape)
-    return np.maximum(gt + sie_bias + noise, 0)
-
-
-METHODS = {
-    "Ours (Full PINN)":       method_pinn_full,
-    "Vanilla PINN":           method_pinn_vanilla,
-    "Parametric NFW":         method_parametric_nfw,
-    "SIE Model":              method_sie,
-}
-
-
-# ================================================================
-# Evaluation engine
-# ================================================================
-def evaluate_method(
-    method_fn,
-    ground_truths: List[np.ndarray],
-    rng: np.random.RandomState,
-) -> Dict[str, float]:
-    """Evaluate a method across all test lenses."""
-    validator = ScientificValidator(level=ValidationLevel.RIGOROUS)
-    metrics_agg = {"rmse": [], "mae": [], "ssim": [], "psnr": [],
-                   "mass_conservation": [], "time_s": []}
-
-    for gt in ground_truths:
-        t0 = time.time()
-        pred = method_fn(gt, rng)
-        elapsed = time.time() - t0
-
-        result = validator.validate_convergence_map(
-            predicted=pred, ground_truth=gt,
-            profile_type="NFW", verbose=False,
+def generate_benchmark_cases(
+    n_cases: int,
+    grid_size: int,
+    rng: np.random.Generator,
+) -> list[BenchmarkCase]:
+    """Generate deterministic NFW benchmark cases spanning galaxy-scale lenses."""
+    cases: list[BenchmarkCase] = []
+    for system_id in range(n_cases):
+        mass_msun = float(10.0 ** rng.uniform(11.5, 13.4))
+        concentration = float(rng.uniform(5.0, 14.0))
+        z_lens = float(rng.uniform(0.15, 0.6))
+        z_source = float(min(z_lens + rng.uniform(0.35, 1.6), 3.0))
+        lens_system = LensSystem(z_lens=z_lens, z_source=z_source)
+        extent_arcsec = float(max(2.0, 2.2 * lens_system.einstein_radius_scale(mass_msun)))
+        lens_model = NFWProfile(
+            M_vir=mass_msun,
+            concentration=concentration,
+            lens_system=lens_system,
         )
+        ground_truth = generate_convergence_map_vectorized(
+            lens_model=lens_model,
+            grid_size=grid_size,
+            extent=extent_arcsec,
+        ).astype(np.float64)
+        cases.append(
+            BenchmarkCase(
+                system_id=system_id,
+                mass_msun=mass_msun,
+                concentration=concentration,
+                z_lens=z_lens,
+                z_source=z_source,
+                extent_arcsec=extent_arcsec,
+                ground_truth=ground_truth,
+            )
+        )
+    return cases
 
-        metrics_agg["rmse"].append(result.metrics.get("rmse", float("nan")))
-        metrics_agg["mae"].append(result.metrics.get("mae", float("nan")))
-        metrics_agg["ssim"].append(result.metrics.get("ssim", float("nan")))
-        metrics_agg["psnr"].append(result.metrics.get("psnr", float("nan")))
-        metrics_agg["mass_conservation"].append(
-            result.metrics.get("mass_conservation_ratio", float("nan")))
-        metrics_agg["time_s"].append(elapsed)
 
-    summary = {k: {"mean": np.mean(v), "std": np.std(v)} for k, v in metrics_agg.items()}
-    summary["evaluation_mode"] = "proxy_simulation"
-    summary["inference_backend"] = "controlled_noise_surrogate"
+def _evaluate_prediction(
+    validator: ScientificValidator,
+    predicted: np.ndarray,
+    ground_truth: np.ndarray,
+) -> dict[str, float]:
+    result = validator.validate_convergence_map(
+        predicted=predicted,
+        ground_truth=ground_truth,
+        profile_type="NFW",
+        verbose=False,
+    )
+    return {
+        "rmse": float(result.metrics.get("rmse", float("nan"))),
+        "mae": float(result.metrics.get("mae", float("nan"))),
+        "ssim": float(result.metrics.get("ssim", float("nan"))),
+        "psnr": float(result.metrics.get("psnr", float("nan"))),
+        "mass_conservation": float(result.metrics.get("mass_conservation_ratio", float("nan"))),
+    }
+
+
+def _checkpoint_method(
+    checkpoint_key: str,
+    calibration_cases: list[BenchmarkCase],
+    mc_samples: int = 1,
+) -> Callable[[BenchmarkCase], tuple[np.ndarray, float]]:
+    checkpoint_path = DEFAULT_ABLATION_CHECKPOINTS[checkpoint_key]
+    model, device = load_ablation_checkpoint_model(checkpoint_path)
+    calibration = fit_affine_decoder_calibration(
+        model=model,
+        calibration_maps=[case.ground_truth for case in calibration_cases],
+        device=device,
+        mc_samples=mc_samples,
+    )
+
+    def _predict(case: BenchmarkCase) -> tuple[np.ndarray, float]:
+        start = time.perf_counter()
+        predicted = predict_calibrated_decoder_map(
+            model=model,
+            convergence_map=case.ground_truth,
+            calibration=calibration,
+            device=device,
+            mc_samples=mc_samples,
+        )
+        elapsed = time.perf_counter() - start
+        return predicted, elapsed
+
+    _predict.metadata = {  # type: ignore[attr-defined]
+        "evaluation_mode": "checkpoint_backed_affine_decoder",
+        "inference_backend": str(checkpoint_path),
+        "calibration_cases": len(calibration_cases),
+        "mc_samples": mc_samples,
+    }
+    return _predict
+
+
+def _parametric_nfw_method() -> Callable[[BenchmarkCase], tuple[np.ndarray, float]]:
+    def _predict(case: BenchmarkCase) -> tuple[np.ndarray, float]:
+        start = time.perf_counter()
+        fit_result = fit_parametric_nfw_profile(
+            convergence_map=case.ground_truth,
+            z_lens=case.z_lens,
+            z_source=case.z_source,
+            extent_arcsec=case.extent_arcsec,
+        )
+        lens_system = LensSystem(z_lens=case.z_lens, z_source=case.z_source)
+        fitted_lens = NFWProfile(
+            M_vir=fit_result.mass_msun,
+            concentration=fit_result.concentration,
+            lens_system=lens_system,
+        )
+        predicted = generate_convergence_map_vectorized(
+            lens_model=fitted_lens,
+            grid_size=case.ground_truth.shape[0],
+            extent=case.extent_arcsec,
+        )
+        elapsed = time.perf_counter() - start
+        return predicted, elapsed
+
+    _predict.metadata = {  # type: ignore[attr-defined]
+        "evaluation_mode": "analytic_profile_refit",
+        "inference_backend": "coarse_to_fine_nfw_grid_search",
+    }
+    return _predict
+
+
+def _sie_method() -> Callable[[BenchmarkCase], tuple[np.ndarray, float]]:
+    def _predict(case: BenchmarkCase) -> tuple[np.ndarray, float]:
+        start = time.perf_counter()
+        fit_result = fit_sie_like_profile(
+            convergence_map=case.ground_truth,
+            extent_arcsec=case.extent_arcsec,
+        )
+        predicted = generate_sie_like_convergence(
+            grid_size=case.ground_truth.shape[0],
+            extent_arcsec=case.extent_arcsec,
+            einstein_radius_arcsec=fit_result.einstein_radius_arcsec,
+            axis_ratio=fit_result.axis_ratio,
+            position_angle_deg=fit_result.position_angle_deg,
+        )
+        elapsed = time.perf_counter() - start
+        return predicted, elapsed
+
+    _predict.metadata = {  # type: ignore[attr-defined]
+        "evaluation_mode": "analytic_profile_refit",
+        "inference_backend": "sie_like_moment_fit",
+    }
+    return _predict
+
+
+def evaluate_method(
+    method_name: str,
+    method: Callable[[BenchmarkCase], tuple[np.ndarray, float]],
+    test_cases: list[BenchmarkCase],
+) -> dict[str, object]:
+    """Evaluate one method across all test cases."""
+    validator = ScientificValidator(level=ValidationLevel.RIGOROUS)
+    metric_store: dict[str, list[float]] = {
+        "rmse": [],
+        "mae": [],
+        "ssim": [],
+        "psnr": [],
+        "mass_conservation": [],
+        "time_s": [],
+    }
+
+    for case in test_cases:
+        predicted, elapsed = method(case)
+        metrics = _evaluate_prediction(validator, predicted=predicted, ground_truth=case.ground_truth)
+        for metric_name in ("rmse", "mae", "ssim", "psnr", "mass_conservation"):
+            metric_store[metric_name].append(metrics[metric_name])
+        metric_store["time_s"].append(float(elapsed))
+
+    summary: dict[str, object] = {
+        metric_name: {
+            "mean": float(np.mean(values)),
+            "std": float(np.std(values)),
+        }
+        for metric_name, values in metric_store.items()
+    }
+    metadata = getattr(method, "metadata", {})
+    summary.update(metadata)
+    summary["n_test_cases"] = len(test_cases)
+    print(
+        f"  RMSE: {summary['rmse']['mean']:.6f} ± {summary['rmse']['std']:.6f} | "
+        f"SSIM: {summary['ssim']['mean']:.4f} ± {summary['ssim']['std']:.4f}"
+    )
+    print(f"  Mode: {summary['evaluation_mode']} | Backend: {summary['inference_backend']}")
     return summary
 
 
-def generate_latex_table(all_results: Dict[str, Dict], outdir: Path):
+def generate_latex_table(all_results: dict[str, dict[str, object]], outdir: Path) -> None:
     """Generate publication-ready LaTeX comparison table."""
     lines = [
         r"\begin{table}[t]",
         r"\centering",
-        r"\caption{Quantitative Comparison with Baseline Methods}",
+        r"\caption{Checkpoint-backed comparison with analytic baseline methods}",
         r"\label{tab:sota}",
         r"\small",
         r"\begin{tabular}{l|cccc|c}",
         r"\toprule",
         r"\textbf{Method} & \textbf{RMSE}$\downarrow$ & \textbf{MAE}$\downarrow$ "
-        r"& \textbf{SSIM}$\uparrow$ & \textbf{PSNR}$\uparrow$ "
-        r"& \textbf{Time (ms)} \\",
+        r"& \textbf{SSIM}$\uparrow$ & \textbf{PSNR}$\uparrow$ & \textbf{Time (ms)} \\",
         r"\midrule",
     ]
 
     for method_name, metrics in all_results.items():
-        is_ours = "Ours" in method_name
+        is_ours = method_name == "Ours (Full PINN)"
         prefix = r"\textbf{" if is_ours else ""
         suffix = "}" if is_ours else ""
-
-        rmse = f'{metrics["rmse"]["mean"]:.4f} ± {metrics["rmse"]["std"]:.4f}'
-        mae = f'{metrics["mae"]["mean"]:.4f} ± {metrics["mae"]["std"]:.4f}'
-        ssim_v = f'{metrics["ssim"]["mean"]:.4f} ± {metrics["ssim"]["std"]:.4f}'
-        psnr_v = f'{metrics["psnr"]["mean"]:.1f} ± {metrics["psnr"]["std"]:.1f}'
-        time_ms = f'{metrics["time_s"]["mean"]*1000:.1f}'
-
+        rmse = metrics["rmse"]
+        mae = metrics["mae"]
+        ssim = metrics["ssim"]
+        psnr = metrics["psnr"]
+        time_s = metrics["time_s"]
         lines.append(
-            f"  {prefix}{method_name}{suffix} & {rmse} & {mae} "
-            f"& {ssim_v} & {psnr_v} & {time_ms} \\\\"
+            f"  {prefix}{method_name}{suffix} & "
+            f"{rmse['mean']:.4f} ± {rmse['std']:.4f} & "
+            f"{mae['mean']:.4f} ± {mae['std']:.4f} & "
+            f"{ssim['mean']:.4f} ± {ssim['std']:.4f} & "
+            f"{psnr['mean']:.1f} ± {psnr['std']:.1f} & "
+            f"{time_s['mean'] * 1000.0:.1f} \\\\"
         )
 
-    lines += [
-        r"\bottomrule",
-        r"\end{tabular}",
-        r"\vspace{1mm}",
-        r"\parbox{\columnwidth}{\footnotesize "
-        r"Mean ± std over 10 lens configurations with masses $M_{\rm vir} \in "
-        r"[3 \times 10^{11}, 3 \times 10^{13}]\,M_\odot$, "
-        r"redshifts $z_l \in [0.15, 0.6]$, $z_s \in [0.45, 3.0]$. "
-        r"All methods evaluated on $64 \times 64$ convergence maps.}",
-        r"\end{table}",
-    ]
+    lines.extend(
+        [
+            r"\bottomrule",
+            r"\end{tabular}",
+            r"\vspace{1mm}",
+            r"\parbox{\columnwidth}{\footnotesize "
+            r"All methods are executed directly: released neural checkpoints use a disjoint affine decoder calibration, "
+            r"while analytic baselines refit their profile parameters on each test map.}",
+            r"\end{table}",
+        ]
+    )
 
-    tex_path = outdir / "sota_comparison_table.tex"
-    tex_path.write_text("\n".join(lines))
-    print(f"\n📝 LaTeX table saved: {tex_path}")
+    output_path = outdir / "sota_comparison_table.tex"
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"\nLaTeX table saved: {output_path}")
 
 
-def main():
-    parser = argparse.ArgumentParser(description="SOTA comparison benchmarks")
-    parser.add_argument("--grid", type=int, default=64)
-    parser.add_argument("--n-lenses", type=int, default=10)
-    parser.add_argument("--outdir", type=str, default="results")
-    parser.add_argument("--seed", type=int, default=42)
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--grid", type=int, default=64, help="Grid size.")
+    parser.add_argument("--n-lenses", type=int, default=10, help="Number of evaluation systems.")
+    parser.add_argument("--n-calibration", type=int, default=6, help="Number of calibration systems for checkpoint decoding.")
+    parser.add_argument("--outdir", type=str, default="results", help="Output directory.")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     args = parser.parse_args()
 
-    np.random.seed(args.seed)
-    rng = np.random.RandomState(args.seed)
+    if args.n_lenses < 1:
+        raise ValueError("--n-lenses must be >= 1")
+    if args.n_calibration < 2:
+        raise ValueError("--n-calibration must be >= 2")
 
+    rng = np.random.default_rng(args.seed)
     outdir = Path(args.outdir)
-    outdir.mkdir(exist_ok=True)
+    outdir.mkdir(parents=True, exist_ok=True)
 
     print("\n" + "=" * 80)
     print("  SOTA COMPARISON BENCHMARK")
     print("=" * 80)
-    print("  Mode: proxy simulation (controlled perturbation surrogates)")
-    print(f"  Grid: {args.grid}×{args.grid} | Lenses: {args.n_lenses} | Methods: {len(METHODS)}")
+    print("  Mode: checkpoint-backed + analytic profile fitting")
+    print(f"  Grid: {args.grid}×{args.grid} | Calibration: {args.n_calibration} | Test: {args.n_lenses}")
     print("=" * 80)
 
-    # Generate test suite
-    configs = generate_test_suite(args.n_lenses, rng)
-    ground_truths = [compute_ground_truth(c, args.grid) for c in configs]
+    calibration_cases = generate_benchmark_cases(args.n_calibration, args.grid, rng)
+    test_cases = generate_benchmark_cases(args.n_lenses, args.grid, rng)
 
-    # Evaluate each method
-    all_results = {}
-    for name, fn in METHODS.items():
-        print(f"\n▶ Evaluating: {name}")
-        method_rng = np.random.RandomState(args.seed)
-        metrics = evaluate_method(fn, ground_truths, method_rng)
-        all_results[name] = metrics
-        print(f"  RMSE: {metrics['rmse']['mean']:.6f} ± {metrics['rmse']['std']:.6f}")
-        print(f"  SSIM: {metrics['ssim']['mean']:.4f} ± {metrics['ssim']['std']:.4f}")
-        print(f"  PSNR: {metrics['psnr']['mean']:.1f} ± {metrics['psnr']['std']:.1f} dB")
+    methods: dict[str, Callable[[BenchmarkCase], tuple[np.ndarray, float]]] = {
+        "Ours (Full PINN)": _checkpoint_method("full", calibration_cases),
+        "Vanilla PINN": _checkpoint_method("vanilla", calibration_cases),
+        "Parametric NFW": _parametric_nfw_method(),
+        "SIE Approximation": _sie_method(),
+    }
 
-    # Console summary
+    all_results: dict[str, dict[str, object]] = {}
+    for method_name, method in methods.items():
+        print(f"\n▶ Evaluating: {method_name}")
+        all_results[method_name] = evaluate_method(method_name, method, test_cases)
+
     print(f"\n{'=' * 90}")
-    print(f"{'Method':<25} {'RMSE':>14} {'MAE':>14} {'SSIM':>12} {'PSNR (dB)':>12}")
+    print(f"{'Method':<24} {'RMSE':>14} {'MAE':>14} {'SSIM':>12} {'PSNR (dB)':>12}")
     print(f"{'-' * 90}")
-    for name, m in all_results.items():
-        marker = "★" if "Ours" in name else " "
-        print(f"{marker} {name:<23} "
-              f"{m['rmse']['mean']:.4f}±{m['rmse']['std']:.4f}  "
-              f"{m['mae']['mean']:.4f}±{m['mae']['std']:.4f}  "
-              f"{m['ssim']['mean']:.4f}±{m['ssim']['std']:.4f}  "
-              f"{m['psnr']['mean']:.1f}±{m['psnr']['std']:.1f}")
+    for method_name, metrics in all_results.items():
+        marker = "★" if method_name == "Ours (Full PINN)" else " "
+        print(
+            f"{marker} {method_name:<22} "
+            f"{metrics['rmse']['mean']:.4f}±{metrics['rmse']['std']:.4f}  "
+            f"{metrics['mae']['mean']:.4f}±{metrics['mae']['std']:.4f}  "
+            f"{metrics['ssim']['mean']:.4f}±{metrics['ssim']['std']:.4f}  "
+            f"{metrics['psnr']['mean']:.1f}±{metrics['psnr']['std']:.1f}"
+        )
     print(f"{'=' * 90}")
 
-    # Outputs
     generate_latex_table(all_results, outdir)
-
     json_path = outdir / "sota_comparison_results.json"
-    json_path.write_text(json.dumps(
-        {k: {mk: mv for mk, mv in v.items()} for k, v in all_results.items()},
-        indent=2, default=str,
-    ))
-    print(f"📊 JSON results saved: {json_path}")
-    print("\n✓ SOTA comparison complete.")
+    json_path.write_text(json.dumps(all_results, indent=2), encoding="utf-8")
+    print(f"JSON results saved: {json_path}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

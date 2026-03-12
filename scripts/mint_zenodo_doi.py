@@ -109,20 +109,18 @@ def build_jsonld_metadata(doi: str = None) -> dict:
 
         # ── Title and description
         "name": (
-            "LensPINN: Physics-Informed Neural Networks for Gravitational "
-            "Lensing Convergence Map Inference"
+            "Computational Imaging Research Platform for Gravitational "
+            "Lensing"
         ),
         "description": (
-            "Research-grade open-source toolkit for gravitational lens "
-            "modelling. Implements physics-informed neural networks (PINNs) "
-            "for convergence map reconstruction from strong lensing "
-            "observations, with Bayesian uncertainty quantification via Monte "
-            "Carlo Dropout, stellar kinematics constraints (Jeans equation), "
-            "μ-GLANCE magnification residual diagnostics, nested-sampling "
-            "Bayesian model evidence, multi-plane cosmological ray tracing, "
-            "and correlated pixel-noise covariance for drizzled HST/JWST "
-            "images. Validated on the SLACS survey. Designed for IEEE "
-            "Transactions on Computational Imaging."
+            "Research software for gravitational-lensing computational "
+            "imaging. Includes analytic lens models, multi-plane cosmological "
+            "ray tracing, stellar kinematics constraints, nested-sampling "
+            "Bayesian evidence, correlated pixel-noise covariance for "
+            "drizzled HST/JWST images, observational SLACS image-space "
+            "diagnostics, and checkpoint-backed Monte-Carlo-dropout "
+            "uncertainty calibration on held-out synthetic NFW analogs. "
+            "Designed as a reproducible publication artifact."
         ),
 
         # ── Versioning
@@ -166,7 +164,7 @@ def build_jsonld_metadata(doi: str = None) -> dict:
             "convergence map",
             "physics-informed neural network",
             "PINN",
-            "Bayesian uncertainty quantification",
+            "uncertainty calibration",
             "Monte Carlo Dropout",
             "stellar kinematics",
             "Jeans equation",
@@ -298,16 +296,15 @@ def build_zenodo_metadata(doi: str = None) -> dict:
     """
     meta = {
         "title": (
-            "LensPINN v2: Physics-Informed Neural Networks for Gravitational "
-            "Lensing Convergence Map Inference with Bayesian UQ"
+            "Computational Imaging Research Platform for Gravitational "
+            "Lensing"
         ),
         "description": (
-            "Reproducibility package for the LensPINN v2 gravitational lensing "
-            "analysis toolkit. Includes source code, trained model checkpoints, "
-            "validation scripts against the SLACS survey, ablation study "
-            "results, uncertainty calibration curves, pixel-level drizzle "
-            "covariance module, and stellar kinematics constraints. "
-            "Designed for IEEE Transactions on Computational Imaging."
+            "Reproducibility package for the gravitational-lensing research "
+            "platform. Includes source code, trained uncertainty-calibration "
+            "checkpoints, observational SLACS diagnostics, proxy sensitivity "
+            "benchmarks, reliability curves, pixel-level drizzle covariance, "
+            "and stellar kinematics constraints."
         ),
         "upload_type": "software",
         "publication_date": _iso_date(),
@@ -323,7 +320,7 @@ def build_zenodo_metadata(doi: str = None) -> dict:
         "keywords": [
             "gravitational lensing",
             "physics-informed neural network",
-            "Bayesian uncertainty quantification",
+            "uncertainty calibration",
             "stellar kinematics",
             "NFW profile",
             "drizzle covariance",
@@ -363,7 +360,7 @@ def build_zenodo_metadata(doi: str = None) -> dict:
         ],
         "notes": (
             "Validate reproducibility with: bash scripts/reproduce.sh\n"
-            "Test suite: python3 -m pytest tests/ -q  # 481 passed, 35 skipped"
+            "Test suite: python3 -m pytest tests/ -q  # 513 passed, 38 skipped"
         ),
         "resource_type": {
             "type": "software",

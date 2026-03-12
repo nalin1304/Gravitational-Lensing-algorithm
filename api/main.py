@@ -24,16 +24,17 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import numpy as np
 import torch
+import json
 import io
 import base64
 import logging
-import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 from pathlib import Path
 from contextlib import asynccontextmanager
 
 from src.utils.common import (
+    find_pretrained_model_checkpoint,
     load_pretrained_model,
     prepare_model_input,
     compute_classification_entropy
@@ -240,6 +241,23 @@ class InferenceRequest(BaseModel):
     target_size: int = Field(64, description="Target size for model input")
     mc_samples: int = Field(1, ge=1, le=1000, description="Number of MC Dropout samples")
 
+    @field_validator("convergence_map")
+    @classmethod
+    def validate_convergence_map(cls, value: List[List[float]]) -> List[List[float]]:
+        """Require a finite, rectangular 2-D convergence map large enough for inference."""
+        try:
+            array = np.asarray(value, dtype=float)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("convergence_map must contain finite numeric values") from exc
+
+        if array.ndim != 2:
+            raise ValueError("convergence_map must be a 2D array")
+        if min(array.shape) < 16:
+            raise ValueError("convergence_map must be at least 16x16 for scientific inference")
+        if not np.isfinite(array).all():
+            raise ValueError("convergence_map must contain only finite numeric values")
+        return value
+
 
 class InferenceResponse(BaseModel):
     """Response for model inference"""
@@ -279,7 +297,7 @@ class ErrorResponse(BaseModel):
 
 def get_current_timestamp() -> str:
     """Get current timestamp as ISO string"""
-    return datetime.utcnow().isoformat() + "Z"
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def generate_job_id() -> str:
@@ -300,130 +318,143 @@ def decode_base64_to_array(b64_string: str) -> np.ndarray:
     buffer = io.BytesIO(base64.b64decode(b64_string))
     return np.load(buffer)
 
-
-def _normalize_probabilities(raw_scores: np.ndarray) -> np.ndarray:
-    """Normalize non-negative class scores into a valid probability simplex."""
-    safe_scores = np.clip(raw_scores, 1e-9, None).astype(float)
-    return safe_scores / float(safe_scores.sum())
-
-
-def _estimate_ellipticity(convergence_map: np.ndarray) -> float:
-    """Estimate projected ellipticity from second moments of the convergence map."""
-    height, width = convergence_map.shape
-    yy, xx = np.indices((height, width))
-    xx = xx - (width - 1) / 2.0
-    yy = yy - (height - 1) / 2.0
-
-    weights = np.clip(convergence_map - float(convergence_map.min()), 0.0, None) + 1e-9
-    i_xx = float(np.sum(weights * xx * xx))
-    i_yy = float(np.sum(weights * yy * yy))
-    i_xy = float(np.sum(weights * xx * yy))
-
-    inertia = np.array([[i_xx, i_xy], [i_xy, i_yy]], dtype=float)
-    eigenvalues = np.linalg.eigvalsh(inertia)
-    major = float(np.max(eigenvalues))
-    minor = float(np.min(eigenvalues))
-    ellipticity = (major - minor) / max(major + minor, 1e-12)
-    return float(np.clip(ellipticity, 0.0, 0.5))
+def _runtime_dependencies_ready() -> bool:
+    """Return whether the JAX/Equinox runtime required for inference is available."""
+    try:
+        import jax  # noqa: F401
+        import equinox  # noqa: F401
+    except ImportError:
+        return False
+    return True
 
 
-def _physics_estimate_from_map(convergence_map: np.ndarray) -> tuple[dict[str, float], np.ndarray, float]:
-    """Infer lens parameters directly from map morphology when a PINN checkpoint is unavailable."""
-    finite_map = np.nan_to_num(convergence_map.astype(float), copy=False)
-    map_min = float(finite_map.min())
-    map_max = float(finite_map.max())
-    map_mean = float(finite_map.mean())
-    map_std = float(finite_map.std())
+def _model_status() -> dict[str, Any]:
+    """Summarize checkpoint and runtime readiness for the inference service."""
+    checkpoint_path = find_pretrained_model_checkpoint()
+    runtime_ready = _runtime_dependencies_ready()
+    loaded = "model" in MODEL_CACHE
 
-    grad_y, grad_x = np.gradient(finite_map)
-    mean_gradient = float(np.mean(np.hypot(grad_x, grad_y)))
+    if loaded:
+        status = "loaded"
+    elif checkpoint_path is None:
+        status = "checkpoint_missing"
+    elif not runtime_ready:
+        status = "runtime_incomplete"
+    else:
+        status = "checkpoint_available"
 
-    center_slice_y = slice(finite_map.shape[0] // 4, 3 * finite_map.shape[0] // 4)
-    center_slice_x = slice(finite_map.shape[1] // 4, 3 * finite_map.shape[1] // 4)
-    central_mean = float(finite_map[center_slice_y, center_slice_x].mean())
-    concentration_proxy = central_mean / max(map_mean, 1e-9)
-
-    # Map morphology signals into physically plausible ranges used by the synthetic pipeline.
-    mass_signal = np.clip(0.45 * map_mean + 0.35 * map_max + 0.2 * mean_gradient, 0.02, 1.25)
-    log10_m_vir = 11.0 + 3.0 * float(np.clip((mass_signal - 0.02) / 1.23, 0.0, 1.0))
-    m_vir = float(10.0 ** log10_m_vir)
-
-    r_s = float(np.clip(70.0 + 320.0 / max(concentration_proxy, 0.2) + 80.0 * map_std, 50.0, 500.0))
-    ellipticity = _estimate_ellipticity(finite_map)
-
-    class_scores = np.array(
-        [
-            max(0.05, 1.0 - 2.0 * ellipticity),
-            max(0.05, 0.35 + 2.2 * ellipticity),
-            max(0.05, 0.25 + 0.6 * float(np.clip((concentration_proxy - 1.0) / 2.0, 0.0, 1.0))),
-        ],
-        dtype=float,
-    )
-    class_probs = _normalize_probabilities(class_scores)
-    entropy = float(compute_classification_entropy(class_probs))
-
-    predictions = {
-        "M_vir": m_vir,
-        "r_s": r_s,
-        "ellipticity": ellipticity,
+    return {
+        "status": status,
+        "loaded": loaded,
+        "supports_inference": bool(checkpoint_path is not None and runtime_ready),
+        "runtime_dependencies_ready": runtime_ready,
+        "checkpoint_path": str(checkpoint_path) if checkpoint_path is not None else None,
     }
-    return predictions, class_probs, entropy
 
 
-def _build_physics_fallback_response(
-    job_id: str,
-    convergence_map: np.ndarray,
-    mc_samples: int,
-) -> InferenceResponse:
-    """Build deterministic fallback inference response from map statistics."""
-    if mc_samples <= 1:
-        predictions, class_probs, entropy = _physics_estimate_from_map(convergence_map)
-        return InferenceResponse(
-            job_id=job_id,
-            predictions=predictions,
-            classification={f"class_{idx}": float(prob) for idx, prob in enumerate(class_probs)},
-            entropy=entropy,
-            inference_mode="physics_fallback",
-            timestamp=get_current_timestamp(),
-        )
+def _lens_finder_status() -> dict[str, Any]:
+    """Summarize availability of the trained survey lens-finder model."""
+    try:
+        from src.ml.lens_finder import find_lens_finder_checkpoint
+    except ImportError:
+        return {
+            "status": "module_unavailable",
+            "loaded": False,
+            "supports_detection": False,
+            "runtime_dependencies_ready": False,
+            "checkpoint_path": None,
+        }
 
-    digest = hashlib.sha256(np.ascontiguousarray(convergence_map).tobytes()).hexdigest()
-    seed = int(digest[:16], 16) % (2**32)
-    rng = np.random.default_rng(seed)
+    checkpoint_path = find_lens_finder_checkpoint()
+    runtime_ready = bool(getattr(torch, "__version__", None))
+    status = "checkpoint_available" if checkpoint_path is not None and runtime_ready else "checkpoint_missing"
+    if not runtime_ready:
+        status = "runtime_incomplete"
 
-    noise_scale = max(0.001, 0.05 * float(np.std(convergence_map)))
-    sampled_predictions: list[np.ndarray] = []
-    sampled_classes: list[np.ndarray] = []
-    for _ in range(mc_samples):
-        noisy_map = convergence_map + rng.normal(0.0, noise_scale, size=convergence_map.shape)
-        pred, class_probs, _ = _physics_estimate_from_map(noisy_map)
-        sampled_predictions.append(np.array([pred["M_vir"], pred["r_s"], pred["ellipticity"]], dtype=float))
-        sampled_classes.append(class_probs)
+    return {
+        "status": status,
+        "loaded": False,
+        "supports_detection": bool(checkpoint_path is not None and runtime_ready),
+        "runtime_dependencies_ready": runtime_ready,
+        "checkpoint_path": str(checkpoint_path) if checkpoint_path is not None else None,
+    }
 
-    pred_array = np.stack(sampled_predictions, axis=0)
-    class_array = np.stack(sampled_classes, axis=0)
 
-    mean_pred = pred_array.mean(axis=0)
-    std_pred = pred_array.std(axis=0)
-    mean_class = class_array.mean(axis=0)
+def _load_json_artifact(path: Path) -> Optional[Any]:
+    """Load a JSON artifact if it exists and is parseable."""
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        logger.warning("Could not parse JSON artifact at %s", path)
+        return None
 
-    return InferenceResponse(
-        job_id=job_id,
-        predictions={
-            "M_vir": float(mean_pred[0]),
-            "r_s": float(mean_pred[1]),
-            "ellipticity": float(mean_pred[2]),
-        },
-        uncertainties={
-            "M_vir_std": float(std_pred[0]),
-            "r_s_std": float(std_pred[1]),
-            "ellipticity_std": float(std_pred[2]),
-        },
-        classification={f"class_{idx}": float(prob) for idx, prob in enumerate(mean_class)},
-        entropy=float(compute_classification_entropy(mean_class)),
-        inference_mode="physics_fallback",
-        timestamp=get_current_timestamp(),
-    )
+
+def _load_regression_summary() -> Optional[dict[str, Any]]:
+    """Load the latest regression summary or derive a minimal gate-check summary."""
+    regression_path = PROJECT_ROOT / "results" / "regression_summary.json"
+    regression_summary = _load_json_artifact(regression_path)
+    if isinstance(regression_summary, dict):
+        return regression_summary
+
+    gate_path = PROJECT_ROOT / "results" / "publication_gate_report.json"
+    gate_report = _load_json_artifact(gate_path)
+    if not isinstance(gate_report, dict):
+        return None
+
+    checks = gate_report.get("checks", [])
+    passed_checks = sum(1 for check in checks if isinstance(check, dict) and check.get("passed"))
+    total_checks = len(checks)
+    return {
+        "status": "artifact_checks",
+        "generated_at_utc": gate_report.get("generated_at_utc"),
+        "publication_gate_passed": bool(gate_report.get("publication_gate_passed")),
+        "checks_passed": passed_checks,
+        "checks_total": total_checks,
+    }
+
+
+def _load_validation_summary() -> Optional[dict[str, Any]]:
+    """Load the latest statistical-rigor summary for dashboards."""
+    rigor_path = PROJECT_ROOT / "results" / "statistical_rigor_report.json"
+    rigor_report = _load_json_artifact(rigor_path)
+    if not isinstance(rigor_report, dict):
+        return None
+
+    slacs = rigor_report.get("slacs_validation", {})
+    warnings_list = rigor_report.get("overall_warnings", [])
+    return {
+        "generated_at_utc": rigor_report.get("generated_at_utc"),
+        "slacs_joint_pass_rate": slacs.get("joint_pass_rate"),
+        "slacs_prediction_modes": slacs.get("prediction_modes", []),
+        "slacs_data_sources": slacs.get("data_sources", []),
+        "warning_count": len(warnings_list) if isinstance(warnings_list, list) else 0,
+        "warnings": warnings_list if isinstance(warnings_list, list) else [],
+    }
+
+
+def _normalize_slacs_rows(payload: Any) -> Any:
+    """Normalize SLACS validation rows for frontend consumption."""
+    if not isinstance(payload, list):
+        return payload
+
+    normalized_rows: list[dict[str, Any]] = []
+    for row in payload:
+        if not isinstance(row, dict):
+            continue
+        normalized = dict(row)
+        if isinstance(normalized.get("passed"), str):
+            normalized["passed"] = normalized["passed"].strip().lower() == "true"
+        if "validation_scope" not in normalized:
+            mode = str(normalized.get("prediction_mode", "unknown"))
+            normalized["validation_scope"] = (
+                "image_space_diagnostic"
+                if "scaled_intensity" in mode
+                else "proxy_sensitivity"
+            )
+        normalized_rows.append(normalized)
+    return normalized_rows
 
 
 # Note: Real authentication is now in src.api_utils.auth
@@ -434,13 +465,20 @@ def load_model_cached():
     """Load model with caching and require a real trained checkpoint."""
     model = MODEL_CACHE.get('model')
     if model is None:
-        logger.info("Loading PINN model into cache...")
-        model = load_pretrained_model()
-        if model is None:
+        status = _model_status()
+        if status["checkpoint_path"] is None:
             raise RuntimeError(
                 "No pretrained PINN model available. "
                 "Deploy a trained checkpoint before requesting inference."
             )
+        if not status["runtime_dependencies_ready"]:
+            raise RuntimeError(
+                "A pretrained PINN checkpoint exists, but JAX/Equinox runtime "
+                "dependencies are unavailable in this environment."
+            )
+
+        logger.info("Loading PINN model into cache...")
+        model = load_pretrained_model()
         MODEL_CACHE['model'] = model
         logger.info("Model loaded successfully")
     return model
@@ -532,7 +570,7 @@ async def generate_synthetic(
         "status": "running",
         "job_type": "synthetic",
         "progress": 0.0,
-        "_created_ts": datetime.utcnow().timestamp(),
+        "_created_ts": datetime.now(timezone.utc).timestamp(),
     }
     
     try:
@@ -617,34 +655,24 @@ async def run_inference(
         "status": "running",
         "job_type": "inference",
         "progress": 0.0,
-        "_created_ts": datetime.utcnow().timestamp(),
+        "_created_ts": datetime.now(timezone.utc).timestamp(),
     }
     
     try:
         # Prepare input (NumPy) always available
         convergence_map = np.array(request.convergence_map, dtype=float)
 
-        # Load model; if unavailable, use deterministic physics fallback estimator.
+        # Load model; strict mode forbids heuristic stand-ins when checkpoints are missing.
         try:
             model = load_model_cached()
         except RuntimeError as missing_model_error:
-            logger.warning(
-                "Job %s: %s Falling back to physics estimator.",
-                job_id,
-                str(missing_model_error),
-            )
-            response = _build_physics_fallback_response(
-                job_id=job_id,
-                convergence_map=convergence_map,
-                mc_samples=request.mc_samples,
-            )
             JOBS[job_id] = {
-                "status": "completed",
+                "status": "failed",
                 "job_type": "inference",
                 "progress": 100.0,
-                "result": response.model_dump(),
+                "error": str(missing_model_error),
             }
-            return response
+            raise HTTPException(status_code=503, detail=str(missing_model_error))
 
         # Prepare tensor input
         input_tensor = prepare_model_input(convergence_map, target_size=request.target_size)
@@ -736,6 +764,8 @@ async def run_inference(
         logger.info(f"Job {job_id}: Inference completed successfully")
         return response
         
+    except HTTPException:
+        raise
     except Exception as e:
         JOBS[job_id] = {
             "status": "failed",
@@ -814,6 +844,7 @@ async def list_models():
     Returns:
     - Available model information
     """
+    model_status = _model_status()
     return {
         "models": [
             {
@@ -822,8 +853,16 @@ async def list_models():
                 "description": "Physics-Informed Neural Network for lensing analysis",
                 "input_size": [64, 64],
                 "output_parameters": ["M_vir", "r_s", "ellipticity"],
-                "loaded": "model" in MODEL_CACHE
-            }
+                **model_status,
+            },
+            {
+                "name": "LensFinder",
+                "version": "1.0.0",
+                "description": "Checkpoint-backed survey lens candidate detector",
+                "input_size": [64, 64],
+                "output_parameters": ["objectness", "x_center", "y_center", "width", "height"],
+                **_lens_finder_status(),
+            },
         ]
     }
 
@@ -840,8 +879,14 @@ async def get_statistics():
         "total_jobs": len(JOBS),
         "active_jobs": sum(1 for j in JOBS.values() if j.get("status") == "running"),
         "completed_jobs": sum(1 for j in JOBS.values() if j.get("status") == "completed"),
-        "model_loaded": "model" in MODEL_CACHE,
+        "model_status": _model_status(),
+        "feature_status": {
+            "pinn_inference": _model_status(),
+            "survey_finder": _lens_finder_status(),
+        },
         "gpu_available": torch.cuda.is_available(),
+        "regression_summary": _load_regression_summary(),
+        "validation_summary": _load_validation_summary(),
         "timestamp": get_current_timestamp()
     }
 
@@ -937,31 +982,37 @@ async def http_exception_handler(request, exc):
 @app.get("/api/v1/validation/slacs", tags=["validation"])
 async def get_slacs_validation():
     """Return SLACS survey validation results from pre-computed JSON."""
-    import json
     results_path = Path("results/real_data/slacs_validation_results.json")
     if not results_path.exists():
         return JSONResponse(status_code=404, content={"error": "No SLACS results found. Run: python scripts/validate_real_data.py"})
-    return json.loads(results_path.read_text())
+    payload = _load_json_artifact(results_path)
+    if payload is None:
+        return JSONResponse(status_code=500, content={"error": "SLACS validation artifact could not be parsed."})
+    return _normalize_slacs_rows(payload)
 
 
 @app.get("/api/v1/validation/calibration", tags=["validation"])
 async def get_calibration_results():
     """Return uncertainty calibration results (ECE, coverage)."""
-    import json
     results_path = Path("results/uncertainty_calibration_results.json")
     if not results_path.exists():
         return JSONResponse(status_code=404, content={"error": "No calibration results found. Run: python scripts/uncertainty_calibration.py"})
-    return json.loads(results_path.read_text())
+    payload = _load_json_artifact(results_path)
+    if payload is None:
+        return JSONResponse(status_code=500, content={"error": "Calibration artifact could not be parsed."})
+    return payload
 
 
 @app.get("/api/v1/validation/ablation", tags=["validation"])
 async def get_ablation_results():
     """Return ablation study results."""
-    import json
     results_path = Path("results/ablation_results.json")
     if not results_path.exists():
         return JSONResponse(status_code=404, content={"error": "No ablation results found. Run: python scripts/ablation_study.py"})
-    return json.loads(results_path.read_text())
+    payload = _load_json_artifact(results_path)
+    if payload is None:
+        return JSONResponse(status_code=500, content={"error": "Ablation artifact could not be parsed."})
+    return payload
 
 
 @app.exception_handler(Exception)
@@ -990,9 +1041,31 @@ class FinderRequest(BaseModel):
     seed: int = Field(42)
 
 
+@app.get("/api/v1/survey/finder/status")
+async def survey_finder_status():
+    """Expose survey detector availability for the frontend."""
+    return _lens_finder_status()
+
+
 @app.post("/api/v1/survey/finder")
 async def survey_finder(req: FinderRequest):
     """LenNet-style automated lens discovery on synthetic or uploaded field."""
+    if req.mode != "synthetic":
+        raise HTTPException(
+            status_code=501,
+            detail="FITS upload scanning is not enabled in this deployment. Use synthetic mode or deploy the multipart upload route."
+        )
+
+    status = _lens_finder_status()
+    if not status["supports_detection"]:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "LensFinder is unavailable because no trained checkpoint-backed detector "
+                "is present in this environment."
+            ),
+        )
+
     try:
         from src.ml.lens_finder import LensFinder
         finder = LensFinder(confidence_threshold=req.confidence_threshold)
@@ -1006,6 +1079,7 @@ async def survey_finder(req: FinderRequest):
             "n_candidates": len(results),
             "stride": req.stride,
             "mode": req.mode,
+            "detector_status": status,
         }
     except Exception as e:
         logger.exception("Finder error")

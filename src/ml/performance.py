@@ -8,7 +8,6 @@ Features:
 - GPU acceleration via CuPy (optional)
 - Vectorized operations
 - Performance benchmarking
-- Automatic fallback to NumPy
 """
 
 import numpy as np
@@ -21,11 +20,9 @@ import sys
 try:
     import cupy as cp
     GPU_AVAILABLE = True
-    print("CuPy detected: GPU acceleration available")
 except ImportError:
     cp = None
     GPU_AVAILABLE = False
-    print("CuPy not found: Using CPU (NumPy) only")
 
 
 class ArrayBackend:
@@ -44,6 +41,11 @@ class ArrayBackend:
         use_gpu : bool
             Whether to use GPU if available (default True)
         """
+        if use_gpu and not GPU_AVAILABLE:
+            raise ImportError(
+                "CuPy is required for GPU acceleration. "
+                "Install cupy or set use_gpu=False."
+            )
         self.use_gpu = use_gpu and GPU_AVAILABLE
         self.xp = cp if self.use_gpu else np
         
@@ -91,7 +93,7 @@ class ArrayBackend:
 
 
 # Global backend instance
-_global_backend = ArrayBackend(use_gpu=True)
+_global_backend = ArrayBackend(use_gpu=False)
 
 
 def get_backend() -> ArrayBackend:

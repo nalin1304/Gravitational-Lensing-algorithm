@@ -273,13 +273,12 @@ def evaluate_with_existing_benchmarks():
             print(f"   RMSE (direct): {rmse_direct:.6f}")
             print(f"   RMSE (validator): {rmse_validator:.6f}")
             return True
-        else:
-            print("⚠️  RMSE values differ (using fallback implementation)")
-            return True  # Still valid, just using fallback
+        print("❌ RMSE values differ; fallback implementations are not permitted")
+        return False
         
     except ImportError:
-        print("⚠️  Existing benchmarks not available (using built-in implementations)")
-        return True
+        print("❌ Existing benchmarks not available; fallback implementations are not permitted")
+        return False
 
 
 def main():

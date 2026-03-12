@@ -27,7 +27,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Astroquery is optional — graceful fallback for CI
+# Astroquery is optional — required for live MAST queries
 try:
     from astroquery.mast import Observations
     ASTROQUERY_AVAILABLE = True
@@ -106,6 +106,42 @@ SLACS_HST_CATALOG: List[LensCatalogEntry] = [
         "filter": "F814W",
         "ref": "Bolton+2008",
     },
+    {
+        "name": "SDSS J0737+3216",
+        "ra": 114.36854,  "dec": 32.27181,
+        "z_lens": 0.3223,  "z_source": 0.5812,
+        "sigma_v": 338.0,  "einstein_radius": 1.03,
+        "proposal_ids": [10174, 10494],
+        "filter": "F814W",
+        "ref": "Bolton+2008",
+    },
+    {
+        "name": "SDSS J1205+4910",
+        "ra": 181.41846,  "dec": 49.17481,
+        "z_lens": 0.2150,  "z_source": 0.4808,
+        "sigma_v": 281.0,  "einstein_radius": 1.22,
+        "proposal_ids": [10174, 10494],
+        "filter": "F814W",
+        "ref": "Bolton+2008",
+    },
+    {
+        "name": "SDSS J1630+4520",
+        "ra": 247.61729,  "dec": 45.34339,
+        "z_lens": 0.2479,  "z_source": 0.7933,
+        "sigma_v": 279.0,  "einstein_radius": 1.81,
+        "proposal_ids": [10174, 10494],
+        "filter": "F814W",
+        "ref": "Bolton+2008",
+    },
+    {
+        "name": "SDSS J2321-0939",
+        "ra": 350.33721,  "dec": -9.65285,
+        "z_lens": 0.0819,  "z_source": 0.5324,
+        "sigma_v": 245.0,  "einstein_radius": 1.57,
+        "proposal_ids": [10174],
+        "filter": "F814W",
+        "ref": "Bolton+2008",
+    },
 ]
 
 
@@ -116,7 +152,7 @@ class MASTDownloader:
     Implements a three-tier data strategy:
       1. Check local cache (fast)
       2. Query MAST by coordinates (requires astroquery + network)
-      3. Generate synthetic observation matching published parameters (fallback)
+      3. Generate synthetic observation matching published parameters (explicit opt-in only)
     """
 
     def __init__(self, cache_dir: str = "data/hst_cache"):
@@ -135,6 +171,7 @@ class MASTDownloader:
         name: str,
         force: bool = False,
         search_radius_arcsec: float = 5.0,
+        allow_synthetic_fallback: bool = False,
     ) -> Path:
         """
         Download a SLACS lens HST/ACS image.
@@ -147,6 +184,10 @@ class MASTDownloader:
             Force re-download even if cached.
         search_radius_arcsec : float
             MAST coordinate search radius in arcseconds.
+        allow_synthetic_fallback : bool
+            If ``True``, generate a synthetic FITS surrogate when no archival
+            observation can be fetched. This should remain ``False`` for
+            publication-grade observational validation.
 
         Returns
         -------
@@ -156,7 +197,8 @@ class MASTDownloader:
         Raises
         ------
         FileNotFoundError
-            If download fails and no cache exists.
+            If no cached or archival observation is available and synthetic
+            fallback is disabled.
         """
         if name not in self.catalog:
             raise ValueError(
@@ -181,6 +223,12 @@ class MASTDownloader:
                     return fits_path
             except Exception as e:
                 logger.warning(f"MAST query failed for {name}: {e}")
+
+        if not allow_synthetic_fallback:
+            raise FileNotFoundError(
+                f"No cached or archival HST observation available for {name}. "
+                "Enable allow_synthetic_fallback only for demo/smoke-test workflows."
+            )
 
         # Tier 3: Generate synthetic with published parameters
         logger.info(f"Generating synthetic observation for {name} from published parameters")
@@ -356,6 +404,7 @@ class MASTDownloader:
         name: str,
         grid_size: int = 64,
         cutout_arcsec: Optional[float] = None,
+        allow_synthetic_fallback: bool = False,
     ) -> Tuple[np.ndarray, np.ndarray, Dict]:
         """
         Download (if needed) and load a SLACS lens image and weight map.
@@ -368,6 +417,9 @@ class MASTDownloader:
             Desired output size (will resize).
         cutout_arcsec : float, optional
             Extract a square cutout of this size. Default: 4× Einstein radius.
+        allow_synthetic_fallback : bool
+            If ``True``, allow a synthetic FITS surrogate when archival data are
+            unavailable. Keep ``False`` for observational validation.
 
         Returns
         -------
@@ -378,7 +430,10 @@ class MASTDownloader:
         metadata : dict
             Lens parameters and provenance.
         """
-        fits_path = self.download_slacs_lens(name)
+        fits_path = self.download_slacs_lens(
+            name,
+            allow_synthetic_fallback=allow_synthetic_fallback,
+        )
         entry = self.catalog[name]
 
         if ASTROPY_AVAILABLE and fits_path.suffix == ".fits":
@@ -460,16 +515,24 @@ class MASTDownloader:
             # Scale weight map inversely by normalization factor squared
             cutout_weight = cutout_weight * ((vmax - vmin) ** 2)
 
+        output_pixel_scale = float(cutout_arcsec) / float(grid_size)
+        comment_cards = header.get("COMMENT", [])
+        if isinstance(comment_cards, str):
+            comment_text = comment_cards
+        else:
+            comment_text = " ".join(str(card) for card in comment_cards)
+
         metadata = {
             "name": entry["name"],
             "z_lens": entry["z_lens"],
             "z_source": entry["z_source"],
             "sigma_v": entry["sigma_v"],
             "einstein_radius": entry["einstein_radius"],
-            "pixel_scale_arcsec": pixel_scale,
+            "pixel_scale_arcsec": output_pixel_scale,
+            "native_pixel_scale_arcsec": float(pixel_scale),
             "cutout_arcsec": cutout_arcsec,
             "fits_path": str(fits_path),
-            "is_synthetic": "COMMENT" in header and "Synthetic" in str(header.get("COMMENT", "")),
+            "is_synthetic": "Synthetic" in comment_text,
             "ref": entry["ref"],
         }
 

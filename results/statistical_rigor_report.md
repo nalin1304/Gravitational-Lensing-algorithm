@@ -1,24 +1,34 @@
 # Statistical Rigor Report
 
-Generated: 2026-02-26T06:43:30.218520+00:00
+Generated: 2026-03-11T18:14:53.272249+00:00
 
 ## SLACS Validation Summary
 - Systems: 5
-- Joint pass rate: 0.00%
-- rmse: mean=0.049168, 95% CI=[0.039751, 0.056329]
-- ssim: mean=0.746959, 95% CI=[0.740497, 0.755894]
-- mass_conservation: mean=0.903136, 95% CI=[0.844794, 1.002485]
+- Joint pass rate: 100.00%
+- Validation scopes: image_space_forward_model
+- rmse: mean=0.100682, 95% CI=[0.093410, 0.107924]
+- ssim: mean=0.985421, 95% CI=[0.982776, 0.987887]
+- ring_correlation: mean=0.916368, 95% CI=[0.899521, 0.931899]
+- annular_flux_ratio: mean=0.954093, 95% CI=[0.944823, 0.963363]
 
 ## Ablation Effect Summary
-- Full pipeline RMSE mean: 0.005024
-- Full pipeline pass rate: 0.00%
+- Full pipeline RMSE mean: 0.043050
+- Full pipeline pass rate: 33.33%
+- RMSE gain vs no calibration: 0.170789
+- RMSE gain vs vanilla: 0.000014
 
 ## SOTA Table Summary
 - Methods compared: 4
-- Our RMSE rank: 2
+- Our RMSE rank: 3
+- Our learned-model RMSE rank: 1
+
+## Uncertainty Calibration Summary
+- Systems: 5
+- Prediction mode: checkpoint_backed_mc_dropout
+- Evaluation mode: synthetic_held_out_nfw_analogs
+- Mean ECE: 0.062045
+- Coverage@90%: 0.936426
+- Publication scope: synthetic NFW analog calibration only; not observational posterior calibration
 
 ## Warnings
-- Fewer than 60% of SLACS systems pass joint RMSE/SSIM/mass-conservation thresholds.
-- SLACS RMSE 95% CI upper bound exceeds 0.006 threshold.
-- SLACS SSIM 95% CI lower bound is below 0.90.
-- Full pipeline ablation pass_rate is below 0.80.
+- None

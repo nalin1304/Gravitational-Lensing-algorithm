@@ -86,6 +86,7 @@ async function checkHealth() {
 
 const routes = {};
 let currentPage = null;
+const ASSET_VERSION = "2026-03-10-rigor-sync-2";
 
 function registerPage(name, mod) { routes[name] = mod; }
 
@@ -132,14 +133,14 @@ function setupMenu() {
 async function boot() {
   // Load page modules
   const mods = await Promise.all([
-    import("/ui-static/pages/dashboard.js"),
-    import("/ui-static/pages/workbench.js"),
-    import("/ui-static/pages/validation.js"),
-    import("/ui-static/pages/analyses.js"),
-    import("/ui-static/pages/account.js"),
-    import("/ui-static/pages/api-explorer.js"),
-    import("/ui-static/pages/survey.js"),
-    import("/ui-static/pages/rigor.js"),
+    import(`/ui-static/pages/dashboard.js?v=${ASSET_VERSION}`),
+    import(`/ui-static/pages/workbench.js?v=${ASSET_VERSION}`),
+    import(`/ui-static/pages/validation.js?v=${ASSET_VERSION}`),
+    import(`/ui-static/pages/analyses.js?v=${ASSET_VERSION}`),
+    import(`/ui-static/pages/account.js?v=${ASSET_VERSION}`),
+    import(`/ui-static/pages/api-explorer.js?v=${ASSET_VERSION}`),
+    import(`/ui-static/pages/survey.js?v=${ASSET_VERSION}`),
+    import(`/ui-static/pages/rigor.js?v=${ASSET_VERSION}`),
   ]);
 
   registerPage("dashboard", mods[0]);

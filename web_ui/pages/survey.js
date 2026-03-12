@@ -31,13 +31,16 @@ export function render() {
         <div class="card">
           <div class="card-header">
             <span class="card-title">Automated Lens Discovery</span>
-            <span class="badge badge-info">LenNet-style CNN</span>
+            <span class="badge badge-info" id="sfModelBadge">LenNet-style CNN</span>
           </div>
+          <p id="sfStatusNote" class="section-desc" style="margin-bottom:12px">
+            Learned survey detection requires a trained checkpoint-backed detector.
+          </p>
           <div class="form-group">
             <label class="form-label">Scan Mode</label>
             <select id="sfScanMode" class="form-input">
               <option value="synthetic">Synthetic injection (demo)</option>
-              <option value="fits">Upload FITS file</option>
+              <option value="fits" disabled>Upload FITS file (not enabled in this build)</option>
             </select>
           </div>
           <div id="sfFitsRow" class="form-group" style="display:none">
@@ -64,7 +67,7 @@ export function render() {
               <input id="sfSeed" class="form-input" type="number" value="42" />
             </div>
           </div>
-          <button id="sfRunBtn" class="btn btn-primary" style="margin-top:8px;width:100%">
+          <button id="sfRunBtn" class="btn btn-primary" style="margin-top:8px;width:100%" disabled>
             🔭 Scan for Lens Candidates
           </button>
         </div>
@@ -354,6 +357,7 @@ export function render() {
 
 export async function init() {
     const P = L();
+    let _finderStatus = null;
 
     // ── Tab switching ────────────────────────────────────────────────────
     document.querySelectorAll("#surveyTabs .tab").forEach(btn => {
@@ -367,6 +371,35 @@ export async function init() {
     });
 
     // ── Finder scan mode toggle ──────────────────────────────────────────
+    function syncFinderAvailability() {
+        const button = document.getElementById("sfRunBtn");
+        const note = document.getElementById("sfStatusNote");
+        const badge = document.getElementById("sfModelBadge");
+        if (!_finderStatus) return;
+
+        if (_finderStatus.supports_detection) {
+            button.disabled = false;
+            badge.textContent = "LenNet-style CNN";
+            note.innerHTML = `Checkpoint active: <code>${P.esc(_finderStatus.checkpoint_path || "trained detector")}</code>`;
+            return;
+        }
+
+        button.disabled = true;
+        badge.textContent = "Detector unavailable";
+        note.textContent = "Survey detection is disabled because no trained LensFinder checkpoint is deployed. The UI is wired to backend status and will enable automatically when a detector is installed.";
+    }
+
+    try {
+        _finderStatus = await P.api("/api/v1/survey/finder/status", { auth: false });
+    } catch (e) {
+        _finderStatus = {
+            supports_detection: false,
+            status: "status_unavailable",
+            detail: e.message,
+        };
+    }
+    syncFinderAvailability();
+
     document.getElementById("sfScanMode").addEventListener("change", e => {
         document.getElementById("sfFitsRow").style.display =
             e.target.value === "fits" ? "" : "none";
@@ -379,6 +412,13 @@ export async function init() {
         const conf = parseFloat(document.getElementById("sfConf").value) || 0.7;
         const nlenses = parseInt(document.getElementById("sfNLenses").value) || 5;
         const seed = parseInt(document.getElementById("sfSeed").value) || 42;
+
+        if (!_finderStatus?.supports_detection) {
+            const message = "LensFinder is unavailable because no trained checkpoint-backed detector is deployed.";
+            document.getElementById("sfResults").innerHTML = `<p class="section-desc" style="color:var(--warning)">${P.esc(message)}</p>`;
+            P.toast(message, "warning");
+            return;
+        }
 
         document.getElementById("sfResults").innerHTML = `<p class="section-desc">Scanning…</p>`;
         try {

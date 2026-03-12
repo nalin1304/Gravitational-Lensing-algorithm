@@ -8,12 +8,14 @@ Date: October 2025
 SECURITY: P1 fixes applied November 2025 (rate limiting)
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from sqlalchemy.orm import Session
+from datetime import timedelta, datetime, timezone
+import re
 from typing import Optional, List
-from datetime import timedelta, datetime
+from urllib.parse import parse_qs
+
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy.orm import Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -52,6 +54,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 # P1 SECURITY FIX: Rate limiter to prevent brute-force attacks
 limiter = Limiter(key_func=get_remote_address)
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 # ============================================================================
@@ -60,10 +63,18 @@ limiter = Limiter(key_func=get_remote_address)
 
 class UserRegister(BaseModel):
     """User registration request"""
-    email: EmailStr
+    email: str
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8)
     full_name: Optional[str] = None
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not EMAIL_PATTERN.match(normalized):
+            raise ValueError("Invalid email address format")
+        return normalized
 
 
 class UserLogin(BaseModel):
@@ -94,9 +105,19 @@ class UserResponse(BaseModel):
 
 class UserUpdate(BaseModel):
     """User update request"""
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     full_name: Optional[str] = None
     password: Optional[str] = Field(None, min_length=8)
+
+    @field_validator("email")
+    @classmethod
+    def validate_optional_email(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if not EMAIL_PATTERN.match(normalized):
+            raise ValueError("Invalid email address format")
+        return normalized
 
 
 class ApiKeyCreate(BaseModel):
@@ -116,6 +137,31 @@ class ApiKeyResponse(BaseModel):
     created_at: datetime
     expires_at: Optional[datetime]
     model_config = ConfigDict(from_attributes=True)
+
+
+async def _parse_login_payload(request: Request) -> UserLogin:
+    """Parse login credentials without requiring python-multipart."""
+    content_type = request.headers.get("content-type", "").lower()
+    username = ""
+    password = ""
+
+    if "application/json" in content_type:
+        payload = await request.json()
+        if isinstance(payload, dict):
+            username = str(payload.get("username", ""))
+            password = str(payload.get("password", ""))
+    else:
+        raw_body = (await request.body()).decode("utf-8")
+        form_payload = parse_qs(raw_body, keep_blank_values=True)
+        username = form_payload.get("username", [""])[0]
+        password = form_payload.get("password", [""])[0]
+
+    if not username or not password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="username and password are required",
+        )
+    return UserLogin(username=username, password=password)
 
 
 # ============================================================================
@@ -171,7 +217,6 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
 @limiter.limit("5/minute")  # P1 SECURITY FIX: Limit login attempts to prevent brute-force
 async def login(
     request: Request,  # Required for rate limiting
-    form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
     """
@@ -181,6 +226,8 @@ async def login(
     
     SECURITY: Rate limited to 5 attempts per minute per IP address to prevent brute-force attacks.
     """
+    form_data = await _parse_login_payload(request)
+
     # Authenticate user
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -199,7 +246,7 @@ async def login(
     )
     
     # Update last login
-    update_user(db, user.id, last_login=datetime.utcnow())
+    update_user(db, user.id, last_login=datetime.now(timezone.utc))
     
     # Create audit log
     create_audit_log(

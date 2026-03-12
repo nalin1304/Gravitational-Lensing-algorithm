@@ -55,7 +55,6 @@ Usage
 
 from __future__ import annotations
 
-import warnings
 from typing import Literal, Optional, Tuple
 
 import numpy as np
@@ -169,16 +168,14 @@ def build_drizzle_covariance(
     Returns
     -------
     Sigma : (N*M, N*M) ndarray  [for small images]
-         or (N*M,) ndarray of variances  [fallback for large images > 128²]
-        Full covariance matrix, or variance-only vector if the image is too
-        large to store the full matrix in memory.
+        Full covariance matrix. Large images must be downsampled to avoid
+        prohibitive memory costs.
 
     Notes
     -----
     For a 64×64 image the full Σ is 4096×4096 (128 MB float32).
-    For a 128×128 image the full Σ is 16384×16384 (1 GB float32) and
-    this function falls back to returning only the variance + a 1-D
-    correlation profile that can be used for block-diagonal approximation.
+    For a 128×128 image the full Σ is 16384×16384 (1 GB float32). Larger
+    images must be downsampled before calling this function.
     """
     if rms_map.ndim != 2:
         raise ValueError(f"rms_map must be 2-D, got shape {rms_map.shape}")
@@ -196,16 +193,12 @@ def build_drizzle_covariance(
     if kernel_fn is None:
         raise ValueError(f"Unknown kernel '{kernel}'. Choose from {list(_KERNEL_FUNCTIONS)}")
 
-    # ── Large-image fallback: return sparse representation
     if n_pix > 128 * 128:
-        warnings.warn(
-            f"Image size {N}×{M} = {n_pix} pixels; full covariance matrix "
-            f"would be {n_pix**2 * 8 / 1e9:.2f} GB. Returning variance + "
-            f"correlation profile for block-diagonal approximation.",
-            ResourceWarning,
-            stacklevel=2,
+        raise ValueError(
+            f"Image size {N}×{M} = {n_pix} pixels is too large for a dense covariance "
+            "matrix. Downsample the image or reduce the grid size to avoid fallback "
+            "approximations."
         )
-        return _sparse_covariance_profile(rms_map, pixfrac, scale, kernel_fn, max_lag)
 
     # ── Full dense covariance matrix for manageable image sizes
     sigma_flat = rms_map.ravel()                 # (N*M,)

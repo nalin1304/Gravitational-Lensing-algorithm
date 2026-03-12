@@ -9,7 +9,7 @@ Date: November 2025
 
 from fastapi import HTTPException, UploadFile, status
 from typing import Optional, Dict, Any
-import bleach
+from html import escape
 import os
 
 # File upload configuration
@@ -71,7 +71,7 @@ def sanitize_fits_header_value(value: Any) -> str:
     """
     Sanitize FITS header values to prevent XSS attacks.
     
-    Uses bleach to clean HTML/JavaScript from string values.
+    Uses HTML escaping to neutralize embedded markup in string values.
     
     Args:
         value: Header value (any type)
@@ -89,15 +89,7 @@ def sanitize_fits_header_value(value: Any) -> str:
     # Convert to string
     value_str = str(value)
     
-    # Sanitize with bleach (removes all HTML/JS tags)
-    sanitized = bleach.clean(
-        value_str,
-        tags=[],  # No tags allowed
-        attributes={},  # No attributes allowed
-        strip=True  # Strip tags instead of escaping
-    )
-    
-    return sanitized
+    return escape(value_str, quote=True)
 
 
 def sanitize_fits_headers(headers: Dict[str, Any]) -> Dict[str, str]:

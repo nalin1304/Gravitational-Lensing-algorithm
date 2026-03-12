@@ -169,7 +169,7 @@ def predict_velocity_dispersion(
     for i in range(1, len(r_kpc)):
         r_sub = r_kpc[:i+1]
         rho_sub = rho_3d[:i+1]
-        M_enclosed[i] = max(0.0, np.trapz(4 * np.pi * r_sub**2 * rho_sub, r_sub))
+        M_enclosed[i] = max(0.0, np.trapezoid(4 * np.pi * r_sub**2 * rho_sub, r_sub))
 
     # Solve Jeans equation: σ_r²(r) = (1/ν) ∫_r^∞ ν(r') GM(r')/r'² f(β) dr'
     # where ν is the luminosity density and f(β) corrects for anisotropy
@@ -179,7 +179,7 @@ def predict_velocity_dispersion(
     a_H = r_eff / 1.8153  # Hernquist scale radius from R_eff
     a_kpc = a_H * arcsec_to_rad * D_A_kpc * 1e3
     nu = 1.0 / (r_kpc / a_kpc * (1 + r_kpc / a_kpc)**3 + 1e-30)
-    nu /= np.trapz(nu * 4 * np.pi * r_kpc**2, r_kpc)  # Normalize
+    nu /= np.trapezoid(nu * 4 * np.pi * r_kpc**2, r_kpc)  # Normalize
 
     # Jeans integration (backwards from outer boundary)
     sigma_r2 = np.zeros_like(r_kpc)

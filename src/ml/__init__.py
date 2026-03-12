@@ -6,7 +6,7 @@ This module provides physics-informed neural networks for:
 - Dark matter model classification
 - Training and evaluation utilities
 
-Hardware-Agnostic Backend: Automatically detects JAX, falls back to NumPy.
+Hardware-Agnostic Backend: Detects JAX and reports unavailable otherwise.
 All sub-modules are guarded against missing dependencies.
 
 Phase 7: GPU acceleration and performance optimization
@@ -19,17 +19,13 @@ from typing import Any
 # Backend detection
 # --------------------------------------------------------------------------
 BACKEND: str = "unavailable"
-"""Active compute backend: ``"jax"``, ``"numpy"``, or ``"unavailable"``."""
+"""Active compute backend: ``"jax"`` or ``"unavailable"``."""
 
 try:
     import jax  # noqa: F401
     BACKEND = "jax"
 except ImportError:
-    try:
-        import numpy  # noqa: F401
-        BACKEND = "numpy"
-    except ImportError:
-        pass
+    pass
 
 
 def check_backend() -> str:

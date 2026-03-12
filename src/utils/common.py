@@ -10,13 +10,33 @@ This module provides:
 Import from here instead of app.utils to avoid circular dependencies.
 """
 
-import torch
-import numpy as np
+import logging
 from pathlib import Path
 from typing import Optional, Tuple
-import logging
+
+import numpy as np
+import torch
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_MODEL_PATHS = (
+    Path("models/pinn_best.eqx"),
+    Path("models/pinn_final.eqx"),
+    Path("results/pinn_demo/model_final.eqx"),
+    Path("../models/pinn_best.eqx"),
+)
+
+
+def find_pretrained_model_checkpoint(model_path: Optional[str] = None) -> Optional[Path]:
+    """Return the first available pretrained checkpoint path, if any."""
+    if model_path is not None:
+        explicit_path = Path(model_path)
+        return explicit_path if explicit_path.exists() else None
+
+    for candidate_path in DEFAULT_MODEL_PATHS:
+        if candidate_path.exists():
+            return candidate_path
+    return None
 
 
 def load_pretrained_model(model_path: Optional[str] = None):
@@ -34,42 +54,30 @@ def load_pretrained_model(model_path: Optional[str] = None):
     try:
         import jax
         import equinox as eqx
-    except ImportError:
-        logger.error("JAX/Equinox not available for loading model.")
-        return None
+    except ImportError as exc:
+        raise ImportError(
+            "JAX/Equinox not available for loading model. "
+            "Install the required runtime dependencies."
+        ) from exc
     
-    if model_path is None:
-        # Try default locations (updated for JAX/Equinox names)
-        possible_paths = [
-            Path("models/pinn_best.eqx"),
-            Path("models/pinn_final.eqx"),
-            Path("results/pinn_demo/model_final.eqx"),
-            Path("../models/pinn_best.eqx"),
-        ]
-        
-        for path in possible_paths:
-            if path.exists():
-                model_path = str(path)
-                break
-    
-    if model_path is None or not Path(model_path).exists():
-        logger.warning(f"Model not found at {model_path}")
-        return None
+    checkpoint_path = find_pretrained_model_checkpoint(model_path)
+
+    if checkpoint_path is None:
+        raise FileNotFoundError(f"Model checkpoint not found at {model_path}")
     
     try:
-        # Initialize a model structure with a deterministic fallback key
+        # Initialize a model structure with a deterministic key
         key = jax.random.PRNGKey(0)
         model = PhysicsInformedNN(key=key)
         
         # Load weights using Equinox
-        model = eqx.tree_deserialise_leaves(model_path, model)
+        model = eqx.tree_deserialise_leaves(str(checkpoint_path), model)
         
-        logger.info(f"Model loaded successfully from {model_path}")
+        logger.info(f"Model loaded successfully from {checkpoint_path}")
         return model
         
     except Exception as e:
-        logger.error(f"Error loading Equinox model: {e}")
-        return None
+        raise RuntimeError(f"Error loading Equinox model: {e}") from e
 
 
 def prepare_model_input(

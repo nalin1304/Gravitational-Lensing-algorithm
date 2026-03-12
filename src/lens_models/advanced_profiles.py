@@ -122,7 +122,7 @@ class EllipticalNFWProfile(NFWProfile):
     
     def _transform_coordinates(
         self, x: np.ndarray, y: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Transform (x, y) to elliptical coordinates.
         
@@ -135,8 +135,10 @@ class EllipticalNFWProfile(NFWProfile):
         
         Returns
         -------
-        x_ell : np.ndarray
-            Transformed x coordinates
+        x_rot : np.ndarray
+            Rotated x coordinates
+        y_rot : np.ndarray
+            Rotated y coordinates
         r_ell : np.ndarray
             Elliptical radius
         """
@@ -157,7 +159,7 @@ class EllipticalNFWProfile(NFWProfile):
         # Compute elliptical radius
         r_ell = np.sqrt(x_rot**2 + y_scaled**2)
         
-        return x_rot, r_ell
+        return x_rot, y_rot, r_ell
     
     def convergence(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -183,7 +185,7 @@ class EllipticalNFWProfile(NFWProfile):
         y_arr = np.atleast_1d(y)
         
         # Transform to elliptical coordinates
-        _, r_ell = self._transform_coordinates(x_arr, y_arr)
+        _, _, r_ell = self._transform_coordinates(x_arr, y_arr)
         
         # Evaluate circular NFW at elliptical radius
         # Use parent class method with r_ell as distance
@@ -201,9 +203,8 @@ class EllipticalNFWProfile(NFWProfile):
         """
         Compute deflection angle at position (x, y).
         
-        For elliptical profiles, this requires numerical integration.
-        Here we use a simplified approximation based on the gradient
-        of the lensing potential.
+        Use a pseudo-elliptical approximation based on the gradient of the
+        circular NFW potential evaluated at the elliptical radius.
         
         Parameters
         ----------
@@ -224,60 +225,18 @@ class EllipticalNFWProfile(NFWProfile):
         This is an approximation. For precise calculations, use numerical
         integration of the convergence profile.
         """
-        x_rot, y_rot = self._transform_coordinates(x, y)
-        
-        from scipy.integrate import quad
-        import warnings
-        
-        # Keeton 2001, Eq. 33 & 34 for general elliptical mass distributions:
-        # alpha_x = 2 * x * q * int_0^1 kappa(xi(u)) / (1 - (1-q^2)u) du
-        # alpha_y = 2 * y * q * int_0^1 kappa(xi(u)) / sqrt(1 - (1-q^2)u) du
-        # where xi(u) = sqrt(u * (x^2 + y^2 / (1 - (1-q^2)u)))
-        
-        # We need kappa as a function of the elliptical radius xi
-        # We can reuse our own convergence method but force it to treat the input
-        # as already being an elliptical radius (i.e., on the major axis)
-        def kappa_ell(xi):
-            # For xi on the major axis, x=xi, y=0. kappa() internally calculates r_ell = xi.
-            return self.convergence(np.array([xi]), np.array([0.0]))[0]
+        scalar_input = np.isscalar(x) and np.isscalar(y)
+        x_arr = np.atleast_1d(x).astype(float)
+        y_arr = np.atleast_1d(y).astype(float)
 
-        x_flat = np.atleast_1d(x_rot).flatten()
-        y_flat = np.atleast_1d(y_rot).flatten()
-        
-        alpha_x_rot = np.zeros_like(x_flat, dtype=float)
-        alpha_y_rot = np.zeros_like(y_flat, dtype=float)
-        omega = 1.0 - self.q**2
-        
-        # Ensure we don't suppress integration warnings if numerical issues arise
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            for i in range(x_flat.size):
-                vx = x_flat[i]
-                vy = y_flat[i]
-                
-                if abs(vx) < 1e-10 and abs(vy) < 1e-10:
-                    continue
-                    
-                def integrand_x(u):
-                    if u < 1e-15: return 0.0
-                    f = 1.0 - omega * u
-                    xi = np.sqrt(u * (vx**2 + vy**2 / f))
-                    return kappa_ell(xi) / f
-                    
-                def integrand_y(u):
-                    if u < 1e-15: return 0.0
-                    f = 1.0 - omega * u
-                    xi = np.sqrt(u * (vx**2 + vy**2 / f))
-                    return kappa_ell(xi) / np.sqrt(f)
-                    
-                res_x, _ = quad(integrand_x, 0.0, 1.0, limit=100)
-                res_y, _ = quad(integrand_y, 0.0, 1.0, limit=100)
-                
-                alpha_x_rot[i] = 2.0 * vx * self.q * res_x
-                alpha_y_rot[i] = 2.0 * vy * self.q * res_y
+        x_rot, y_rot, r_ell = self._transform_coordinates(x_arr, y_arr)
+        safe_radius = np.maximum(r_ell, 1.0e-12)
 
-        alpha_x_rot = alpha_x_rot.reshape(np.shape(x))
-        alpha_y_rot = alpha_y_rot.reshape(np.shape(y))
+        # Evaluate the circular parent profile at the elliptical radius and
+        # project the radial deflection back into the rotated frame.
+        alpha_radial, _ = super().deflection_angle(safe_radius, np.zeros_like(safe_radius))
+        alpha_x_rot = alpha_radial * x_rot / safe_radius
+        alpha_y_rot = alpha_radial * y_rot / (self.q**2 * safe_radius)
         
         # Rotate back to the original un-rotated coordinate frame
         cos_phi = np.cos(self.phi)
@@ -286,6 +245,8 @@ class EllipticalNFWProfile(NFWProfile):
         alpha_x = alpha_x_rot * cos_phi - alpha_y_rot * sin_phi
         alpha_y = alpha_x_rot * sin_phi + alpha_y_rot * cos_phi
         
+        if scalar_input:
+            return float(np.ravel(alpha_x)[0]), float(np.ravel(alpha_y)[0])
         return alpha_x, alpha_y
     
     def shear(self, x: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:

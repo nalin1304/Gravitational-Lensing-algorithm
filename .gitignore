@@ -108,6 +108,10 @@ Thumbs.db
 *.temp
 temp/
 tmp/
+.cache/
+
+# HST cache
+data/hst_cache/
 
 # Documentation builds
 docs/_build/

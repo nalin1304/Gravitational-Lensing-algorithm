@@ -1364,7 +1364,7 @@ class DarkMatterFactory:
         
         # Trapezoidal integration
         integrand = 2 * np.pi * sigma * r_grid
-        M_integrated = np.trapz(integrand, r_grid)  # Msun
+        M_integrated = np.trapezoid(integrand, r_grid)  # Msun
         
         # Expected mass depends on profile type
         if hasattr(halo, 'enclosed_mass'):

@@ -1,4 +1,4 @@
-# 🌌 Computational Imaging Research Platform (IEEE TCI)
+# Computational Imaging Research Platform
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
 [![JAX](https://img.shields.io/badge/JAX-0.4%2B-green.svg)](https://jax.readthedocs.io/)
@@ -6,35 +6,50 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![IEEE TCI](https://img.shields.io/badge/IEEE_TCI-Publication_Ready-blue.svg)](https://ieeexplore.ieee.org/)
 
-> **Research-grade lens modeling in one command**  
-> Physics-informed neural networks + cosmological ray tracing for gravitational lensing analysis, natively accelerated by JAX and Equinox.
+> Physics-constrained gravitational-lensing software with explicit reproducibility gates, analytic lens validation, real-data diagnostics, and a browser UI served by FastAPI.
 
-## ▶️ Try a Demo Now
+## Current Verified Scope
 
-**Experience publication-quality gravitational lensing analysis instantly:**
+This repository currently provides four verified capability classes:
 
-```powershell
+1. Physics-based synthetic lens generation from analytic mass profiles under Planck-2018 cosmology defaults.
+2. Known-system validation for canonical lenses such as Q2237+030 and Q0957+561.
+3. Observational image-space diagnostics on SLACS/HST data with explicit provenance tagging and an archive-backed cache.
+4. Checkpoint-backed Monte-Carlo-dropout uncertainty calibration on held-out synthetic NFW analog systems.
+5. Checkpoint-backed benchmark tables that compare released neural checkpoints against explicit analytic NFW and SIE-like fits.
+
+Important boundary conditions:
+
+- Real-data SLACS outputs are image-space diagnostics, not direct convergence-map ground truth.
+- The active quantitative SLACS table uses 5 literature-parameterized lenses, while `data/hst_cache/manifest.json` now inventories 9 cached ACS/F814W SLACS cutouts for future holdout expansion.
+- If no trained inference checkpoint is deployed, the workbench disables inference and the API returns an explicit unavailable state instead of a heuristic fallback.
+- The uncertainty calibration artifact is publication-valid only for the held-out synthetic NFW-analog regime represented by `results/uncertainty_calibration_results.json`.
+- Current held-out synthetic calibration artifact: mean ECE `0.062` and coverage@90 `0.936` from `results/uncertainty_calibration_results.json`.
+
+## Quick Start
+
+```bash
 git clone https://github.com/nalin1304/Gravitational-Lensing-algorithm
 cd Gravitational-Lensing-algorithm
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn api.main:app --reload
 ```
 
-**Then open `http://localhost:8000/ui` → click "Einstein Cross" → see results immediately**
-
-✅ **No training** • ✅ **No config** • ✅ **Scientifically validated**
+Open `http://localhost:8000/ui` for the web interface and `http://localhost:8000/docs` for the OpenAPI explorer.
 
 ---
 
-## 🎯 What This Does
+## What This Does
 
-Turn **raw astronomical observations** into **validated mass maps** with **full uncertainty quantification** — automatically.
+The codebase is organized as a reproducible computational-imaging platform rather than a single black-box model. It combines:
 
-**Built for IEEE Transactions on Computational Imaging (TCI)**, this toolkit demonstrates:
-- ✨ Physics-informed machine learning (PINNs constrained by General Relativity)
-- 🌌 Cosmological thin-lens ray tracing (ΛCDM distances)
-- 📊 Bayesian uncertainty quantification (Monte Carlo dropout)
-- 🔬 Sub-percent accuracy on benchmark lensing systems
+- thin-lens and multi-plane gravitational lensing physics,
+- analytic NFW/SIS/point-mass validation paths,
+- JAX/Equinox and PyTorch ML components where explicitly available,
+- observational HST/SLACS ingestion and image-space comparison tooling,
+- a web UI and API surface that expose validation artifacts directly.
 
 ### Featured Demos (One-Click Ready)
 
@@ -42,9 +57,12 @@ Turn **raw astronomical observations** into **validated mass maps** with **full 
 |------|--------|-----------|
 | **🌟 Einstein Cross** | Q2237+030 (z=0.04) | Quadruple-image quasar, classic strong lens |
 | **🔭 Twin Quasar** | Q0957+561 (z=0.36) | First discovered lens (1979), time delay demo |
-| **🪐 JWST Cluster** | Simulated (z=0.3) | Dark matter substructure detection with AI |
+| **🪐 JWST Cluster** | Simulated (z=0.3) | Cluster-scale synthetic NFW experimentation |
 
-All demos use **pre-trained PINN models** and **generate publication-ready figures automatically**.
+Demo note:
+- Synthetic map generation is always available.
+- Checkpoint-backed inference depends on an installed model checkpoint.
+- Validation pages remain available even when inference checkpoints are absent.
 
 ---
 
@@ -142,7 +160,7 @@ Generate convergence maps from NFW profiles with:
 - **WCS coordinate handling**: Astropy integration
 
 ### 3. Model Inference (JAX / Equinox)
-- **Pre-trained PINNs**: Pure JAX/Equinox functional transformations
+- **Checkpoint-gated PINNs**: Pure JAX/Equinox functional transformations when a trained checkpoint is available
 - **5D Spherical Topologies**: Native boundary divergence resolving
 - **Hardware acceleration**: JIT compilation (`eqx.filter_jit`) and `jax.vmap` batching
 
@@ -155,7 +173,7 @@ Generate convergence maps from NFW profiles with:
 - **Known systems**: Einstein Cross, Twin Quasar, etc.
 - **Automated metrics**: Relative errors, correlations
 - **Ground truth comparison**: Validate against literature
-- **Research-grade accuracy**: Publication-ready results
+- **Artifact-level traceability**: Scripts emit machine-readable JSON and LaTeX tables under `results/`
 
 ### 6. Multi-Plane Lensing
 - **Cosmological distances**: FlatLambdaCDM
@@ -188,15 +206,15 @@ python -m pytest tests/test_mass_profiles.py -v
 python scripts/check_imports.py
 ```
 
-**Current Test Status**: ✅ 502 passed, 8 skipped (`python -m pytest tests/ -q`, run on February 26, 2026)
+**Current Test Status**: ✅ 513 passed, 38 skipped (`python3 -m pytest tests/ -q`, run on March 10, 2026)
 
 ## ✅ Publication Readiness
 
 - Full reproducibility and validation record: `JOURNAL_PUBLICATION_READINESS.md`
 - Executable publication gate: `python3 scripts/publication_gate.py`
 - Latest release gate summary:
-  - `502 passed, 8 skipped` (full test suite)
-  - `mypy src/` clean
+  - `513 passed, 38 skipped` (full test suite)
+  - `mypy src/` clean when developer tooling is installed; publication gate falls back to `py_compile` syntax sweep in bare runtimes
   - Python compile sanity clean
   - Known-system validation script passes (`scripts/validate_known_systems.py`)
 
@@ -268,14 +286,15 @@ gravitational-lensing-algorithm/
 
 4. **Authentication Security**
    - Real JWT authentication with `python-jose`
-   - Secure password hashing with `bcrypt`
+   - Secure password hashing with `pbkdf2_sha256` (bcrypt verification retained for compatibility)
    - No hardcoded fallback tokens or auth bypasses
    - Proper token verification in all protected endpoints
 
 5. **Web UI Architecture**
    - FastAPI-served static frontend at `/ui` with Plotly.js visualizations
-   - Real-time convergence map generation and PINN inference from browser
+   - Real-time convergence map generation and status-aware PINN inference from browser
    - Preset lens system configurations (Einstein Cross, Twin Quasar, JWST Cluster)
+   - Frontend cards consume live regression, validation, and model-status artifacts from the backend
 
 6. **Test Organization**
    - Renamed phase-based tests to descriptive names:
@@ -302,18 +321,18 @@ gravitational-lensing-algorithm/
 ### Physics
 
 This toolkit implements gravitational lensing based on:
-- **Einstein's General Relativity**: Full geodesic equations
-- **Lens equation**: θ = β + α(θ)
+- **Einstein's General Relativity**: thin-lens cosmography plus Schwarzschild/Born comparison utilities
+- **Lens equation**: β = θ - α(θ)
 - **Convergence**: κ = Σ / Σ_crit
-- **Deflection angle**: α = (4GM/c²) × (D_LS / D_L × D_S)
+- **Reduced point-mass deflection**: α = (D_LS / D_S) × α_physical, with α_physical = 4GM / (c² ξ)
 
 ### Machine Learning
 
-Our Physics-Informed Neural Networks:
-- **Architecture**: Conv2D → Dense → Dual heads (regression + classification)
-- **Loss function**: MSE + physics constraints + classification cross-entropy
-- **Training data**: 50,000+ synthetic convergence maps
-- **Uncertainty**: Monte Carlo dropout + Bayesian calibration
+The repository contains multiple ML paths with different maturity levels:
+- **Checkpoint-gated inference models** exposed through the API/UI when a trained Equinox checkpoint is present
+- **Physics losses** for Poisson, gradient, and mass-consistency constraints
+- **Synthetic uncertainty surrogate** using Monte-Carlo dropout on held-out NFW analog systems
+- **Explicit availability reporting** when optional ML checkpoints are absent
 
 ### Validation
 
@@ -321,7 +340,7 @@ Tested against:
 - **Einstein Cross (Q2237+0305)**: z_lens=0.04, z_source=1.695
 - **Twin Quasar (Q0957+561)**: First discovered gravitational lens
 - **SDSS J1004+4112**: Five-image quasar lens system
-- **Literature values**: Sub-5% error on Einstein radii
+- **Literature values**: raw Einstein-radius errors below roughly 2.3% in the current known-system calibration artifact
 
 ## 🏆 IEEE TCI Publication Readiness
 
@@ -335,8 +354,8 @@ This project was developed for submission to IEEE Transactions on Computational 
 **Key Talking Points**:
 - Combines ML with physics constraints (not pure black-box)
 - Post-Newtonian Schwarzschild deflection with controlled PN corrections
-- Research-grade accuracy on known systems
-- Production-ready with a 502-test passing baseline (+8 skipped tests)
+- Known-system raw Einstein-radius errors below 2.3% on the current validation gate
+- Production-ready with a 513-test passing baseline (+38 skipped tests)
 
 ## 🤝 Contributing
 

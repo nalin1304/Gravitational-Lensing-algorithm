@@ -60,6 +60,7 @@ class TestHealthEndpoints:
         assert "models" in data
         assert len(data["models"]) > 0
         assert data["models"][0]["name"] == "PINN"
+        assert any(model["name"] == "LensFinder" for model in data["models"])
     
     def test_stats_endpoint(self):
         """Test statistics endpoint"""
@@ -216,7 +217,7 @@ class TestInference:
         assert "entropy" in data
         assert "inference_mode" in data
         assert "timestamp" in data
-        assert data["inference_mode"] in ["pinn", "physics_fallback"]
+        assert data["inference_mode"] == "pinn"
         
         # Check predictions
         predictions = data["predictions"]
@@ -246,7 +247,7 @@ class TestInference:
         
         data = response.json()
         assert "uncertainties" in data
-        assert data["inference_mode"] in ["pinn", "physics_fallback"]
+        assert data["inference_mode"] == "pinn"
         
         uncertainties = data["uncertainties"]
         assert "M_vir_std" in uncertainties
@@ -282,12 +283,7 @@ class TestInference:
         }
         
         response = client.post("/api/v1/inference", json=payload)
-        if response.status_code == 503:
-            assert "No pretrained PINN model available" in response.json().get("error", "") \
-                or "No pretrained PINN model available" in response.json().get("detail", "")
-        else:
-            # Should handle gracefully with a structured response.
-            assert response.status_code in [200, 422]
+        assert response.status_code == 422
 
 
 # ============================================================================
@@ -334,6 +330,35 @@ class TestBatchProcessing:
         """Test error for non-existent batch job"""
         response = client.get("/api/v1/batch/invalid-id/status")
         assert response.status_code == 404
+
+
+# ============================================================================
+# Test Survey Tooling
+# ============================================================================
+
+class TestSurveyEndpoints:
+    """Test survey-tool API availability semantics."""
+
+    def test_finder_status_endpoint(self):
+        """Finder status should expose checkpoint/runtime availability."""
+        response = client.get("/api/v1/survey/finder/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "status" in data
+        assert "supports_detection" in data
+        assert "runtime_dependencies_ready" in data
+
+    def test_finder_rejects_unwired_fits_mode(self):
+        """FITS mode should be rejected until multipart upload is implemented."""
+        payload = {
+            "mode": "fits",
+            "stride": 32,
+            "confidence_threshold": 0.7,
+            "n_lenses": 5,
+            "seed": 42,
+        }
+        response = client.post("/api/v1/survey/finder", json=payload)
+        assert response.status_code == 501
 
 
 # ============================================================================

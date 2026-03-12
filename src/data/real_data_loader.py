@@ -22,13 +22,12 @@ import numpy as np
 from typing import Dict, Tuple, Optional, Union, List
 from pathlib import Path
 from dataclasses import dataclass
-import warnings
 import logging
 
 
 logger = logging.getLogger(__name__)
 
-# Optional dependencies - graceful fallback
+# Optional dependencies
 try:
     from astropy.io import fits
     from astropy.wcs import WCS
@@ -41,11 +40,6 @@ except ImportError:
     u = None
     SkyCoord = None
     ASTROPY_AVAILABLE = False
-    warnings.warn(
-        "Astropy not installed. Real data loading functionality limited. "
-        "Install with: pip install astropy",
-        ImportWarning
-    )
 
 try:
     from scipy.ndimage import gaussian_filter
@@ -292,12 +286,10 @@ class FITSDataLoader:
         elif 'MIRI' in instrument:
             return 0.11  # JWST MIRI: ~0.11 arcsec/pixel
         
-        # Default fallback for sparse headers lacking WCS/instrument metadata.
-        logger.info(
+        raise ValueError(
             "Could not determine pixel scale from FITS header. "
-            "Using default 0.05 arcsec/pixel."
+            "Provide WCS/CD/CDELT/PIXSCALE keywords or instrument metadata."
         )
-        return 0.05
     
     def list_extensions(self, filepath: Union[str, Path]) -> List[Dict]:
         """
@@ -549,34 +541,32 @@ def preprocess_real_data(
             valid_median = np.median(processed[np.isfinite(processed)])
             processed[mask_invalid] = valid_median
         elif handle_nans == 'interpolate':
-            # Simple nearest-neighbor interpolation
-            from scipy.ndimage import distance_transform_edt
-            
-            if SCIPY_AVAILABLE:
-                indices = distance_transform_edt(
-                    mask_invalid,
-                    return_distances=False,
-                    return_indices=True
+            if not SCIPY_AVAILABLE:
+                raise ImportError(
+                    "SciPy is required for NaN interpolation. "
+                    "Install scipy or choose handle_nans='zero'/'median'."
                 )
-                processed = processed[tuple(indices)]
-            else:
-                processed[mask_invalid] = 0.0
+            from scipy.ndimage import distance_transform_edt
+            indices = distance_transform_edt(
+                mask_invalid,
+                return_distances=False,
+                return_indices=True
+            )
+            processed = processed[tuple(indices)]
     
     # Step 2: Resize if needed
     if target_size is not None:
+        if not SCIPY_AVAILABLE:
+            raise ImportError(
+                "SciPy is required for resizing. "
+                "Install scipy or omit target_size."
+            )
         from scipy.ndimage import zoom
-        
-        if SCIPY_AVAILABLE:
-            zoom_factors = (
-                target_size[0] / processed.shape[0],
-                target_size[1] / processed.shape[1]
-            )
-            processed = zoom(processed, zoom_factors, order=1)
-        else:
-            warnings.warn(
-                "SciPy not available. Skipping resize.",
-                UserWarning
-            )
+        zoom_factors = (
+            target_size[0] / processed.shape[0],
+            target_size[1] / processed.shape[1]
+        )
+        processed = zoom(processed, zoom_factors, order=1)
     
     # Step 3: Normalize
     if normalize:

@@ -63,8 +63,9 @@ do not quantify modeling/systematic reliability sufficiently for cosmographic us
 ## 6. Remaining High-Impact Scientific Gaps
 
 1. Raw mass recovery remains weaker than calibrated recovery on some systems.
-2. Current benchmark scripts include proxy simulation pathways; manuscript text
-   must clearly distinguish proxy vs trained-model evidence.
+2. Current benchmark scripts are now checkpoint-backed or analytic, but the
+   manuscript must still distinguish learned-checkpoint evidence from
+   oracle-like analytic profile refits.
 3. Final manuscript should include explicit confidence intervals and hypothesis
    outcomes table (accept/reject per hypothesis).
 

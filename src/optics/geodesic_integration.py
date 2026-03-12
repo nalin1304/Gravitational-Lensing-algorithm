@@ -14,7 +14,7 @@ Key Features:
 - Dimensionless scaling (x = r_s/r) for numerical stability
 - Periapsis detection via event-based solver termination
 - Strong- vs weak-field accuracy comparisons against Born term
-- Graceful fallback to first-order Born formula for captured/failed integrations
+- Explicit failure reporting when the GR solver cannot produce a valid solution
 
 Physics Background:
 The geodesic equation in curved spacetime:
@@ -40,8 +40,8 @@ try:
 except ImportError:
     EINSTEINPY_AVAILABLE = False
     warnings.warn(
-        "EinsteinPy not installed. Full GR geodesic integration unavailable. "
-        "Install with: pip install einsteinpy",
+        "EinsteinPy not installed. Trajectory-export helpers are unavailable, "
+        "but the internal Schwarzschild Binet solver remains usable.",
         ImportWarning
     )
 
@@ -91,7 +91,7 @@ class GeodesicIntegrator:
         """Initialize geodesic integrator with lens mass."""
         if not EINSTEINPY_AVAILABLE:
             warnings.warn(
-                "EinsteinPy not available; using PN-only deflection model.",
+                "EinsteinPy not available; trajectory-export helpers are disabled.",
                 RuntimeWarning,
             )
 
@@ -121,11 +121,12 @@ class GeodesicIntegrator:
         return_trajectory: bool = False
     ) -> Dict:
         """
-        Calculate PN-approximated Schwarzschild deflection angle.
+        Calculate Schwarzschild deflection angle from explicit geodesic integration.
         
-        The implemented solver uses an analytical PN expansion with terms up
-        to second order in M/b. It does not currently integrate the full null
-        geodesic ODE through spacetime.
+        The solver integrates the null-orbit Binet equation numerically and
+        reports the exact Schwarzschild deflection for the chosen impact
+        parameter. The first-order Born term is returned only as a comparison
+        baseline in the output dictionary.
         
         Parameters
         ----------
@@ -142,26 +143,26 @@ class GeodesicIntegrator:
         -------
         result : dict
             Dictionary containing:
-            - 'deflection_angle_rad': PN deflection angle in radians
+            - 'deflection_angle_rad': GR deflection angle in radians
             - 'deflection_angle_arcsec': Deflection angle in arcseconds
             - 'impact_parameter': Input impact parameter (m)
             - 'impact_parameter_rs': b/rs (dimensionless)
             - 'regime': 'strong-field' or 'weak-field'
-            - 'trajectory': Reserved for future exact-integration backend
+            - 'trajectory': Reserved for future trajectory export
             - 'simplified_angle_rad': First-order (Born) comparison angle
-            - 'relative_error': |α_PN - α_Born|/|α_PN|
+            - 'relative_error': |α_GR - α_Born|/|α_GR|
         
         Notes
         -----
         Method summary:
         1. Construct geometric-unit mass scale M = GM/c².
-        2. Evaluate first-order and second-order PN terms as a function of b.
-        3. Compare with the first-order Born expression.
+        2. Integrate the Schwarzschild null-orbit equation for the chosen `b`.
+        3. Compare the GR result with the first-order Born expression.
         
         Notes on scope:
-        - This approximation is well-behaved in weak fields (b >> rs).
-        - In near-capture strong fields, exact ODE integration should replace
-          this PN expansion for publication-grade GR claims.
+        - Weak-field results converge toward the Born limit as `b/rs` grows.
+        - Near the capture boundary the solver may fail cleanly and raises an
+          explicit exception rather than substituting a simplified formula.
         
         Examples
         --------
@@ -210,12 +211,10 @@ class GeodesicIntegrator:
         dr_dlambda_sq = E**2 - metric_factor * (term2 + 0)  # Last term is for massive particles
         
         if dr_dlambda_sq < 0:
-            warnings.warn(
+            raise ValueError(
                 f"Geodesic cannot reach r={r_init/self.rs:.2f}rs with b={b_over_rs:.2f}rs. "
                 "Photon captured or invalid initial conditions."
             )
-            # Return fallback to simplified formula
-            return self._fallback_simplified(b)
         
         dr_dlambda = -np.sqrt(dr_dlambda_sq)  # Negative = moving inward
         
@@ -242,8 +241,7 @@ class GeodesicIntegrator:
             0.0  # φ
         ])
         
-        # Current implementation: PN approximation rather than full ODE integration.
-        alpha_pn = self._integrate_schwarzschild_orbit(
+        alpha_gr = self._integrate_schwarzschild_orbit(
             r_init, b, lambda_steps
         )
         
@@ -254,15 +252,15 @@ class GeodesicIntegrator:
         alpha_simplified = 4 * G * M_kg / (c**2 * b)  # radians
         
         # Relative error
-        relative_error = abs(alpha_pn - alpha_simplified) / alpha_pn if alpha_pn != 0 else 0
+        relative_error = abs(alpha_gr - alpha_simplified) / alpha_gr if alpha_gr != 0 else 0
         
         # Convert to arcseconds
-        alpha_pn_arcsec = (alpha_pn * u.rad).to(u.arcsec).value
+        alpha_gr_arcsec = (alpha_gr * u.rad).to(u.arcsec).value
         alpha_simp_arcsec = (alpha_simplified * u.rad).to(u.arcsec).value
         
         result = {
-            'deflection_angle_rad': alpha_pn,
-            'deflection_angle_arcsec': alpha_pn_arcsec,
+            'deflection_angle_rad': alpha_gr,
+            'deflection_angle_arcsec': alpha_gr_arcsec,
             'simplified_angle_rad': alpha_simplified,
             'simplified_angle_arcsec': alpha_simp_arcsec,
             'impact_parameter': b,
@@ -271,7 +269,7 @@ class GeodesicIntegrator:
             'regime': regime,
             'relative_error': relative_error,
             'percent_difference': relative_error * 100,
-            'gr_exceeds_simplified': alpha_pn > alpha_simplified
+            'gr_exceeds_simplified': alpha_gr > alpha_simplified
         }
         
         return result
@@ -342,30 +340,7 @@ class GeodesicIntegrator:
             # Captured by the black hole horizon
             return float(np.pi)
         else:
-            warnings.warn("Geodesic integration failed to converge or find periapsis.")
-            return float(4.0 * self.M_geom / b)
-    
-    def _fallback_simplified(self, b: float) -> Dict:
-        """Fallback to simplified formula when integration fails."""
-        G = const.G.value
-        c = const.c.value
-        M_kg = (self.M * u.Msun).to(u.kg).value
-        alpha_simplified = 4 * G * M_kg / (c**2 * b)
-        
-        return {
-            'deflection_angle_rad': alpha_simplified,
-            'deflection_angle_arcsec': (alpha_simplified * u.rad).to(u.arcsec).value,
-            'simplified_angle_rad': alpha_simplified,
-            'simplified_angle_arcsec': (alpha_simplified * u.rad).to(u.arcsec).value,
-            'impact_parameter': b,
-            'impact_parameter_rs': b / self.rs,
-            'schwarzschild_radius': self.rs,
-            'regime': 'fallback',
-            'relative_error': 0.0,
-            'percent_difference': 0.0,
-            'gr_exceeds_simplified': False,
-            'warning': 'Integration failed, using simplified formula'
-        }
+            raise RuntimeError("Geodesic integration failed to converge or find periapsis.")
     
     def compare_strong_vs_weak_field(
         self,

@@ -9,6 +9,7 @@ const presets = {
 };
 
 let _synReq = null, _synResp = null, _infResp = null;
+let _modelStatus = null;
 
 export function render() {
   const chipHtml = Object.entries(presets).map(([k, p]) =>
@@ -56,7 +57,7 @@ export function render() {
 
         <div class="card">
           <button id="wGenerate" class="btn btn-primary" style="width:100%;margin-bottom:8px">Generate Map</button>
-          <button id="wInfer" class="btn btn-secondary" style="width:100%;margin-bottom:8px">Run PINN Inference</button>
+          <button id="wInfer" class="btn btn-secondary" style="width:100%;margin-bottom:8px" disabled>Run PINN Inference</button>
           <button id="wExport" class="btn btn-secondary" style="width:100%">Export JSON</button>
         </div>
       </div>
@@ -188,6 +189,36 @@ function renderPlots(mat) {
   }
 }
 
+async function syncInferenceAvailability() {
+  const P = L();
+  const inferBtn = document.getElementById("wInfer");
+  const output = document.getElementById("wInfOutput");
+  const trace = document.getElementById("wMethodsOutput");
+
+  try {
+    const models = await P.api("/api/v1/models", { auth: false });
+    _modelStatus = models.models?.[0] || null;
+  } catch {
+    _modelStatus = null;
+  }
+
+  const ready = Boolean(_modelStatus?.supports_inference);
+  if (inferBtn) inferBtn.disabled = !ready;
+  if (!ready && output) {
+    output.textContent = JSON.stringify({
+      status: _modelStatus?.status || "unknown",
+      detail: "Inference disabled until a trained PINN checkpoint and runtime dependencies are available.",
+    }, null, 2);
+  }
+  if (trace && _modelStatus) {
+    trace.textContent = JSON.stringify({
+      checkpoint_status: _modelStatus.status,
+      supports_inference: _modelStatus.supports_inference,
+      checkpoint_path: _modelStatus.checkpoint_path,
+    }, null, 2);
+  }
+}
+
 export function init() {
   const P = L();
 
@@ -196,6 +227,7 @@ export function init() {
   );
 
   applyPreset("einstein_cross");
+  syncInferenceAvailability();
 
   document.getElementById("wGenerate").addEventListener("click", async () => {
     try {
@@ -216,6 +248,14 @@ export function init() {
 
   document.getElementById("wInfer").addEventListener("click", async () => {
     if (!_synResp) { P.toast("Generate a map first", "error"); return; }
+    if (_modelStatus && !_modelStatus.supports_inference) {
+      document.getElementById("wInfOutput").textContent = JSON.stringify({
+        status: _modelStatus.status,
+        detail: "No checkpoint-backed PINN inference is currently available.",
+      }, null, 2);
+      P.toast("Inference unavailable: checkpoint missing", "error");
+      return;
+    }
     try {
       P.showLoading("Running PINN inference...");
       _infResp = await P.api("/api/v1/inference", {
@@ -225,7 +265,13 @@ export function init() {
       });
       document.getElementById("wInfOutput").textContent = JSON.stringify(_infResp, null, 2);
       P.toast(`Inference complete: ${_infResp.inference_mode || 'pinn'}`, "success");
-    } catch (e) { P.toast(`Inference failed: ${e.message}`, "error"); }
+    } catch (e) {
+      document.getElementById("wInfOutput").textContent = JSON.stringify({
+        error: e.message,
+        model_status: _modelStatus?.status || "unknown",
+      }, null, 2);
+      P.toast(`Inference failed: ${e.message}`, "error");
+    }
     finally { P.hideLoading(); }
   });
 

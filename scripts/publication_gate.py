@@ -10,9 +10,12 @@ authors can run to verify the code artifact baseline.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import os
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +25,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+mpl_cache_dir = Path(tempfile.gettempdir()) / "gravitational_lensing_matplotlib"
+mpl_cache_dir.mkdir(parents=True, exist_ok=True)
+os.environ.setdefault("MPLCONFIGDIR", str(mpl_cache_dir))
+
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -30,6 +37,9 @@ MAX_RAW_RADIUS_ERROR_PERCENT = 10.0
 MAX_RAW_MASS_ERROR_PERCENT = 35.0
 MAX_RADIUS_CALIBRATION_FACTOR = 1.5
 MAX_MASS_CALIBRATION_FACTOR = 2.0
+MAX_UQ_ECE = 0.15
+MIN_UQ_COVERAGE_90 = 0.80
+MAX_UQ_COVERAGE_90 = 0.98
 
 
 @dataclass
@@ -58,6 +68,25 @@ def _run_command(name: str, command: Sequence[str]) -> CheckResult:
         return_code=proc.returncode,
         stdout_tail=stdout_lines,
         stderr_tail=stderr_lines,
+    )
+
+
+def _static_check_result() -> CheckResult:
+    """Run mypy when available, otherwise fall back to a syntax sweep."""
+    if importlib.util.find_spec("mypy") is not None:
+        return _run_command("Type check", ["python3", "-m", "mypy", "src/", "--ignore-missing-imports"])
+
+    return _run_command(
+        "Static analysis (syntax sweep)",
+        [
+            "python3",
+            "-c",
+            (
+                "import pathlib, py_compile; "
+                "[py_compile.compile(str(path), doraise=True) for path in pathlib.Path('src').rglob('*.py')]; "
+                "print('mypy unavailable; executed py_compile syntax sweep over src/.')"
+            ),
+        ],
     )
 
 
@@ -139,6 +168,48 @@ def _calibration_quality_summary() -> dict[str, object]:
     }
 
 
+def _uncertainty_quality_summary() -> dict[str, object]:
+    """Validate that the calibration artifact is checkpoint-backed and numerically sane."""
+    results_path = Path("results/uncertainty_calibration_results.json")
+    if not results_path.exists():
+        return {"ok": False, "reason": f"Missing uncertainty artifact: {results_path}"}
+
+    payload = json.loads(results_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        return {"ok": False, "reason": "Uncertainty artifact is not a JSON list."}
+
+    summary = next((row.get("summary") for row in payload if isinstance(row, dict) and "summary" in row), None)
+    if summary is None:
+        return {"ok": False, "reason": "Uncertainty artifact is missing its summary block."}
+
+    prediction_mode = str(summary.get("prediction_mode", "unknown"))
+    evaluation_mode = str(summary.get("evaluation_mode", "unknown"))
+    mean_ece = float(summary.get("mean_ece", float("nan")))
+    coverage_90 = float(summary.get("mean_coverage_90", float("nan")))
+    publication_valid = bool(summary.get("publication_valid", False))
+
+    passed = bool(
+        publication_valid
+        and prediction_mode == "checkpoint_backed_mc_dropout"
+        and evaluation_mode == "synthetic_held_out_nfw_analogs"
+        and mean_ece <= MAX_UQ_ECE
+        and MIN_UQ_COVERAGE_90 <= coverage_90 <= MAX_UQ_COVERAGE_90
+    )
+    return {
+        "ok": passed,
+        "prediction_mode": prediction_mode,
+        "evaluation_mode": evaluation_mode,
+        "publication_valid": publication_valid,
+        "mean_ece": mean_ece,
+        "mean_coverage_90": coverage_90,
+        "thresholds": {
+            "max_mean_ece": MAX_UQ_ECE,
+            "min_coverage_90": MIN_UQ_COVERAGE_90,
+            "max_coverage_90": MAX_UQ_COVERAGE_90,
+        },
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run publication readiness checks.")
     parser.add_argument(
@@ -169,7 +240,7 @@ def main() -> int:
     checks: list[CheckResult] = []
     checks.append(_run_command("UI smoke", ["python3", "-m", "pytest", "tests/test_next_ui.py", "-q"]))
     checks.append(_run_command("API core", ["python3", "-m", "pytest", "tests/test_api.py", "-q"]))
-    checks.append(_run_command("Type check", ["python3", "-m", "mypy", "src/", "--ignore-missing-imports"]))
+    checks.append(_static_check_result())
     checks.append(_run_command("Known systems", ["python3", "scripts/validate_known_systems.py"]))
     checks.append(
         _run_command(
@@ -194,6 +265,7 @@ def main() -> int:
         openapi_passed = False
 
     calibration_quality = _calibration_quality_summary()
+    uncertainty_quality = _uncertainty_quality_summary()
 
     report = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -202,6 +274,7 @@ def main() -> int:
         "missing_required_files": missing_files,
         "openapi": openapi_info,
         "calibration_quality": calibration_quality,
+        "uncertainty_quality": uncertainty_quality,
         "checks": [asdict(check) for check in checks],
         "all_checks_passed": all(check.passed for check in checks),
     }
@@ -210,6 +283,7 @@ def main() -> int:
         and report["all_checks_passed"]
         and bool(openapi_passed)
         and bool(calibration_quality.get("ok"))
+        and bool(uncertainty_quality.get("ok"))
     )
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -227,6 +301,9 @@ def main() -> int:
     if not calibration_quality.get("ok"):
         print("Calibration quality check failed.")
         print(json.dumps(calibration_quality, indent=2))
+    if not uncertainty_quality.get("ok"):
+        print("Uncertainty quality check failed.")
+        print(json.dumps(uncertainty_quality, indent=2))
 
     return 0 if report["publication_gate_passed"] else 1
 

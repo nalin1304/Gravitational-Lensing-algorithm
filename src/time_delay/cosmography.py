@@ -367,7 +367,7 @@ def infer_h0(
     # Compute posterior (assume flat prior)
     # P(H0|data) ∝ exp(-χ²/2)
     posterior = np.exp(-0.5 * (chi2_grid - chi2_min))
-    norm = np.trapz(posterior, h0_grid)
+    norm = np.trapezoid(posterior, h0_grid)
     if norm > 0:
         posterior /= norm
     else:

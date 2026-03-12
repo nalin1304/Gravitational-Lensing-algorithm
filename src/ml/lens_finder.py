@@ -40,8 +40,10 @@ try:
     import torch.nn as nn
     _HAS_TORCH = True
 except ImportError:
+    torch = None
+    nn = None
     _HAS_TORCH = False
-    warnings.warn("PyTorch not available; LensFinder will run in fallback mode", stacklevel=2)
+    warnings.warn("PyTorch not available; LensFinder is unavailable in this environment", stacklevel=2)
 
 try:
     from astropy.io import fits as astrofits
@@ -176,6 +178,24 @@ def _nms(candidates: List[ScanResult], iou_thresh: float = 0.45) -> List[ScanRes
 # Main API
 # ---------------------------------------------------------------------------
 
+DEFAULT_LENS_FINDER_CHECKPOINTS = (
+    Path("models/lens_finder.pt"),
+    Path("models/lens_finder_best.pt"),
+    Path("results/lens_finder/model_best.pt"),
+)
+
+
+def find_lens_finder_checkpoint(checkpoint: Optional[str] = None) -> Optional[Path]:
+    """Return the first available trained LensFinder checkpoint."""
+    if checkpoint is not None:
+        candidate = Path(checkpoint)
+        return candidate if candidate.exists() else None
+
+    for candidate in DEFAULT_LENS_FINDER_CHECKPOINTS:
+        if candidate.exists():
+            return candidate
+    return None
+
 class LensFinder:
     """
     Automated gravitational lens finder for wide-field survey images.
@@ -193,8 +213,9 @@ class LensFinder:
     nms_iou_threshold : float
         IoU threshold for non-maximum suppression.
     checkpoint : str or None
-        Path to a saved ``LensNetModel`` state dict. If None, reports
-        confidence from a physics-heuristic fallback.
+        Path to a trained ``LensNetModel`` state dict. If unavailable, the
+        finder is reported as unavailable rather than emitting heuristic or
+        randomly initialized detections.
     """
 
     CUTOUT_SIZE = 64
@@ -208,12 +229,12 @@ class LensFinder:
         self.conf_thresh = confidence_threshold
         self.nms_iou = nms_iou_threshold
         self.model = None
+        self.checkpoint_path = find_lens_finder_checkpoint(checkpoint)
 
-        if _HAS_TORCH:
+        if _HAS_TORCH and self.checkpoint_path is not None:
             self.model = LensNetModel()
-            if checkpoint and Path(checkpoint).exists():
-                sd = torch.load(checkpoint, map_location="cpu")
-                self.model.load_state_dict(sd)
+            sd = torch.load(self.checkpoint_path, map_location="cpu")
+            self.model.load_state_dict(sd)
             self.model.eval()
 
     def _preprocess_cutout(self, cutout: np.ndarray) -> np.ndarray:
@@ -234,50 +255,27 @@ class LensFinder:
         c = np.clip(c, 0.0, 1.0)
         return c[np.newaxis, np.newaxis, :, :]  # (1, 1, 64, 64)
 
-    @staticmethod
-    def _physics_heuristic_score(cutout: np.ndarray) -> Tuple[float, BoundingBox]:
-        """
-        Fallback confidence estimator without a trained model.
-
-        Uses ring-like flux pattern: computes the ratio of flux in an annular
-        region (Einstein-ring radius ~0.3–0.5 of cutout half-width) to total
-        flux. High ratio → likely ring/arc morphology.
-        """
-        cut = np.asarray(cutout, dtype=np.float64)
-        cut = np.clip(cut - np.percentile(cut, 10), 0, None)
-        h, w = cut.shape[:2]
-        cy, cx = h // 2, w // 2
-        Y, X = np.ogrid[:h, :w]
-        dist = np.sqrt((X - cx) ** 2 + (Y - cy) ** 2)
-        r_in = min(h, w) * 0.20
-        r_out = min(h, w) * 0.50
-        annulus = (dist >= r_in) & (dist <= r_out)
-        total = cut.sum() + 1e-10
-        ring_flux = cut[annulus].sum() / total
-        # Scale: ring_flux > 0.35 is a confident ring
-        confidence = float(np.clip((ring_flux - 0.15) / 0.20, 0.0, 1.0))
-        box = BoundingBox(x_center=cx, y_center=cy,
-                          width=r_out * 2, height=r_out * 2)
-        return confidence, box
+    def available(self) -> bool:
+        """Return whether a trained detector is available."""
+        return self.model is not None
 
     def _infer_cutout(self, cutout: np.ndarray, x0: int, y0: int) -> Optional[ScanResult]:
-        """Run model or heuristic on one cutout; return ScanResult if above threshold."""
-        if self.model is not None and _HAS_TORCH:
-            tensor = torch.from_numpy(self._preprocess_cutout(cutout))
-            with torch.no_grad():
-                pred = self.model(tensor)[0].cpu().numpy()
-            confidence = float(pred[0])
-            xc = float(pred[1]) * self.CUTOUT_SIZE + x0
-            yc = float(pred[2]) * self.CUTOUT_SIZE + y0
-            bw = float(pred[3]) * self.CUTOUT_SIZE
-            bh = float(pred[4]) * self.CUTOUT_SIZE
-            bbox = BoundingBox(xc, yc, bw, bh)
-        else:
-            confidence, local_box = self._physics_heuristic_score(cutout)
-            bbox = BoundingBox(
-                local_box.x_center + x0, local_box.y_center + y0,
-                local_box.width, local_box.height,
+        """Run the trained detector on one cutout and return a candidate above threshold."""
+        if self.model is None or not _HAS_TORCH:
+            raise RuntimeError(
+                "LensFinder requires a trained checkpoint-backed PyTorch model. "
+                "No learned detector is available in this environment."
             )
+
+        tensor = torch.from_numpy(self._preprocess_cutout(cutout))
+        with torch.no_grad():
+            pred = self.model(tensor)[0].cpu().numpy()
+        confidence = float(pred[0])
+        xc = float(pred[1]) * self.CUTOUT_SIZE + x0
+        yc = float(pred[2]) * self.CUTOUT_SIZE + y0
+        bw = float(pred[3]) * self.CUTOUT_SIZE
+        bh = float(pred[4]) * self.CUTOUT_SIZE
+        bbox = BoundingBox(xc, yc, bw, bh)
 
         if confidence < self.conf_thresh:
             return None

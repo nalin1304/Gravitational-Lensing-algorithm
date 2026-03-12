@@ -36,7 +36,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Tuple, Dict, Optional
-import numpy as np
 
 
 class PhysicsConstrainedPINNLoss(nn.Module):
@@ -111,6 +110,11 @@ class PhysicsConstrainedPINNLoss(nn.Module):
         self.lambda_conservation = lambda_conservation
         self.lambda_reg = lambda_reg
         self.lambda_classification = lambda_classification
+        if not use_autograd:
+            raise ValueError(
+                "Finite-difference fallbacks are disabled. "
+                "Set use_autograd=True to enforce rigorous derivatives."
+            )
         self.use_autograd = use_autograd
         
     def compute_laplacian_autograd(
@@ -199,85 +203,6 @@ class PhysicsConstrainedPINNLoss(nn.Module):
         
         return laplacian
     
-    def compute_laplacian_finite_diff(self, psi: torch.Tensor) -> torch.Tensor:
-        """
-        Compute ∇²ψ using finite differences (fallback method).
-        
-        Uses standard 5-point stencil:
-            ∇²ψ ≈ [ψ(i+1,j) + ψ(i-1,j) + ψ(i,j+1) + ψ(i,j-1) - 4ψ(i,j)] / h²
-        
-        Parameters
-        ----------
-        psi : torch.Tensor
-            Lensing potential [B, 1, H, W]
-            
-        Returns
-        -------
-        laplacian : torch.Tensor
-            Approximate ∇²ψ
-            
-        Notes
-        -----
-        This is faster than autograd but less accurate for training.
-        Use for validation and testing, not training loss.
-        """
-        if psi.ndim != 4 or psi.shape[1] != 1:
-            raise ValueError(f"Expected psi shape [B, 1, H, W], got {tuple(psi.shape)}")
-
-        _, _, h, w = psi.shape
-        # Coordinate grids in this project are normalized to [-1, 1].
-        # Finite differences must be scaled by the physical spacing.
-        hx = 2.0 / max(w - 1, 1)
-        hy = 2.0 / max(h - 1, 1)
-
-        d2psi_dx2 = torch.zeros_like(psi)
-        d2psi_dy2 = torch.zeros_like(psi)
-
-        if w >= 3:
-            d2psi_dx2[:, :, :, 1:-1] = (
-                psi[:, :, :, 2:] - 2.0 * psi[:, :, :, 1:-1] + psi[:, :, :, :-2]
-            ) / (hx * hx)
-            if w >= 4:
-                # 2nd-order one-sided stencils at boundaries.
-                d2psi_dx2[:, :, :, 0:1] = (
-                    2.0 * psi[:, :, :, 0:1]
-                    - 5.0 * psi[:, :, :, 1:2]
-                    + 4.0 * psi[:, :, :, 2:3]
-                    - psi[:, :, :, 3:4]
-                ) / (hx * hx)
-                d2psi_dx2[:, :, :, -1:] = (
-                    2.0 * psi[:, :, :, -1:]
-                    - 5.0 * psi[:, :, :, -2:-1]
-                    + 4.0 * psi[:, :, :, -3:-2]
-                    - psi[:, :, :, -4:-3]
-                ) / (hx * hx)
-            else:
-                d2psi_dx2[:, :, :, 0:1] = d2psi_dx2[:, :, :, 1:2]
-                d2psi_dx2[:, :, :, -1:] = d2psi_dx2[:, :, :, -2:-1]
-
-        if h >= 3:
-            d2psi_dy2[:, :, 1:-1, :] = (
-                psi[:, :, 2:, :] - 2.0 * psi[:, :, 1:-1, :] + psi[:, :, :-2, :]
-            ) / (hy * hy)
-            if h >= 4:
-                d2psi_dy2[:, :, 0:1, :] = (
-                    2.0 * psi[:, :, 0:1, :]
-                    - 5.0 * psi[:, :, 1:2, :]
-                    + 4.0 * psi[:, :, 2:3, :]
-                    - psi[:, :, 3:4, :]
-                ) / (hy * hy)
-                d2psi_dy2[:, :, -1:, :] = (
-                    2.0 * psi[:, :, -1:, :]
-                    - 5.0 * psi[:, :, -2:-1, :]
-                    + 4.0 * psi[:, :, -3:-2, :]
-                    - psi[:, :, -4:-3, :]
-                ) / (hy * hy)
-            else:
-                d2psi_dy2[:, :, 0:1, :] = d2psi_dy2[:, :, 1:2, :]
-                d2psi_dy2[:, :, -1:, :] = d2psi_dy2[:, :, -2:-1, :]
-
-        return d2psi_dx2 + d2psi_dy2
-    
     def compute_gradient_autograd(
         self,
         psi: torch.Tensor,
@@ -347,12 +272,13 @@ class PhysicsConstrainedPINNLoss(nn.Module):
         Physical meaning: The lensing potential's curvature must equal
         twice the surface density. This is Maxwell's equation for gravity.
         """
-        if self.use_autograd and grid_coords is not None:
-            # Use autograd for exact derivatives
-            laplacian_psi = self.compute_laplacian_autograd(psi, grid_coords)
-        else:
-            # Use finite differences
-            laplacian_psi = self.compute_laplacian_finite_diff(psi)
+        if grid_coords is None:
+            raise ValueError(
+                "grid_coords is required for rigorous Poisson loss; "
+                "finite-difference fallbacks are disabled."
+            )
+        # Use autograd for exact derivatives
+        laplacian_psi = self.compute_laplacian_autograd(psi, grid_coords)
         
         # Poisson equation: ∇²ψ = 2κ
         target = 2.0 * kappa
@@ -393,63 +319,19 @@ class PhysicsConstrainedPINNLoss(nn.Module):
         This ensures the deflection field is conservative (curl-free),
         which is required by the physics of gravitational lensing.
         """
-        if self.use_autograd and grid_coords is not None:
-            # Use autograd
-            dpsi_dx, dpsi_dy = self.compute_gradient_autograd(psi, grid_coords)
-            grad_psi = torch.cat([dpsi_dx, dpsi_dy], dim=1)  # [B, 2, H, W]
-        else:
-            # Use finite differences
-            grad_psi = self._compute_gradient_finite_diff(psi)
+        if grid_coords is None:
+            raise ValueError(
+                "grid_coords is required for rigorous gradient consistency; "
+                "finite-difference fallbacks are disabled."
+            )
+        # Use autograd
+        dpsi_dx, dpsi_dy = self.compute_gradient_autograd(psi, grid_coords)
+        grad_psi = torch.cat([dpsi_dx, dpsi_dy], dim=1)  # [B, 2, H, W]
         
         # Consistency: α = ∇ψ
         loss = F.mse_loss(alpha_pred, grad_psi)
         
         return loss
-    
-    def _compute_gradient_finite_diff(
-        self,
-        psi: torch.Tensor
-    ) -> torch.Tensor:
-        """
-        Compute gradient using finite differences (fallback).
-        
-        Parameters
-        ----------
-        psi : torch.Tensor
-            Potential [B, 1, H, W]
-            
-        Returns
-        -------
-        gradient : torch.Tensor
-            [B, 2, H, W] where [:, 0] = ∂ψ/∂x, [:, 1] = ∂ψ/∂y
-        """
-        if psi.ndim != 4 or psi.shape[1] != 1:
-            raise ValueError(f"Expected psi shape [B, 1, H, W], got {tuple(psi.shape)}")
-
-        _, _, h, w = psi.shape
-        hx = 2.0 / max(w - 1, 1)
-        hy = 2.0 / max(h - 1, 1)
-
-        dpsi_dx = torch.zeros_like(psi)
-        dpsi_dy = torch.zeros_like(psi)
-
-        if w >= 3:
-            dpsi_dx[:, :, :, 1:-1] = (psi[:, :, :, 2:] - psi[:, :, :, :-2]) / (2.0 * hx)
-            dpsi_dx[:, :, :, 0:1] = (-3.0 * psi[:, :, :, 0:1] + 4.0 * psi[:, :, :, 1:2] - psi[:, :, :, 2:3]) / (2.0 * hx)
-            dpsi_dx[:, :, :, -1:] = (3.0 * psi[:, :, :, -1:] - 4.0 * psi[:, :, :, -2:-1] + psi[:, :, :, -3:-2]) / (2.0 * hx)
-        elif w == 2:
-            dpsi_dx[:, :, :, 0:1] = (psi[:, :, :, 1:2] - psi[:, :, :, 0:1]) / hx
-            dpsi_dx[:, :, :, -1:] = dpsi_dx[:, :, :, 0:1]
-
-        if h >= 3:
-            dpsi_dy[:, :, 1:-1, :] = (psi[:, :, 2:, :] - psi[:, :, :-2, :]) / (2.0 * hy)
-            dpsi_dy[:, :, 0:1, :] = (-3.0 * psi[:, :, 0:1, :] + 4.0 * psi[:, :, 1:2, :] - psi[:, :, 2:3, :]) / (2.0 * hy)
-            dpsi_dy[:, :, -1:, :] = (3.0 * psi[:, :, -1:, :] - 4.0 * psi[:, :, -2:-1, :] + psi[:, :, -3:-2, :]) / (2.0 * hy)
-        elif h == 2:
-            dpsi_dy[:, :, 0:1, :] = (psi[:, :, 1:2, :] - psi[:, :, 0:1, :]) / hy
-            dpsi_dy[:, :, -1:, :] = dpsi_dy[:, :, 0:1, :]
-
-        return torch.cat([dpsi_dx, dpsi_dy], dim=1)
     
     def mass_conservation_loss(self, kappa: torch.Tensor) -> torch.Tensor:
         """
