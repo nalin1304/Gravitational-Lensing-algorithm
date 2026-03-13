@@ -171,29 +171,49 @@ class PhysicsConstrainedPINNLoss(nn.Module):
                 inputs=grid_coords,
                 grad_outputs=grad_outputs,
                 create_graph=True,  # CRITICAL: allow second derivatives
-                retain_graph=True
+                retain_graph=True,
+                allow_unused=True,
             )[0]  # [B, 2, H, W]
+            if grad_psi is None:
+                raise ValueError(
+                    "psi must depend on grid_coords for autograd derivatives. "
+                    "Ensure psi is computed from grid_coords with requires_grad=True."
+                )
             
             dpsi_dx = grad_psi[:, 0].view(B, -1)[:, i]  # ∂ψ/∂x at location i
             dpsi_dy = grad_psi[:, 1].view(B, -1)[:, i]  # ∂ψ/∂y at location i
             
             # Second derivatives: ∂²ψ/∂x²
-            d2psi_dx2 = torch.autograd.grad(
-                outputs=dpsi_dx,
-                inputs=grid_coords,
-                grad_outputs=torch.ones_like(dpsi_dx),
-                create_graph=True,
-                retain_graph=True
-            )[0][:, 0].view(B, -1)[:, i]
+            if not dpsi_dx.requires_grad:
+                d2psi_dx2 = torch.zeros_like(grid_coords)
+            else:
+                d2psi_dx2 = torch.autograd.grad(
+                    outputs=dpsi_dx,
+                    inputs=grid_coords,
+                    grad_outputs=torch.ones_like(dpsi_dx),
+                    create_graph=True,
+                    retain_graph=True,
+                    allow_unused=True,
+                )[0]
+                if d2psi_dx2 is None:
+                    d2psi_dx2 = torch.zeros_like(grid_coords)
+            d2psi_dx2 = d2psi_dx2[:, 0].view(B, -1)[:, i]
             
             # ∂²ψ/∂y²
-            d2psi_dy2 = torch.autograd.grad(
-                outputs=dpsi_dy,
-                inputs=grid_coords,
-                grad_outputs=torch.ones_like(dpsi_dy),
-                create_graph=True,
-                retain_graph=True
-            )[0][:, 1].view(B, -1)[:, i]
+            if not dpsi_dy.requires_grad:
+                d2psi_dy2 = torch.zeros_like(grid_coords)
+            else:
+                d2psi_dy2 = torch.autograd.grad(
+                    outputs=dpsi_dy,
+                    inputs=grid_coords,
+                    grad_outputs=torch.ones_like(dpsi_dy),
+                    create_graph=True,
+                    retain_graph=True,
+                    allow_unused=True,
+                )[0]
+                if d2psi_dy2 is None:
+                    d2psi_dy2 = torch.zeros_like(grid_coords)
+            d2psi_dy2 = d2psi_dy2[:, 1].view(B, -1)[:, i]
             
             # Laplacian = ∂²ψ/∂x² + ∂²ψ/∂y²
             laplacian_flat[:, i] = d2psi_dx2 + d2psi_dy2
@@ -234,8 +254,14 @@ class PhysicsConstrainedPINNLoss(nn.Module):
             inputs=grid_coords,
             grad_outputs=torch.ones_like(psi),
             create_graph=True,
-            retain_graph=True
+            retain_graph=True,
+            allow_unused=True,
         )[0]  # [B, 2, H, W]
+        if grad_psi is None:
+            raise ValueError(
+                "psi must depend on grid_coords for autograd derivatives. "
+                "Ensure psi is computed from grid_coords with requires_grad=True."
+            )
         
         dpsi_dx = grad_psi[:, 0:1]  # [B, 1, H, W]
         dpsi_dy = grad_psi[:, 1:2]  # [B, 1, H, W]

@@ -301,9 +301,13 @@ class TestCombinedLoss:
         classes_pred = torch.randn(batch_size, 3, device=device)
         classes_true = torch.randint(0, 3, (batch_size,), device=device)
         
-        psi = torch.randn(batch_size, 1, h, w, device=device)
-        kappa = torch.rand(batch_size, 1, h, w, device=device)
-        alpha = torch.randn(batch_size, 2, h, w, device=device)
+        grid_coords = create_coordinate_grid(h, w, batch_size, device, requires_grad=True)
+        x = grid_coords[:, 0:1]
+        y = grid_coords[:, 1:2]
+        psi = 0.5 * (x**2 + y**2)
+        # Intentionally mismatch kappa to ensure a non-zero Poisson loss
+        kappa = torch.zeros_like(psi)
+        alpha = torch.cat([x, y], dim=1)
         
         # Create loss function
         loss_fn = PhysicsConstrainedPINNLoss(
@@ -323,7 +327,7 @@ class TestCombinedLoss:
             psi_pred=psi,
             kappa_pred=kappa,
             alpha_pred=alpha,
-            grid_coords=create_coordinate_grid(h, w, batch_size, device, requires_grad=True)
+            grid_coords=grid_coords
         )
         
         # Check all components are present
@@ -413,7 +417,8 @@ class TestValidationUtilities:
         # ψ = 0.5(x² + y²), so ∇²ψ = 2, κ = 1
         psi = 0.5 * (x**2 + y**2)
         
-        kappa = torch.ones_like(psi)
+        # Intentionally mismatch kappa to ensure a non-zero Poisson loss
+        kappa = torch.zeros_like(psi)
         
         # Note: autograd validation may not work perfectly with our simple implementation
         # This tests the validation function structure
@@ -447,15 +452,19 @@ class TestLambdaWeights:
         params_true = torch.randn(batch_size, 5, device=device)
         classes_pred = torch.randn(batch_size, 3, device=device)
         classes_true = torch.randint(0, 3, (batch_size,), device=device)
-        psi = torch.randn(batch_size, 1, h, w, device=device)
-        kappa = torch.rand(batch_size, 1, h, w, device=device)
+        grid_coords = create_coordinate_grid(h, w, batch_size, device, requires_grad=True)
+        x = grid_coords[:, 0:1]
+        y = grid_coords[:, 1:2]
+        psi = 0.5 * (x**2 + y**2)
+        # Intentionally mismatch kappa to ensure a non-zero Poisson loss
+        kappa = torch.zeros_like(psi)
         
         # Low weight
         loss_fn_low = PhysicsConstrainedPINNLoss(lambda_poisson=0.1, use_autograd=True)
         total_low, _ = loss_fn_low(
             params_pred, params_true, classes_pred, classes_true,
             psi_pred=psi, kappa_pred=kappa,
-            grid_coords=create_coordinate_grid(h, w, batch_size, device, requires_grad=True)
+            grid_coords=grid_coords
         )
         
         # High weight
@@ -463,7 +472,7 @@ class TestLambdaWeights:
         total_high, _ = loss_fn_high(
             params_pred, params_true, classes_pred, classes_true,
             psi_pred=psi, kappa_pred=kappa,
-            grid_coords=create_coordinate_grid(h, w, batch_size, device, requires_grad=True)
+            grid_coords=grid_coords
         )
         
         # High lambda should give higher total loss (Poisson contribution larger)

@@ -117,6 +117,7 @@ class TestFITSDataLoader:
         # Create FITS with empty extension
         hdu1 = fits.PrimaryHDU()  # No data
         hdu2 = fits.ImageHDU(np.random.randn(50, 50))
+        hdu2.header["PIXSCALE"] = 0.05
         hdul = fits.HDUList([hdu1, hdu2])
         hdul.writeto(filepath)
         

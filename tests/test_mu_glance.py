@@ -13,6 +13,9 @@ except ImportError:
     jnp = None  # type: ignore[assignment]
 
 pytestmark = pytest.mark.skipif(not HAS_JAX, reason="requires jax")
+if not HAS_JAX:
+    pytest.skip("requires jax", allow_module_level=True)
+
 from src.validation.mu_glance import MuGlanceValidator
 
 class TestMuGlanceValidator_JAX:
