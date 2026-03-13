@@ -125,8 +125,8 @@ class LensingPINN(eqx.Module):
         x = self.activation(self.layers[0](x))
         
         for i in range(1, len(self.layers) - 1):
-            if self.use_skip_connections and i <= len(self.skip_layers):
-                skip = self.skip_layers[i - 1](x_input)
+            if self.use_skip_connections and i < len(self.skip_layers):
+                skip = self.skip_layers[i](x_input)
                 x = self.activation(self.layers[i](x) + skip)
             else:
                 x = self.activation(self.layers[i](x))

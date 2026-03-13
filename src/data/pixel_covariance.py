@@ -399,6 +399,6 @@ def whiten_image_block_diagonal(
                 r_flat, cov_block, return_chisq=False
             )
             whitened[i0:i1, j0:j1] = chi_flat.reshape(r_block.shape)
-            total_chisq += float(np.dot(r_flat, chi_flat))
+            total_chisq += float(np.dot(chi_flat, chi_flat))
 
     return whitened, total_chisq

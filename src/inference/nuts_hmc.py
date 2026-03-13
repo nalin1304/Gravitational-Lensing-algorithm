@@ -238,6 +238,7 @@ class NUTSSampler:
         p_minus = [p.clone() for p in p0]
         p_plus = [p.clone() for p in p0]
         q_sample = [q.clone() for q in q0]
+        p_sample = [p.clone() for p in p0]
         lp_sample = float(lp0)
         n_valid = 1
         depth = 0
@@ -271,6 +272,7 @@ class NUTSSampler:
                 n_valid += 1
                 if self.rng.random() < 1.0 / n_valid:
                     q_sample = [q.clone() for q in q_leaf]
+                    p_sample = [pi.clone() for pi in p_leaf]
                     lp_sample = float(lp_leaf)
 
             # U-turn check
@@ -285,8 +287,8 @@ class NUTSSampler:
         for p, q in zip(self.params, q_sample):
             p.data.copy_(q)
 
-        # Acceptance statistic (for dual averaging)
-        H_sample = -lp_sample + float(self._kinetic_energy(self._sample_momentum()))
+        # Acceptance statistic using trajectory momenta (not fresh random ones)
+        H_sample = -lp_sample + float(self._kinetic_energy(p_sample))
         accept_stat = min(1.0, math.exp(float(-H_sample + H0)))
 
         result = {name: float(q) for name, q in zip(self.param_names, q_sample)}

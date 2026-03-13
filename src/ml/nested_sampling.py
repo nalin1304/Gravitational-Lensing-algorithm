@@ -129,7 +129,8 @@ class NestedSampler:
             # Step 3: Update prior volume
             # Ref: Skilling (2004) — X_i ≈ exp(-i/N)
             log_vol_new = log_vol - 1.0 / self.n_live
-            log_weight = np.logaddexp(log_vol, log_vol_new) - np.log(2.0)
+            # Weight = X_{i-1} - X_i (prior volume shell width)
+            log_weight = log_vol + np.log1p(-np.exp(-1.0 / self.n_live))
 
             # Update evidence: ln Z = ln(Z_prev + L_i × w_i)
             log_evidence_new = np.logaddexp(log_evidence, logl_min + log_weight)

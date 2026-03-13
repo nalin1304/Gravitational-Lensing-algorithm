@@ -631,6 +631,7 @@ async def generate_synthetic(
             "job_type": "synthetic",
             "progress": 100.0,
             "result": response.model_dump(),
+            "_created_ts": JOBS.get(job_id, {}).get("_created_ts", datetime.now(timezone.utc).timestamp()),
         }
         
         logger.info(f"Job {job_id}: Successfully generated convergence map")
@@ -642,6 +643,7 @@ async def generate_synthetic(
             "job_type": "synthetic",
             "progress": 100.0,
             "error": str(e),
+            "_created_ts": JOBS.get(job_id, {}).get("_created_ts", datetime.now(timezone.utc).timestamp()),
         }
         logger.error(f"Job {job_id}: Error generating convergence map: {str(e)}")
         raise HTTPException(
@@ -778,6 +780,7 @@ async def run_inference(
             "job_type": "inference",
             "progress": 100.0,
             "result": response.model_dump(),
+            "_created_ts": JOBS.get(job_id, {}).get("_created_ts", datetime.now(timezone.utc).timestamp()),
         }
         
         logger.info(f"Job {job_id}: Inference completed successfully")
@@ -791,6 +794,7 @@ async def run_inference(
             "job_type": "inference",
             "progress": 100.0,
             "error": str(e),
+            "_created_ts": JOBS.get(job_id, {}).get("_created_ts", datetime.now(timezone.utc).timestamp()),
         }
         logger.error(f"Job {job_id}: Error during inference: {str(e)}")
         raise HTTPException(
@@ -958,7 +962,8 @@ async def submit_batch_job(
         "progress": 0.0,
         "total": len(request.job_ids),
         "completed": 0,
-        "results": []
+        "results": [],
+        "_created_ts": datetime.now(timezone.utc).timestamp(),
     }
     
     # Add to background tasks

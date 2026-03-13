@@ -324,10 +324,14 @@ def fit_lensed_host_observation(
     _cmin, _cmax = int(np.where(_cols)[0][0]), int(np.where(_cols)[0][-1])
     _model_crop = model_image[_rmin:_rmax + 1, _cmin:_cmax + 1]
     _obs_crop = processed_observed[_rmin:_rmax + 1, _cmin:_cmax + 1]
+    _ssim_win = min(7, _model_crop.shape[0], _model_crop.shape[1])
+    if _ssim_win % 2 == 0:
+        _ssim_win = max(_ssim_win - 1, 1)
     ring_ssim = float(
         structural_similarity(
             _model_crop,
             _obs_crop,
+            win_size=_ssim_win,
             data_range=float(
                 _obs_crop.max() - _obs_crop.min() + 1.0e-6
             ),

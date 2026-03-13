@@ -338,7 +338,7 @@ class NFWProfile(MassProfile):
 
     For elliptical halos, we use the prescription from Golse & Kneib
     (2002, A&A, 390, 821) where the circular radius is replaced by
-    an elliptical radius: ξ_ell² = q·x² + y²/q.
+    an elliptical radius: ξ_ell² = x² + y²/q².
     
     Subhalos are generated following Springel et al. (2008) mass function.
     
@@ -1227,10 +1227,7 @@ class SIDMProfile(NFWProfile):
             if R < 1e-8:
                 alpha_mag[i] = 0.0
                 continue
-            integral, _ = quad(_kappa_sidm_radial, 0.0, R, limit=100)
             # α(R) = (2/R) ∫₀^R κ_SIDM(R') R' dR'  [arcsec]
-            # quad integrates f(R'), so we wrap with an extra R' factor:
-            # Re-integrate with R' weight
             def _integrand(R_prime):
                 return _kappa_sidm_radial(R_prime) * R_prime
             integral_w, _ = quad(_integrand, 0.0, R, limit=100)

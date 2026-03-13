@@ -473,11 +473,18 @@ async def list_results(
                 detail="Not authorized to access these results"
             )
     
+    # When no job_id or analysis_id filter is provided, restrict to the
+    # current user's results to prevent cross-user data leakage.
+    effective_user_id = None
+    if not job_id and not analysis_id:
+        effective_user_id = current_user.id
+
     # Get results
     results = get_results(
         db=db,
         job_id=job_id,
         analysis_id=analysis_id,
+        user_id=effective_user_id,
         skip=skip,
         limit=limit
     )
