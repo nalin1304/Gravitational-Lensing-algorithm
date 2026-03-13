@@ -134,7 +134,7 @@ async function navigate() {
   const titles = {
     dashboard: "Dashboard", workbench: "Workbench", validation: "Validation",
     analyses: "Analyses", account: "Account", api: "API Explorer",
-    survey: "Stage IV Survey", rigor: "Next-Gen Rigor"
+    survey: "Stage IV Survey", rigor: "Next-Gen Rigor", "pi-sbi": "PI-SBI"
   };
   document.getElementById("pageTitle").textContent = titles[pageName] || "Dashboard";
 
@@ -172,6 +172,7 @@ async function boot() {
     import(`/ui-static/pages/api-explorer.js?v=${ASSET_VERSION}`),
     import(`/ui-static/pages/survey.js?v=${ASSET_VERSION}`),
     import(`/ui-static/pages/rigor.js?v=${ASSET_VERSION}`),
+    import(`/ui-static/pages/pi_sbi.js?v=${ASSET_VERSION}`),
   ]);
 
   registerPage("dashboard", mods[0]);
@@ -182,6 +183,7 @@ async function boot() {
   registerPage("api", mods[5]);
   registerPage("survey", mods[6]);
   registerPage("rigor", mods[7]);
+  registerPage("pi-sbi", mods[8]);
 
   setupMenu();
   updateUserDisplay();

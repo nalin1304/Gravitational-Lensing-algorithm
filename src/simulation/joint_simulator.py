@@ -86,6 +86,11 @@ def LIGO_O3_PSD(f: np.ndarray) -> np.ndarray:
 
     S_n(f) = S_0 * [ (f_0/f)^4 + 2*(1 + (f/f_0)^2) ]
 
+    S_n(f) is the one-sided power spectral density of detector noise. Smaller
+    S_n = quieter detector = better sensitivity. The dip around 100–300 Hz is
+    the 'sweet spot' where LIGO is most sensitive — dominated by quantum shot
+    noise at high f and thermal/seismic noise at low f.
+
     For gravitational-wave lensing, the relevant dimensionless parameter is
     omega * tau_lens (Nakamura & Deguchi 1999). We convert from GW frequency
     to dimensionless omega in the calling code.
@@ -120,6 +125,10 @@ class SLACSInformedPrior:
 
     Samples lens parameters θ = [log10(M_vir), log10(r_s), z_l, z_s, beta_x, beta_y]
     consistent with the observed population statistics of SLACS ETG lenses.
+
+    Note that SLACS systems are biased toward high σ_v because they were
+    selected via spectroscopic arcs — our prior is appropriate for the SLACS
+    population but may underrepresent low-mass halos (σ_v ≲ 200 km/s).
 
     Parameter ranges:
       log10(M_vir): log-normal centered on log10(FJ_NORM * (sigma_v/200)^4)
@@ -340,6 +349,13 @@ class JointSimulator:
         the NFW Fermat potential surface, evaluated at n_omega dimensionless
         frequencies omega_i.
 
+        Physically: at low ω (wave regime), the lens is effectively transparent
+        — the GW wavelength is longer than the Schwarzschild radius of the lens,
+        so it cannot resolve the lens. As ω increases, interference fringes
+        appear, encoding the lens mass in the fringe frequency. The transition
+        happens near ω_dimless ~ 1, i.e. when the GW period ≈ lens crossing time.
+        ω_dimless = ω × (4GM/c³) — the ratio of lens crossing time to GW period.
+
         For each omega_i, F(omega_i) = (omega_i / 2pi i) * integral exp[i omega tau] d^2 theta.
         The spectrum |F(omega)|^2 encodes lensing magnification vs frequency:
         - |F| -> |mu_geo|^{1/2} in geometric limit (omega >> 1)
@@ -503,6 +519,10 @@ class JointSimulator:
                     # Crop/resize to 64x64 centered on lens
                     cy, cx = img.shape[0] // 2, img.shape[1] // 2
                     half = 32
+                    # Guard against images smaller than 64px: clamp center so
+                    # the slice [cy-half:cy+half] never goes out of bounds.
+                    cy = max(half, min(cy, img.shape[0] - half))
+                    cx = max(half, min(cx, img.shape[1] - half))
                     crop = img[cy - half:cy + half, cx - half:cx + half]
                     if crop.shape != (64, 64):
                         try:

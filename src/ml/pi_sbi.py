@@ -138,8 +138,11 @@ class PhysicsInformedEncoder(nn.Module):
         psi_flat = self.psi_head(phi)  # (B, h*h)
         psi = psi_flat.view(B, 1, h, h)  # (B, 1, h, h)
 
-        # Compute ∇²ψ via finite difference Laplacian (5-point stencil)
-        # Equivalent to conv2d with Laplacian kernel
+        # Compute ∇²ψ via finite difference Laplacian (5-point stencil).
+        # The -4 center weight comes from discretizing (∂²/∂x² + ∂²/∂y²) on a
+        # uniform grid: second-order central differences give each axis a
+        # (+1, -2, +1) stencil, summing to the standard 5-point Laplacian.
+        # This is the simplest second-order isotropic finite-difference kernel.
         lap_kernel = torch.tensor(
             [[0., 1., 0.], [1., -4., 1.], [0., 1., 0.]],
             device=psi.device, dtype=psi.dtype
@@ -241,9 +244,18 @@ class RealNVPCouplingLayer(nn.Module):
         return mask
 
     def forward(self, z: torch.Tensor, context: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Forward pass (data -> latent). Returns (z_out, log_det_J)."""
-        z1 = z * self.mask           # masked (unchanged)
-        z2 = z * (1.0 - self.mask)   # transformed
+        """Forward pass (data -> latent). Returns (z_out, log_det_J).
+
+        The forward direction maps DATA → LATENT. We use this at training time
+        when computing log p(θ|c). The coupling trick: z1 is 'frozen', only z2
+        gets transformed. Alternating frozen halves (lower/upper masks) ensures
+        all dimensions get updated over K layers — no dimension is ever stuck.
+        """
+        # Safe device transfer: register_buffer stores the mask on CPU at init,
+        # but z may arrive on CUDA. This ensures the multiplication never fails.
+        mask = self.mask.to(z.device)
+        z1 = z * mask           # masked (unchanged)
+        z2 = z * (1.0 - mask)   # transformed
 
         st_input = torch.cat([z1[..., :self.split], context], dim=-1)
         t = self.st_net(st_input)
@@ -259,8 +271,9 @@ class RealNVPCouplingLayer(nn.Module):
 
     def inverse(self, z: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         """Inverse pass (latent -> data). Used for sampling."""
-        z1 = z * self.mask
-        z2 = z * (1.0 - self.mask)
+        mask = self.mask.to(z.device)  # safe device transfer (same reason as forward)
+        z1 = z * mask
+        z2 = z * (1.0 - mask)
 
         st_input = torch.cat([z1[..., :self.split], context], dim=-1)
         t = self.st_net(st_input)
@@ -495,7 +508,11 @@ class JointNPE(nn.Module):
         # NPE objective: negative log-likelihood under flow
         nll = -self.flow.log_prob(theta, context).mean()
 
-        # Physics constraint: Poisson equation ∇²ψ = 2κ
+        # The Poisson loss acts like a physics teacher watching over the CNN.
+        # Without it, the network could learn any arbitrary embedding that fits
+        # the training data. With it, the embedding 'knows' about gravitational
+        # lensing — it must be consistent with ∇²ψ = 2κ (Schneider 1992,
+        # Eq. 3.11), keeping the representation physically grounded.
         l_poisson = self.em_encoder.physics_loss(kappa_map, phi_em)
 
         total = nll + self.physics_weight * l_poisson
