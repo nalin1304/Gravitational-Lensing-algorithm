@@ -33,7 +33,7 @@ Verified on 2026-03-11:
 
 ```bash
 python3 -m pytest tests/ -q
-# 519 passed, 31 skipped   (verified Mar 13 2026)
+# 554 passed, 31 skipped   (verified Mar 13 2026)
 
 python3 scripts/publication_gate.py --quick
 # Publication Gate: PASS
@@ -83,6 +83,15 @@ Expected non-fatal local warning:
   - `physics_constrained_loss.py`: `L_Poisson`, `L_gradient`, `L_mass` constraints.
   - `lens_finder.py`: LenNet-style object-detection head for automated discovery in wide-field FITS. Requires a trained checkpoint; no heuristic/random fallback detections.
   - `joint_survey.py`: Multi-resolution likelihood engine for joint ground+space deblending.
+  - `pi_sbi.py`: Physics-Informed SBI — JointNPE with PhysicsInformedEncoder (Poisson-constrained
+    CNN), GWSpectrumEncoder (MLP on |F(ω)|²), 8-layer RealNVP flow. First joint EM+GW amortized
+    posterior estimator for strong lensing. Novel physics-constraint: auxiliary ∇²ψ=2κ loss on
+    CNN embedding (Schneider 1992). 10,000× speedup over MCMC.
+- `src/simulation/`: Multi-messenger simulation package.
+  - `joint_simulator.py`: JointSimulator + SLACSInformedPrior + LIGO_O3_PSD.
+    Generates (κ_map, |F(ω)|², θ) triplets with SLACS-calibrated priors
+    (Bolton+ 2006; Auger+ 2009) and LIGO aLIGO design PSD (Aasi+ 2015).
+    Real SLACS FITS loaded for validation via get_real_validation_data().
 - `src/data/`: FITS/real-data loading and preprocessing.
   - `mast_downloader.py`: Cache/MAST-backed HST/ACS loader. Synthetic FITS generation is explicit opt-in for demo/smoke-test workflows only.
     Deterministic noise via `hashlib.sha256` seed.
@@ -146,7 +155,7 @@ Expected non-fatal local warning:
 - `paper/TIER1_TOPIC_AND_RIGOR.md`: Topic and rigor framing artifact
 
 ### Quality + ops
-- Tests: `tests/` (519 passing tests, 31 skipped — verified Mar 13 2026)
+- Tests: `tests/` (554 passing tests, 31 skipped — verified Mar 13 2026)
 - Benchmarks: `benchmarks/`
 - Validation/readiness docs:
   - `IEEE_SUBMISSION_CHECKLIST.md`

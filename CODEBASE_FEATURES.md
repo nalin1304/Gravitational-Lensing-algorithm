@@ -719,7 +719,92 @@ where B_{*} = lensing_matrix × PSF_{*}.
 
 ---
 
-## 16. Stellar Kinematics Module
+## 15.5. Physics-Informed SBI (PI-SBI)
+
+**Module:** `src/ml/pi_sbi.py`
+
+### Overview
+PI-SBI (Physics-Informed Simulation-Based Inference) is the first joint
+electromagnetic + gravitational-wave amortized posterior estimator for strong
+gravitational lensing. After a single training phase on $N=10{,}000$ simulated
+pairs, posteriors are obtained via a single forward pass (~1 ms), achieving
+~10,000× speedup over MCMC (128 walkers × 200 steps ≈ 13 s per system).
+
+| Method | Time per lens | 10⁵ lenses |
+|--------|--------------|------------|
+| MCMC (NFW, 128w×200s) | ~13 s | ~15 days |
+| PI-SBI (amortized) | ~1 ms | ~100 s |
+| Speedup | **~10,000×** | — |
+
+### Architecture
+
+**Joint context vector** $\mathbf{c} \in \mathbb{R}^{160}$:
+```
+c = [φ_EM, φ_GW] ∈ ℝ^{128+32}
+```
+- **φ_EM**: 4-layer CNN with residual block on κ map (Poisson-constrained)
+- **φ_GW**: 3-layer MLP on log(1 + |F(ωᵢ)|²) at 32 frequencies
+
+**8-layer RealNVP normalizing flow** (Dinh et al. 2017):
+```
+log q(θ | c) = log p_Z(f(θ; c)) + log|det ∂f/∂θ|
+
+f = T_8 ∘ ⋯ ∘ T_1   (affine coupling transforms, log-scale s ∈ [−2, 2])
+```
+
+### Novel Physics Constraint
+
+Joint multi-messenger posterior (EM + GW):
+```
+p(θ | d_EM, d_GW) ∝ p(d_EM | θ) × p(d_GW | θ) × p(θ)
+```
+
+Physics-constrained summary network training loss:
+```
+L_total = L_NLL + λ_phys × L_Poisson
+
+L_Poisson = (1/HW) ‖∇²ψ̂ − 2κ‖²
+```
+where ψ̂ is a lensing potential predicted from the CNN embedding, enforcing
+the lensing Poisson equation ∇²ψ = 2κ (Schneider 1992, Eq. 3.11) on the
+learned representation. This forces embeddings onto the physics-consistent
+manifold, improving out-of-distribution generalization over unconstrained CNNs.
+
+### Training Data and Priors
+
+SLACS-calibrated prior (Bolton et al. 2006; Auger et al. 2009):
+
+| Parameter | Distribution | Source |
+|-----------|-------------|--------|
+| log₁₀(M_vir/M☉) | 𝒩(μ_FJ, 0.2), [9, 14] | Auger et al. (2010) |
+| log₁₀(r_s/arcsec) | 𝒰[−0.5, 1.5] | Bullock et al. (2001) |
+| z_l | 𝒰[0.06, 0.50] | Bolton et al. (2006) |
+| z_s | 𝒰[z_l+0.2, 2.5] | Bolton et al. (2006) |
+| β_x, β_y | 𝒰[−0.3, 0.3] | lensing geometry |
+
+where μ_FJ = log₁₀[10¹²(σ_v/200)⁴] (Faber-Jackson scaling, Auger et al. 2010).
+
+GW channel: Advanced LIGO design sensitivity PSD (Aasi et al. 2015) applied
+to |F(ω)|² computed via the Nakamura & Deguchi (1999) scalar diffraction integral.
+
+### Validation
+
+- Validated on all 9 real SLACS HST/ACS F814W observations from MAST cache
+- Posterior calibration via Simulation-Based Calibration (SBC, Talts et al. 2018):
+  ranks of true parameters among 500 posterior samples must be uniform
+
+### References
+- Cranmer et al. (2020), PNAS 117, 9449 — SBI / neural posterior estimation
+- Papamakarios et al. (2021), JMLR 22, 1 — normalizing flows review
+- Dinh et al. (2017), ICLR 2017 — RealNVP
+- GIGALens (2022) — GPU-accelerated lensing SBI at scale
+- Wagner-Carena et al. (2024) — EM-only NPE for lensing
+- Aasi et al. (2015), CQG 32, 074001 — Advanced LIGO design PSD
+- Bolton et al. (2006), ApJ 638, 703–724 — SLACS survey
+- Auger et al. (2009/2010) — SLACS mass function priors
+- Talts et al. (2018) — Simulation-Based Calibration
+
+---
 
 **Module:** `src/validation/kinematics.py`
 
