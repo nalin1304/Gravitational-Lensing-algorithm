@@ -172,7 +172,7 @@ def ray_trace(source_position: Tuple[float, float],
         #       heuristic factor from silently corrupting results.
         G = 6.67430e-11          # m³ kg⁻¹ s⁻²
         c = 299792458.0           # m s⁻¹
-        M_kg = mass * 1.98847e30  # solar mass → kg
+        M_kg = mass * 1.98841e30  # solar mass → kg (IAU 2015)
         omega_w = 8.0 * jnp.pi * G * M_kg / (c**2 * (wavelength_m + 1e-30))
         
         results['wave_frequency_parameter'] = float(omega_w)

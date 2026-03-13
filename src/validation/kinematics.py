@@ -42,7 +42,7 @@ _np_trapezoid = getattr(np, 'trapezoid', np.trapz)
 # Physical constants (Ref: IAU 2015 nominal values, CODATA 2018)
 G_SI = 6.67430e-11         # m³ kg⁻¹ s⁻²
 c_SI = 2.99792458e8        # m/s
-M_sun = 1.98892e30         # kg
+M_sun = 1.98841e30         # kg  (IAU 2015: GM_sun/G_CODATA)
 kpc_to_m = 3.085677581e19  # m (IAU 2012 / CODATA 2018)
 arcsec_to_rad = 4.8481e-6  # radians
 
