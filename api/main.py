@@ -1677,15 +1677,32 @@ async def nuts_fisher(req: NUTSFisherRequest):
 # Lensing Analysis: Critical Curves, Magnification Maps, Image Solver
 # ---------------------------------------------------------------------------
 
+class LensingAnalysisRequest(BaseModel):
+    """Parameters for critical curve / magnification analysis."""
+    M_vir: float = Field(1e14, ge=1e8, le=1e17, description="Virial mass in solar masses")
+    concentration: float = Field(5.0, ge=1.0, le=50.0, description="NFW concentration c = r_vir/r_s")
+    z_lens: float = Field(0.3, ge=0.01, le=5.0, description="Lens redshift")
+    z_source: float = Field(1.5, ge=0.02, le=10.0, description="Source redshift")
+    grid_size: int = Field(200, ge=50, le=500, description="Grid resolution")
+    grid_range: float = Field(30.0, ge=1.0, le=300.0, description="Grid half-extent in arcsec")
+
+    @field_validator("z_source")
+    @classmethod
+    def source_behind_lens(cls, v, info):
+        z_l = info.data.get("z_lens", 0.01)
+        if v <= z_l:
+            raise ValueError("z_source must be greater than z_lens")
+        return v
+
+
+class ImageSolverRequest(LensingAnalysisRequest):
+    """Parameters for solving the lens equation for image positions."""
+    source_x: float = Field(1.0, ge=-300.0, le=300.0, description="Source x position in arcsec")
+    source_y: float = Field(0.0, ge=-300.0, le=300.0, description="Source y position in arcsec")
+
+
 @app.post("/api/v1/lensing/critical-curves", tags=["lensing-analysis"])
-async def compute_critical_curves(
-    M_vir: float = 1e14,
-    concentration: float = 5.0,
-    z_lens: float = 0.3,
-    z_source: float = 1.5,
-    grid_size: int = 200,
-    grid_range: float = 30.0,
-):
+async def compute_critical_curves(req: LensingAnalysisRequest):
     """Compute critical curves and caustics for an NFW lens profile."""
     try:
         from src.lens_models import LensSystem, NFWProfile
@@ -1695,27 +1712,27 @@ async def compute_critical_curves(
             magnification_map as compute_magnification,
         )
 
-        ls = LensSystem(z_lens=z_lens, z_source=z_source)
-        nfw = NFWProfile(M_vir=M_vir, concentration=concentration, lens_system=ls)
+        ls = LensSystem(z_lens=req.z_lens, z_source=req.z_source)
+        nfw = NFWProfile(M_vir=req.M_vir, concentration=req.concentration, lens_system=ls)
 
-        crit_x, crit_y = find_critical_curves(nfw, grid_size=grid_size, grid_range=grid_range)
-        caus_x, caus_y = find_caustics(nfw, grid_size=grid_size, grid_range=grid_range)
+        crit_x, crit_y = find_critical_curves(nfw, grid_size=req.grid_size, grid_range=req.grid_range)
+        caus_x, caus_y = find_caustics(nfw, grid_size=req.grid_size, grid_range=req.grid_range)
 
-        x1d = np.linspace(-grid_range, grid_range, grid_size)
-        y1d = np.linspace(-grid_range, grid_range, grid_size)
+        x1d = np.linspace(-req.grid_range, req.grid_range, req.grid_size)
+        y1d = np.linspace(-req.grid_range, req.grid_range, req.grid_size)
         xx, yy = np.meshgrid(x1d, y1d)
         mu = compute_magnification(nfw, xx.ravel(), yy.ravel())
-        mu_map = mu.reshape(grid_size, grid_size)
+        mu_map = mu.reshape(req.grid_size, req.grid_size)
 
         return {
             "critical_curves": {"x": crit_x.tolist(), "y": crit_y.tolist()},
             "caustics": {"x": caus_x.tolist(), "y": caus_y.tolist()},
             "magnification_map": mu_map.tolist(),
-            "grid_range": grid_range,
-            "grid_size": grid_size,
+            "grid_range": req.grid_range,
+            "grid_size": req.grid_size,
             "parameters": {
-                "M_vir": M_vir, "concentration": concentration,
-                "z_lens": z_lens, "z_source": z_source,
+                "M_vir": req.M_vir, "concentration": req.concentration,
+                "z_lens": req.z_lens, "z_source": req.z_source,
             },
         }
     except Exception as e:
@@ -1724,36 +1741,27 @@ async def compute_critical_curves(
 
 
 @app.post("/api/v1/lensing/solve-images", tags=["lensing-analysis"])
-async def solve_image_positions(
-    M_vir: float = 1e14,
-    concentration: float = 5.0,
-    z_lens: float = 0.3,
-    z_source: float = 1.5,
-    source_x: float = 1.0,
-    source_y: float = 0.0,
-    grid_size: int = 200,
-    grid_range: float = 30.0,
-):
+async def solve_image_positions(req: ImageSolverRequest):
     """Find multiple image positions for a source behind an NFW lens."""
     try:
         from src.lens_models import LensSystem, NFWProfile
         from src.lens_models.critical_curves import solve_lens_equation
 
-        ls = LensSystem(z_lens=z_lens, z_source=z_source)
-        nfw = NFWProfile(M_vir=M_vir, concentration=concentration, lens_system=ls)
+        ls = LensSystem(z_lens=req.z_lens, z_source=req.z_source)
+        nfw = NFWProfile(M_vir=req.M_vir, concentration=req.concentration, lens_system=ls)
 
         images = solve_lens_equation(
-            nfw, beta_x=source_x, beta_y=source_y,
-            grid_size=grid_size, grid_range=grid_range,
+            nfw, beta_x=req.source_x, beta_y=req.source_y,
+            grid_size=req.grid_size, grid_range=req.grid_range,
         )
 
         return {
-            "source_position": {"x": source_x, "y": source_y},
+            "source_position": {"x": req.source_x, "y": req.source_y},
             "images": images,
             "n_images": len(images),
             "parameters": {
-                "M_vir": M_vir, "concentration": concentration,
-                "z_lens": z_lens, "z_source": z_source,
+                "M_vir": req.M_vir, "concentration": req.concentration,
+                "z_lens": req.z_lens, "z_source": req.z_source,
             },
         }
     except Exception as e:

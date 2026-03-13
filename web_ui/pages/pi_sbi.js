@@ -321,3 +321,11 @@ async function runPosterior() {
     btn.textContent = '🧠 Run PI-SBI Posterior';
   }
 }
+
+
+export function cleanup() {
+  ["kappaPlot", "gwPlot", "posteriorPlot"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) try { Plotly.purge(el); } catch (_) {}
+  });
+}

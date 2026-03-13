@@ -22,9 +22,6 @@ import numpy as np
 from typing import Tuple, Optional, List, Dict
 from scipy import optimize
 
-# NumPy compat
-_np_trapezoid = getattr(np, 'trapezoid', getattr(np, 'trapz', None))
-
 
 # --------------------------------------------------------------------------- #
 #  Jacobian and magnification utilities                                       #
@@ -587,7 +584,7 @@ def _classify_image(
 
     # Magnification
     if abs(det_A) < 1e-12:
-        mu = np.sign(det_A) * 1000.0
+        mu = 1000.0 if det_A >= 0 else -1000.0
     else:
         mu = 1.0 / det_A
 

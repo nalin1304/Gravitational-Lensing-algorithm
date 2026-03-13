@@ -321,3 +321,11 @@ export function init() {
     } catch (e) { P.toast(`Status poll failed: ${e.message}`, "error"); }
   });
 }
+
+
+export function cleanup() {
+  ["wMapPlot", "wRadialPlot", "wDeflPlot"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) try { Plotly.purge(el); } catch (_) {}
+  });
+}
