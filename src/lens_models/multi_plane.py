@@ -523,7 +523,20 @@ class MultiPlaneLens:
         beta = self.ray_trace(theta)
         
         # Geometric term: ½|θ-β|²
+        # NOTE: This uses the effective single-plane approximation β = ray_trace(θ).
+        # For a rigorous multi-plane Fermat potential, the geometric term should sum
+        # contributions between successive planes per SEF (1992) Eq. 9.13.
+        # TODO: implement full SEF (1992) Eq. 9.13 multi-plane Fermat potential.
         geometric_term = 0.5 * np.sum((theta - beta)**2, axis=-1)
+        
+        if len(self.planes) > 1:
+            warnings.warn(
+                f"fermat_potential: {len(self.planes)} lens planes detected. "
+                "The geometric term uses the effective single-plane approximation "
+                "(SEF 1992 Eq. 4.14), not the full multi-plane formula (Eq. 9.13). "
+                "Time delays may be approximate for systems with strong line-of-sight structure.",
+                stacklevel=2,
+            )
         
         # Potential term: sum over planes
         # ψ = Σᵢ (D_is/D_s) ψᵢ

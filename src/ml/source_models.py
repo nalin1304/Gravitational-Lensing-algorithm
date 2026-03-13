@@ -104,7 +104,10 @@ class PixelizedSourceModel:
         sign_prior, logdet_prior = jnp.linalg.slogdet(lambda_reg * source_cov_inv)
         del sign, sign_prior
 
-        log_evidence = -0.5 * chi_sq - 0.5 * reg_penalty - 0.5 * logdet + 0.5 * logdet_prior
+        # Missing data normalization constant: -(N/2)*ln(2π*noise_var)
+        n_data = observed_image.ravel().shape[0]
+        log_norm = -0.5 * n_data * jnp.log(2.0 * jnp.pi * noise_var)
+        log_evidence = -0.5 * chi_sq - 0.5 * reg_penalty - 0.5 * logdet + 0.5 * logdet_prior + log_norm
 
         return {
             "source_intensity": source_intensity.reshape(self.grid_x.shape),

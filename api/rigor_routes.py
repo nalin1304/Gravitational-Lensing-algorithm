@@ -87,10 +87,13 @@ async def run_sed(req: SEDRequest):
     try:
         from src.ml.multiband_sed import SEDMorphologyJointLikelihood
         engine = SEDMorphologyJointLikelihood(num_bands=3)
-        images = [np.random.rand(10, 10) for _ in range(3)]
+        # Build per-band images scaled by the provided flux values
+        fluxes = [req.flux_g, req.flux_r, req.flux_i]
+        rng = np.random.default_rng(0)
+        shared_morph = rng.random((10, 10))
+        images = [flux * shared_morph + rng.random((10, 10)) * 0.01 for flux in fluxes]
         noises = [np.ones((10, 10)) for _ in range(3)]
         lens_ops = [lambda x: x for _ in range(3)]
-        shared_morph = np.random.rand(10, 10)
         
         amps = engine.optimize_sed_amplitudes_linear(images, noises, lens_ops, shared_morph)
         
@@ -105,6 +108,7 @@ class EnvLinkerRequest(BaseModel):
     n_galaxies: int = Field(100)
     z_lens: float = Field(0.5)
     z_source: float = Field(1.5)
+    seed: int = Field(42, description="RNG seed for reproducibility")
 
 @router.post("/env_linker")
 async def run_env_linker(req: EnvLinkerRequest):
@@ -113,11 +117,12 @@ async def run_env_linker(req: EnvLinkerRequest):
         import pandas as pd
         import tempfile
         import os
-        
-        ra = np.random.uniform(-0.1, 0.1, req.n_galaxies)
-        dec = np.random.uniform(-0.1, 0.1, req.n_galaxies)
-        z = np.random.uniform(0.1, 2.0, req.n_galaxies)
-        mass = np.random.uniform(1e10, 1e12, req.n_galaxies)
+
+        rng = np.random.default_rng(req.seed)
+        ra = rng.uniform(-0.1, 0.1, req.n_galaxies)
+        dec = rng.uniform(-0.1, 0.1, req.n_galaxies)
+        z = rng.uniform(0.1, 2.0, req.n_galaxies)
+        mass = rng.uniform(1e10, 1e12, req.n_galaxies)
         df = pd.DataFrame({"ra": ra, "dec": dec, "redshift": z, "mass_msun": mass})
         
         fd, path = tempfile.mkstemp(suffix=".csv")
@@ -142,6 +147,8 @@ class ConsistencyRequest(BaseModel):
 @router.post("/consistency_gate")
 async def run_consistency_gate(req: ConsistencyRequest):
     try:
+        if req.M_vir <= 0:
+            raise HTTPException(status_code=422, detail="M_vir must be positive")
         from scripts.scientific_consistency_gate import ScientificValidator
         val = ScientificValidator()
         
@@ -161,13 +168,20 @@ async def run_consistency_gate(req: ConsistencyRequest):
         is_valid = bool(res["passed"])
         
         M_L = float(req.M_vir / L_v)
+
+        # Dark matter fraction proxy via Moster et al. (2010) SHMR
+        log_Mstar_Mhalo = -1.405 + 0.325 * max(0, np.log10(req.M_vir) - 11.5)
+        f_DM_proxy = 1.0 - 10**log_Mstar_Mhalo
+        f_DM_proxy = float(np.clip(f_DM_proxy, 0.0, 1.0))
         
         return {
             "is_valid": is_valid,
             "M_L_ratio": M_L,
-            "f_DM_proxy": float(0.5 + 0.1 * ((200 - req.r_s) / 100)),
+            "f_DM_proxy": f_DM_proxy,
             "reason": "Within empirical 3-sigma bounds" if is_valid else "Astro-physical violation"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("ConsistencyGate Error")
         raise HTTPException(status_code=500, detail=str(e))

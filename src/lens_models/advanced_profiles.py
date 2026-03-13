@@ -447,7 +447,7 @@ class SersicProfile(MassProfile):
         
         Uses numerical integration of the convergence profile.
         For circular profiles, the deflection angle is radial:
-        α(θ) = (1/θ) ∫₀^θ κ(θ') θ' dθ'
+        α(θ) = (2/θ) ∫₀^θ κ(θ') θ' dθ'
         
         Parameters
         ----------
@@ -535,7 +535,7 @@ class SersicProfile(MassProfile):
         Compute lensing potential for Sérsic profile via exact 1D radial integration.
 
         For a circularly symmetric profile, the lensing potential satisfies
-        ψ(θ) = 2 ∫₀^θ α(θ') dθ'
+        ψ(θ) = ∫₀^θ α(θ') dθ'
         where α(θ') is the scalar (radial) deflection angle magnitude at θ'.
         This follows directly from α = ∇ψ for circularly symmetric lenses.
 
@@ -579,9 +579,9 @@ class SersicProfile(MassProfile):
                 if r_val < 1e-10:
                     psi.flat[i] = 0.0
                     continue
-                # ψ(r) = 2 ∫₀^r α(r') dr'
+                # ψ(r) = ∫₀^r α(r') dr'
                 val, _ = quad(alpha_radial, 0.0, r_val, limit=150)
-                psi.flat[i] = 2.0 * val
+                psi.flat[i] = val
 
         return psi.reshape(x.shape)
     

@@ -180,7 +180,11 @@ class NFW_PINN(LensingPINN):
         log_mass = x_in[1]
         conc = x_in[2]
         
-        r_vir = jnp.exp(log_mass / 3.0)
+        # r_vir [kpc] from M_vir [M_sun] at z=0 Planck cosmology
+        # ρ_crit(z=0) ≈ 147 M_sun/kpc³  (Planck 2018)
+        M_vir_msun = 10.0 ** log_mass
+        rho_crit0 = 147.0   # M_sun/kpc³
+        r_vir = (M_vir_msun / (4.0 * jnp.pi / 3.0 * 200.0 * rho_crit0)) ** (1.0 / 3.0)
         r_s = r_vir / conc
         
         r_norm = r / r_s

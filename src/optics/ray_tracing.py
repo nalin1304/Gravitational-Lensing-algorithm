@@ -223,7 +223,7 @@ def compute_magnification(x: float, y: float, lens_model, dx: float = 0.01) -> f
     Returns
     -------
     mu : float
-        Magnification (absolute value). Positive for positive parity,
+        Signed magnification (μ = 1/det(A)). Positive for positive parity,
         negative for negative parity images.
         
     Notes
@@ -231,10 +231,8 @@ def compute_magnification(x: float, y: float, lens_model, dx: float = 0.01) -> f
     The magnification can be infinite at critical curves where det(A) = 0.
     We clip extreme values for numerical stability.
     """
-    # Compute deflection angles at (x, y) and nearby points
+    # Compute deflection angles at nearby points for numerical derivatives
     # Central differences for better accuracy
-    alpha_x0, alpha_y0 = lens_model.deflection_angle(x, y)
-    
     # Partial derivatives ∂α_x/∂x
     alpha_xp, _ = lens_model.deflection_angle(x + dx, y)
     alpha_xm, _ = lens_model.deflection_angle(x - dx, y)
@@ -316,6 +314,15 @@ def find_einstein_radius(lens_model, tolerance: float = 0.01,
     # Bisection search
     r_min = 0.01
     r_max = max_radius
+    
+    f_min = equation(r_min)
+    f_max = equation(r_max)
+    if f_min * f_max > 0:
+        raise ValueError(
+            f"Einstein radius not bracketed in [{r_min}, {r_max}] arcsec. "
+            "f(r_min) and f(r_max) have the same sign — "
+            "increase max_radius or check lens model normalisation."
+        )
     
     while r_max - r_min > tolerance:
         r_mid = (r_min + r_max) / 2

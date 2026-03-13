@@ -26,8 +26,36 @@ async function api(path, { method = "GET", body = null, auth = true } = {}) {
   if (body) opts.body = JSON.stringify(body);
   const resp = await fetch(path, opts);
   if (!resp.ok) {
+    if (resp.status === 401) {
+      // Try refresh
+      const refreshToken = getRefreshToken() || localStorage.getItem('refresh_token') || sessionStorage.getItem('gh_lens_refresh');
+      if (refreshToken) {
+        const refreshResp = await fetch('/api/v1/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken })
+        });
+        if (refreshResp.ok) {
+          const refreshData = await refreshResp.json();
+          setToken(refreshData.access_token);
+          if (refreshData.refresh_token) setRefreshToken(refreshData.refresh_token);
+          // Retry original request with new token
+          const retryResp = await fetch(path, {
+            method,
+            headers: { ...headers, Authorization: `Bearer ${refreshData.access_token}` },
+            body: body ? JSON.stringify(body) : undefined
+          });
+          if (!retryResp.ok) throw new Error(`API ${retryResp.status}`);
+          if (retryResp.status === 204 || retryResp.headers.get('content-length') === '0') return null;
+          return retryResp.json();
+        }
+      }
+    }
     const err = await resp.json().catch(() => ({ detail: resp.statusText }));
     throw new Error(err.detail || err.error || resp.statusText);
+  }
+  if (resp.status === 204 || resp.headers.get('content-length') === '0') {
+    return null;
   }
   return resp.json();
 }

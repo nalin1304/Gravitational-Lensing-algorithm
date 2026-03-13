@@ -321,8 +321,8 @@ if JAX_AVAILABLE:
         M_vir = pred_params[:, 0:1]
         r_s = pred_params[:, 1:2]
         
-        M_vir = jnp.clip(M_vir, min=0.01, max=1e4)
-        r_s = jnp.clip(r_s, min=1.0, max=1e4)
+        M_vir = jnp.clip(M_vir, min=1e9, max=1e14)   # galaxy-to-cluster scale
+        r_s = jnp.clip(r_s, min=0.1, max=500.0)   # kpc
         beta_x = jnp.clip(beta_x, min=-10.0, max=10.0)
         beta_y = jnp.clip(beta_y, min=-10.0, max=10.0)
         

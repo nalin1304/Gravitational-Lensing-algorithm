@@ -16,6 +16,9 @@ from typing import Tuple, Dict, Optional, List
 from pathlib import Path
 import warnings
 
+from astropy.cosmology import FlatLambdaCDM
+import astropy.units as u
+
 from src.lens_models import (
     LensSystem,
     NFWProfile,
@@ -311,10 +314,12 @@ def generate_single_sample(
     beta_x = np.random.uniform(-1.0, 1.0)
     beta_y = np.random.uniform(-1.0, 1.0)
     
-    # Scale radius (approximate from virial radius and concentration)
-    # r_s = r_vir / c, need to compute r_vir
-    # For now, use typical scale radii
-    r_s = np.random.uniform(10, 100)  # kpc
+    # Scale radius derived from virial radius and concentration (physical formula)
+    # r_vir = (M_vir / (4π/3 * 200 * ρ_crit))^(1/3), r_s = r_vir / c
+    cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+    rho_crit_kpc = cosmo.critical_density(lens_sys.z_l).to(u.Msun / u.kpc**3).value
+    r_vir = (M_vir / (4.0 * np.pi / 3.0 * 200.0 * rho_crit_kpc)) ** (1.0 / 3.0)
+    r_s = r_vir / c
     
     # Package parameters
     parameters = np.array([M_vir, r_s, beta_x, beta_y, H0], dtype=np.float32)

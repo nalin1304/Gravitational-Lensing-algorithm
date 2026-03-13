@@ -260,7 +260,7 @@ export function init() {
       P.showLoading("Running PINN inference...");
       _infResp = await P.api("/api/v1/inference", {
         method: "POST", body: {
-          convergence_map: _synResp.convergence_map, target_size: 64, mc_samples: 32
+          convergence_map: _synResp.convergence_map, target_size: 64, mc_samples: 1 /* current PINN has no Dropout; >1 samples are identical (wasted compute) */
         }
       });
       document.getElementById("wInfOutput").textContent = JSON.stringify(_infResp, null, 2);

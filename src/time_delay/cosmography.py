@@ -150,7 +150,7 @@ def calculate_time_delays(
     D_s = lens_sys.angular_diameter_distance_source().to(u.Mpc).value
     D_ls = lens_sys.angular_diameter_distance_lens_source().to(u.Mpc).value
     
-    D_dt = D_l * D_s / D_ls  # Time delay distance in Mpc
+    D_dt = (1 + z_l) * D_l * D_s / D_ls  # H0LiCOW D_Δt = (1+z_l) D_l D_s / D_ls [Mpc]
     
     # Convert to SI units for time delay calculation
     D_dt_m = D_dt * 1e6 * const.pc.to(u.m).value  # meters (extract value)
@@ -206,7 +206,7 @@ def calculate_time_delays(
             if i != j:
                 # Time delay in seconds
                 delta_phi = fermat_potentials[i] - fermat_potentials[j]
-                time_delay_sec = (1.0 + z_l) * D_dt_m / c_mps * delta_phi
+                time_delay_sec = D_dt_m / c_mps * delta_phi
                 
                 # Convert to days
                 time_delay_days = time_delay_sec / 86400.0
@@ -224,7 +224,7 @@ def calculate_time_delays(
                 geom_i = 0.5 * np.sum((theta_i - beta)**2)
                 geom_j = 0.5 * np.sum((theta_j - beta)**2)
                 
-                geometric_delays[i, j] = (1.0 + z_l) * D_dt_m / c_mps * (geom_i - geom_j) / 86400.0
+                geometric_delays[i, j] = D_dt_m / c_mps * (geom_i - geom_j) / 86400.0
                 gravitational_delays[i, j] = time_delay_days - geometric_delays[i, j]
     
     return {

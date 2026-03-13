@@ -316,14 +316,20 @@ def fit_lensed_host_observation(
         ring_correlation = 0.0
     else:
         ring_correlation = float(np.corrcoef(model_annulus, observed_annulus)[0, 1])
+    # SSIM on bounding-box crop of the annular mask region (avoids zero-inflation
+    # from multiplying by a binary mask which zeros most pixels).
+    _rows = np.any(annular_mask, axis=1)
+    _cols = np.any(annular_mask, axis=0)
+    _rmin, _rmax = int(np.where(_rows)[0][0]), int(np.where(_rows)[0][-1])
+    _cmin, _cmax = int(np.where(_cols)[0][0]), int(np.where(_cols)[0][-1])
+    _model_crop = model_image[_rmin:_rmax + 1, _cmin:_cmax + 1]
+    _obs_crop = processed_observed[_rmin:_rmax + 1, _cmin:_cmax + 1]
     ring_ssim = float(
         structural_similarity(
-            model_image * annular_mask,
-            processed_observed * annular_mask,
+            _model_crop,
+            _obs_crop,
             data_range=float(
-                max(model_image.max(), processed_observed.max())
-                - min(model_image.min(), processed_observed.min())
-                + 1.0e-6
+                _obs_crop.max() - _obs_crop.min() + 1.0e-6
             ),
         )
     )

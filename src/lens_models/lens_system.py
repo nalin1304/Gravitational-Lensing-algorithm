@@ -144,7 +144,7 @@ class LensSystem:
         Notes
         -----
         This is the surface density that produces unit convergence.
-        Typical values are ~10^9 Msun/pc² for cosmological lenses.
+        Typical values are ~10³–10⁴ Msun/pc² for cosmological lenses.
         """
         if self._sigma_cr is None:
             D_l = self.angular_diameter_distance_lens()

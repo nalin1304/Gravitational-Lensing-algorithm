@@ -1,6 +1,6 @@
 # Statistical Rigor Report
 
-Generated: 2026-03-11T18:14:53.272249+00:00
+Generated: 2026-03-13T02:37:07.839121+00:00
 
 ## SLACS Validation Summary
 - Systems: 5

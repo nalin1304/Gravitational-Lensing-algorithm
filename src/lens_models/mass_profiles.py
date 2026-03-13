@@ -663,10 +663,10 @@ class NFWProfile(MassProfile):
         Calculate deflection angle for NFW profile.
         
         Uses the analytical formula from Wright & Brainerd (2000):
-        α(θ) = (4 κ_s θ_s / θ) × f(θ/θ_s)
+        α(θ) = (4 κ_s θ_s / θ) × h(θ/θ_s)
         
         where κ_s = (ρ_s × r_s) / Σ_crit is the characteristic convergence,
-        θ_s = r_s is the angular scale radius, and f(x) is the NFW function.
+        θ_s = r_s is the angular scale radius, and h(x) is the NFW deflection kernel.
         
         For elliptical halos, uses elliptical radius and rotates deflection.
         For halos with substructure, adds subhalo contributions.
@@ -701,8 +701,8 @@ class NFWProfile(MassProfile):
         # Deflection kernel from Bartelmann (1996)
         h_vals = self._h_nfw(x_scaled)
         
-        # Deflection angle magnitude: α(r) = 4 κ_s r_s × f(x) / x
-        # where x = r/r_s, so this becomes: α(r) = 4 κ_s r_s × f(r/r_s) / (r/r_s)
+        # Deflection angle magnitude: α(r) = 4 κ_s r_s × h(x) / x
+        # where x = r/r_s, so this becomes: α(r) = 4 κ_s r_s × h(r/r_s) / (r/r_s)
         # The self.kappa_s was pre-computed in _compute_nfw_parameters()
         alpha_magnitude = 4.0 * self.kappa_s * self.r_s * h_vals / x_scaled
         
@@ -840,8 +840,9 @@ class NFWProfile(MassProfile):
         
         x_scaled = r / self.r_s
         
-        # Lensing potential for circular NFW (Bartelmann 1996, Golse & Kneib 2002)
-        # psi(x) = 2 * kappa_s * r_s^2 * g(x)
+        # Lensing potential for circular NFW (Wright & Brainerd 2000, Bartelmann 1996)
+        # psi(x) = 4.0 * kappa_s * r_s^2 * g(x/r_s)
+        # Derivation: α = dψ/dθ = 4κ_s r_s h(x)/x; integrating gives ψ = 4κ_s r_s² g(x)
         g = np.zeros_like(x_scaled, dtype=float)
         
         mask1 = x_scaled < 1
@@ -858,7 +859,7 @@ class NFWProfile(MassProfile):
         if np.any(mask3):
             g[mask3] = 0.5 * np.log(0.5)**2
             
-        psi = 2.0 * self.kappa_s * self.r_s**2 * g
+        psi = 4.0 * self.kappa_s * self.r_s**2 * g
         
         if self.ellipticity > 0:
             # Re-evaluate with elliptical radius
@@ -882,7 +883,7 @@ class NFWProfile(MassProfile):
             if np.any(mask3_ell):
                 g_ell[mask3_ell] = 0.5 * np.log(0.5)**2
                 
-            psi = 2.0 * self.kappa_s * self.r_s**2 * g_ell
+            psi = 4.0 * self.kappa_s * self.r_s**2 * g_ell
             
         # Add subhalo contributions
         if self.include_subhalos and len(self.subhalos) > 0:

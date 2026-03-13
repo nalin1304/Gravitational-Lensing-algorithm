@@ -44,7 +44,7 @@ export function render() {
         <div id="vTestStats">
           <div class="metric-row"><span class="metric-key">Tests Passed</span><span class="metric-val" id="vTestPassed" style="color:var(--success)">—</span></div>
           <div class="metric-row"><span class="metric-key">Tests Skipped</span><span class="metric-val" id="vTestSkipped" style="color:var(--warning)">—</span></div>
-          <div class="metric-row"><span class="metric-key">Failures</span><span class="metric-val" id="vTestFailed" style="color:var(--success)">—</span></div>
+          <div class="metric-row"><span class="metric-key">Failures</span><span class="metric-val" id="vTestFailed">—</span></div>
           <div class="metric-row"><span class="metric-key">Verification Mode</span><span class="metric-val" id="vTestMode">Loading...</span></div>
           <div class="metric-row"><span class="metric-key">Last Run</span><span class="metric-val" id="vTestLastRun">—</span></div>
         </div>
@@ -61,7 +61,10 @@ export async function init() {
       const regression = stats.regression_summary || {};
       document.getElementById("vTestPassed").textContent = regression.passed != null ? String(regression.passed) : (regression.checks_passed != null ? String(regression.checks_passed) : "—");
       document.getElementById("vTestSkipped").textContent = regression.skipped != null ? String(regression.skipped) : "—";
-      document.getElementById("vTestFailed").textContent = regression.failed != null ? String(regression.failed) : "—";
+      const failures = regression.failed != null ? regression.failed : null;
+      const failEl = document.getElementById("vTestFailed");
+      failEl.textContent = failures != null ? String(failures) : "—";
+      failEl.style.color = (failures != null && failures > 0) ? 'var(--danger, #ff4444)' : 'var(--success)';
       document.getElementById("vTestMode").textContent = regression.status || (regression.publication_gate_passed ? "publication_gate" : "unavailable");
       document.getElementById("vTestLastRun").textContent = regression.generated_at_utc ? regression.generated_at_utc.replace("T", " ").slice(0, 19) : "—";
     } catch {

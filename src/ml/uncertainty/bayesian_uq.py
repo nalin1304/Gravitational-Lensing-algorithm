@@ -228,21 +228,19 @@ class BayesianPINN(nn.Module):
         Returns:
             UncertaintyPrediction with mean, std, lower, upper bounds
         """
-        mean, std = self.predict_with_uncertainty(x, n_samples)
+        mean, std, samples = self.predict_with_uncertainty(x, n_samples, return_samples=True)
         
-        # Calculate z-score for confidence level
-        from scipy import stats
-        z_score = stats.norm.ppf((1 + confidence) / 2)
-        
-        # Confidence intervals
-        lower = mean - z_score * std
-        upper = mean + z_score * std
+        # Empirical quantile computation from MC samples
+        alpha = (1.0 - confidence) / 2.0
+        samples_np = samples.cpu().numpy()  # [n_samples, batch_size, output_dim]
+        lower = np.quantile(samples_np, alpha, axis=0)
+        upper = np.quantile(samples_np, 1.0 - alpha, axis=0)
         
         return UncertaintyPrediction(
             mean=mean.cpu().numpy(),
             std=std.cpu().numpy(),
-            lower=lower.cpu().numpy(),
-            upper=upper.cpu().numpy(),
+            lower=lower,
+            upper=upper,
             confidence=confidence,
             n_samples=n_samples
         )

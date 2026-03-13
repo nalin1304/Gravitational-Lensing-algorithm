@@ -21,7 +21,7 @@ export function render() {
       <div class="card">
         <div class="card-header"><span class="card-title">Neural Posterior Estimation (NPE)</span></div>
         <p class="section-desc">Run JAX/Haiku distrax normalizing flow inference.</p>
-        <button id="sbiRunBtn" class="btn btn-primary">Run SBI Inference Mock</button>
+        <button id="sbiRunBtn" class="btn btn-primary">Run SBI Inference</button>
         <div id="sbiResults" style="margin-top:12px"></div>
       </div>
     </div>
@@ -86,8 +86,20 @@ export async function init() {
     document.getElementById("sbiRunBtn").addEventListener("click", async () => {
         document.getElementById("sbiResults").innerHTML = "Running NPE flow...";
         try {
-            // Mock map 10x10
-            const arr = Array(10).fill().map(() => Array(10).fill(1.0));
+            // Try to get real convergence data from session, fall back to synthetic demo map
+            const storedMap = sessionStorage.getItem('lastConvergenceMap');
+            let arr;
+            if (storedMap) {
+                arr = JSON.parse(storedMap);
+            } else {
+                // Generate a simple NFW-like convergence map for demo
+                arr = Array.from({length: 10}, (_, i) =>
+                    Array.from({length: 10}, (_, j) => {
+                        const r = Math.sqrt((i-4.5)**2 + (j-4.5)**2) + 0.1;
+                        return Math.max(0, 0.5 / (r * (1 + r)**2));  // NFW-like profile
+                    })
+                );
+            }
             const resp = await P.api("/api/v1/rigor/sbi", { method: "POST", body: { convergence_map: arr, n_samples: 500 }, auth: false });
             document.getElementById("sbiResults").innerHTML = `
         <div class="metric-row"><span class="metric-key">M_vir Median</span><span class="metric-val">${resp.M_vir.median.toExponential(3)}</span></div>

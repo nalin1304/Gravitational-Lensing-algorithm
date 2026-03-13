@@ -58,8 +58,9 @@ async function loadTab(tab) {
             return;
         }
         try {
-            const data = await P.api("/api/v1/analyses");
-            if (!data.analyses?.length) {
+            const raw = await P.api("/api/v1/analyses");
+            const analyses = Array.isArray(raw) ? raw : (raw.analyses || []);
+            if (!analyses.length) {
                 el.innerHTML = `<div class="empty-state"><p>No analyses yet</p><button id="aNew" class="btn btn-primary" style="margin-top:12px">Create First Analysis</button></div>`;
                 document.getElementById("aNew")?.addEventListener("click", showCreate);
                 return;
@@ -67,22 +68,32 @@ async function loadTab(tab) {
             el.innerHTML = `
         <div style="margin-bottom:14px"><button id="aNew" class="btn btn-primary btn-sm">+ New Analysis</button></div>
         <table class="data-table">
-          <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
-          <tbody>${data.analyses.map(a => `
+          <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Created</th><th></th></tr></thead>
+          <tbody>${analyses.map(a => `
             <tr><td style="font-weight:500">${P.esc(a.name)}</td><td><span class="badge badge-info">${P.esc(a.type)}</span></td>
             <td><span class="badge ${a.status === 'completed' ? 'badge-success' : 'badge-warning'}">${P.esc(a.status)}</span></td>
-            <td>${new Date(a.created_at).toLocaleDateString()}</td></tr>
+            <td>${new Date(a.created_at).toLocaleDateString()}</td>
+            <td><button class="btn btn-sm btn-secondary aDeleteBtn" data-id="${P.esc(String(a.id))}">Delete</button></td></tr>
           `).join("")}</tbody>
         </table>`;
             document.getElementById("aNew")?.addEventListener("click", showCreate);
+            document.querySelectorAll(".aDeleteBtn").forEach(btn => btn.addEventListener("click", async () => {
+                if (!confirm("Delete this analysis?")) return;
+                try {
+                    await P.api(`/api/v1/analyses/${btn.dataset.id}`, { method: "DELETE" });
+                    P.toast("Analysis deleted", "success");
+                    loadTab("my");
+                } catch (e) { P.toast(`Delete failed: ${e.message}`, "error"); }
+            }));
         } catch (e) { el.innerHTML = `<div class="empty-state"><p>Error: ${P.esc(e.message)}</p></div>`; }
     } else if (tab === "public") {
         try {
-            const data = await P.api("/api/v1/analyses/public", { auth: false });
-            if (!data.analyses?.length) { el.innerHTML = `<div class="empty-state"><p>No public analyses available</p></div>`; return; }
+            const raw = await P.api("/api/v1/analyses/public", { auth: false });
+            const analyses = Array.isArray(raw) ? raw : (raw.analyses || []);
+            if (!analyses.length) { el.innerHTML = `<div class="empty-state"><p>No public analyses available</p></div>`; return; }
             el.innerHTML = `<table class="data-table">
         <thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
-        <tbody>${data.analyses.map(a => `
+        <tbody>${analyses.map(a => `
           <tr><td style="font-weight:500">${P.esc(a.name)}</td><td><span class="badge badge-info">${P.esc(a.type)}</span></td>
           <td><span class="badge badge-success">${P.esc(a.status)}</span></td>
           <td>${new Date(a.created_at).toLocaleDateString()}</td></tr>
@@ -91,11 +102,12 @@ async function loadTab(tab) {
     } else if (tab === "jobs") {
         if (!P.getToken()) { el.innerHTML = `<div class="empty-state"><p>Sign in to view jobs</p></div>`; return; }
         try {
-            const data = await P.api("/api/v1/jobs");
-            if (!data.jobs?.length) { el.innerHTML = `<div class="empty-state"><p>No jobs found</p></div>`; return; }
+            const raw = await P.api("/api/v1/jobs");
+            const jobs = Array.isArray(raw) ? raw : (raw.jobs || []);
+            if (!jobs.length) { el.innerHTML = `<div class="empty-state"><p>No jobs found</p></div>`; return; }
             el.innerHTML = `<table class="data-table">
         <thead><tr><th>Job ID</th><th>Type</th><th>Status</th><th>Progress</th><th>Created</th></tr></thead>
-        <tbody>${data.jobs.map(j => `
+        <tbody>${jobs.map(j => `
           <tr><td style="font-family:var(--mono);font-size:12px">${P.esc(j.job_id)}</td>
           <td>${P.esc(j.job_type)}</td>
           <td><span class="badge ${j.status === 'completed' ? 'badge-success' : j.status === 'failed' ? 'badge-danger' : 'badge-warning'}">${P.esc(j.status)}</span></td>
@@ -106,11 +118,12 @@ async function loadTab(tab) {
     } else if (tab === "results") {
         if (!P.getToken()) { el.innerHTML = `<div class="empty-state"><p>Sign in to view results</p></div>`; return; }
         try {
-            const data = await P.api("/api/v1/results");
-            if (!data.results?.length) { el.innerHTML = `<div class="empty-state"><p>No results yet</p></div>`; return; }
+            const raw = await P.api("/api/v1/results");
+            const results = Array.isArray(raw) ? raw : (raw.results || []);
+            if (!results.length) { el.innerHTML = `<div class="empty-state"><p>No results yet</p></div>`; return; }
             el.innerHTML = `<table class="data-table">
         <thead><tr><th>Type</th><th>Confidence</th><th>Created</th></tr></thead>
-        <tbody>${data.results.map(r => `
+        <tbody>${results.map(r => `
           <tr><td>${P.esc(r.result_type)}</td>
           <td>${r.confidence_score != null ? (r.confidence_score * 100).toFixed(1) + '%' : '—'}</td>
           <td>${new Date(r.created_at).toLocaleDateString()}</td></tr>

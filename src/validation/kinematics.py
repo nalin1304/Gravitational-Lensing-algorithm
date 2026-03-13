@@ -112,9 +112,11 @@ def predict_velocity_dispersion(
         D_d = getattr(ls, 'D_d', 1000.0)   # Mpc
         D_s = getattr(ls, 'D_s', 2000.0)
         D_ds = getattr(ls, 'D_ds', 1500.0)
-        Sigma_cr = c_SI**2 / (4 * np.pi * G_SI) * D_s / (D_d * D_ds)
-        # Convert from kg/m² to M_sun/kpc²
-        Sigma_cr_msun_kpc2 = Sigma_cr / M_sun * (kpc_to_m * 1e-3)**2
+        # C-5: distances are in Mpc — convert to metres before SI formula
+        Mpc_to_m = kpc_to_m * 1e3
+        Sigma_cr = c_SI**2 / (4 * np.pi * G_SI) * (D_s * Mpc_to_m) / ((D_d * Mpc_to_m) * (D_ds * Mpc_to_m))
+        # C-4: convert kg/m² → M_sun/kpc²: multiply by kpc_to_m² (not (kpc_to_m*1e-3)²)
+        Sigma_cr_msun_kpc2 = Sigma_cr / M_sun * kpc_to_m**2
     else:
         Sigma_cr_msun_kpc2 = 3.5e9  # Typical value [M_sun/kpc²]
 
@@ -337,7 +339,17 @@ def combine_lensing_kinematics(
     kappa_eff = float(np.mean(kappa_map[mask])) if np.any(mask) else float(np.mean(kappa_map))
 
     # Σ_cr ≈ c² / (4π G D_eff) in physical units
-    Sigma_cr_msun_kpc2 = 3.5e9 * (1 + z_lens)  # Rough scaling
+    # M-2: compute Sigma_crit from proper angular diameter distances
+    from astropy.cosmology import Planck18
+    D_d_kpc = _angular_diameter_distance_kpc(z_lens)
+    D_s_kpc = _angular_diameter_distance_kpc(z_source)
+    D_ds_kpc = Planck18.angular_diameter_distance_z1z2(z_lens, z_source).to_value('kpc')
+    Mpc_to_m = kpc_to_m * 1e3
+    D_d_m = D_d_kpc * kpc_to_m
+    D_s_m = D_s_kpc * kpc_to_m
+    D_ds_m = D_ds_kpc * kpc_to_m
+    Sigma_cr_si = c_SI**2 / (4 * np.pi * G_SI) * D_s_m / (D_d_m * D_ds_m)
+    Sigma_cr_msun_kpc2 = Sigma_cr_si / M_sun * kpc_to_m**2
     M_lens = np.pi * r_eff_kpc**2 * Sigma_cr_msun_kpc2 * kappa_eff
 
     # Kinematic mass estimate

@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import logging
 
 # Import PINN models
-from .pinn_models import create_lensing_pinn, PINNTrainer, PhysicsLoss
+from .pinn_models import create_lensing_pinn, PhysicsLoss
 
 # Import benchmarks
 import sys
@@ -97,7 +97,13 @@ def generate_nfw_training_data(
         x_val = R / r_s
         x_safe = torch.clamp(x_val, min=1e-5)
         
-        kappa_s = mass / (1e12 * r_s**2)  # Physical reference density scale
+        # kappa_s = rho_s * r_s / Sigma_crit (dimensionless — Bartelmann 1996)
+        # rho_s = M_vir / (4π r_s³ f(c)), f(c) = ln(1+c) - c/(1+c)
+        import math as _math
+        f_c = _math.log(1.0 + conc) - conc / (1.0 + conc)
+        rho_s = mass / (4.0 * _math.pi * r_s**3 * f_c)   # M_sun/kpc³
+        Sigma_crit_ref = 3.5e9  # M_sun/kpc² (reference for z_l~0.5, z_s~1.5)
+        kappa_s = rho_s * r_s / Sigma_crit_ref  # dimensionless
         kappa = torch.zeros_like(x_safe)
         
         # Regime 1: x < 1 (Inner core)
@@ -182,7 +188,7 @@ def train_pinn(
     # Create model
     logger.info(f"Creating {model_type} PINN...")
     model = create_lensing_pinn(model_type=model_type)
-    model = model.to(device)
+    # Equinox models are device-agnostic; data is moved to device instead
     
     # Generate training data
     train_data = generate_nfw_training_data(
@@ -230,7 +236,6 @@ def train_pinn(
             ], dim=1)
             
             # Forward pass
-            model.train()
             trainer.optimizer.zero_grad()
             
             outputs = model(batch_input)
@@ -257,11 +262,9 @@ def train_pinn(
     if save_path:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
-        torch.save({
-            'model_state_dict': model.state_dict(),
-            'model_type': model_type,
-            'history': trainer.history
-        }, save_path)
+        import equinox as eqx
+        eqx.tree_serialise_leaves(str(save_path) + ".eqx", model)
+        torch.save({'model_type': model_type, 'history': trainer.history}, save_path)
         logger.info(f"Model saved to {save_path}")
     
     return model, trainer.history
@@ -289,8 +292,6 @@ def benchmark_trained_pinn(
         Benchmark results dictionary
     """
     logger.info("Benchmarking trained PINN...")
-    
-    model.eval()
     
     # Generate test case
     test_mass = 1e12  # Solar masses
