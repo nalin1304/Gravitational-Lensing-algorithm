@@ -14,7 +14,7 @@ export function render() {
 
     <div id="aContent"></div>
 
-    <div id="aCreateModal" style="display:none" class="card" style="margin-top:20px;">
+    <div id="aCreateModal" class="card" style="display:none;margin-top:20px">
       <div class="card-header">
         <span class="card-title">Create New Analysis</span>
         <button id="aCloseModal" class="btn btn-sm btn-secondary">×</button>

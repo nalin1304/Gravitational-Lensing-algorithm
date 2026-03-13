@@ -247,19 +247,11 @@ function renderSummary(ccData) {
 
 let _ccData = null;
 
-export function render(container) {
-  container.innerHTML = `
-    <div style="margin-bottom:24px">
-      <h1 style="margin:0 0 4px 0">🔭 Lensing Analysis</h1>
-      <p class="subtitle" style="margin:0;color:#8899bb">
-        Critical curves, caustics, magnification maps & image position solver
-        <span style="opacity:0.6">— Schneider, Ehlers & Falco (1992)</span>
-      </p>
-    </div>
-
+export function render() {
+  return `
     <div class="card" style="border-left:3px solid #00ccff">
       <h2 style="margin-top:0">NFW Lens Parameters</h2>
-      <p style="color:#8899bb;font-size:0.9em;margin-top:-4px">
+      <p style="color:var(--text-muted);font-size:0.9em;margin-top:-4px">
         Configure the NFW dark-matter halo lens profile for analysis.
       </p>
       <div class="params-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
@@ -279,14 +271,14 @@ export function render(container) {
       <div id="lns-cc-summary"></div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+    <div class="grid-2 gap-16" style="margin-top:16px">
       <div class="card" style="padding:12px"><div id="lns-mag-plot" style="height:440px"></div></div>
       <div class="card" style="padding:12px"><div id="lns-caustic-plot" style="height:440px"></div></div>
     </div>
 
     <div class="card" style="margin-top:16px;border-left:3px solid #ffcc00">
       <h2 style="margin-top:0">Image Position Solver</h2>
-      <p style="color:#8899bb;font-size:0.9em;margin-top:-4px">
+      <p style="color:var(--text-muted);font-size:0.9em;margin-top:-4px">
         Find all multiple images of a background source lensed by the NFW halo above.
         Uses a two-phase algorithm: coarse grid search followed by Newton-Raphson refinement.
       </p>
@@ -308,13 +300,15 @@ export function render(container) {
     <div class="card" style="margin-top:16px">
       <h3 style="margin-top:0">Image Catalog</h3>
       <div id="lns-images-table">
-        <p style="color:#667799;text-align:center;padding:20px">
+        <p style="color:var(--text-muted);text-align:center;padding:20px">
           Run the solver above to find image positions.
         </p>
       </div>
     </div>
   `;
+}
 
+export function init() {
   /* ── Critical curves button ────────────────────────────────────── */
   document.getElementById("lns-run-cc").addEventListener("click", async () => {
     const btn = document.getElementById("lns-run-cc");

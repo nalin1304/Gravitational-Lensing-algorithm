@@ -117,7 +117,7 @@ async function checkHealth() {
 
 const routes = {};
 let currentPage = null;
-const ASSET_VERSION = "2026-03-13-ui-polish";
+const ASSET_VERSION = "2026-03-13-lensing-fix";
 
 function registerPage(name, mod) { routes[name] = mod; }
 
