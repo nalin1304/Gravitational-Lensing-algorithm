@@ -203,16 +203,6 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/lensing-api:buildcache
         cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/lensing-api:buildcache,mode=max
-    
-    - name: Build and push Streamlit image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.streamlit
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/lensing-webapp:latest
-        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/lensing-webapp:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/lensing-webapp:buildcache,mode=max
 
   # ==========================================================================
   # Security Scanning

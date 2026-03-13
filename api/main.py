@@ -520,7 +520,6 @@ async def root():
         "docs": "/docs",
         "health": "/health",
         "web_ui": "/ui",
-        "streamlit_ui": "app/Home.py",
     }
 
 

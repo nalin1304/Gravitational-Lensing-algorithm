@@ -1,5 +1,5 @@
 # Docker Compose Configuration for Gravitational Lensing Stack
-# Includes: API, Streamlit Web App, PostgreSQL, Redis, Monitoring
+# Includes: API, PostgreSQL, Redis, Monitoring
 
 # ============================================================================
 # 🔴 ACTION REQUIRED: Configure before first run

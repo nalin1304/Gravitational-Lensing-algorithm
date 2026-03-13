@@ -224,7 +224,7 @@ def check_modules() -> bool:
     required_modules = [
         ('numpy', 'NumPy'),
         ('torch', 'PyTorch'),
-        ('streamlit', 'Streamlit'),
+        ('fastapi', 'FastAPI'),
         ('matplotlib', 'Matplotlib'),
     ]
     
@@ -266,7 +266,7 @@ def check_project_modules() -> bool:
         ('src.ml.pinn', 'Physics-Informed Neural Networks'),
         ('src.validation', 'Scientific Validation'),
         ('src.ml.uncertainty', 'Bayesian Uncertainty Quantification'),
-        ('app.main', 'Streamlit Application'),
+        ('api.main', 'FastAPI Application'),
     ]
     
     all_ok = True
@@ -343,7 +343,7 @@ def print_summary(results: Dict[str, bool]):
         print(f"  3. {Color.YELLOW}Run this script again to verify{Color.RESET}")
     else:
         print(f"  1. {Color.GREEN}Run tests: pytest tests/ -v{Color.RESET}")
-        print(f"  2. {Color.GREEN}Start Streamlit: streamlit run app/main.py{Color.RESET}")
+        print(f"  2. {Color.GREEN}Start API: uvicorn api.main:app --reload{Color.RESET}")
         print(f"  3. {Color.GREEN}Deploy to production (if ready){Color.RESET}")
 
 

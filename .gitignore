@@ -127,3 +127,7 @@ find_physics_stubs.py
 test_solve.py
 test_profile_integration.py
 test_rigor_api.py
+
+# Runtime artifacts
+uvicorn.log
+output/playwright/
