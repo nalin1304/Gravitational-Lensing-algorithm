@@ -12,6 +12,9 @@ from astropy import units as u
 from astropy import constants as const
 import hashlib
 
+# NumPy 1.x/2.x compat
+_np_trapezoid = getattr(np, 'trapezoid', getattr(np, 'trapz', None))
+
 
 class MassProfile(ABC):
     """
@@ -1409,7 +1412,7 @@ class DarkMatterFactory:
         
         # Trapezoidal integration
         integrand = 2 * np.pi * sigma * r_grid
-        M_integrated = np.trapezoid(integrand, r_grid)  # Msun
+        M_integrated = _np_trapezoid(integrand, r_grid)  # Msun
         
         # Expected mass depends on profile type
         if hasattr(halo, 'enclosed_mass'):

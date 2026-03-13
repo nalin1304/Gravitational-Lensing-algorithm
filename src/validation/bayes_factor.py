@@ -48,7 +48,7 @@ class BayesFactorComparator:
         s_mean = jnp.mean(microlensing_signals)
 
         cov = jnp.mean((eccentricities - e_mean) * (microlensing_signals - s_mean))
-        var_e = jnp.std(eccentricities)
-        var_s = jnp.std(microlensing_signals)
-        correlation = cov / (var_e * var_s + 1e-8)
+        std_e = jnp.std(eccentricities)
+        std_s = jnp.std(microlensing_signals)
+        correlation = cov / (std_e * std_s + 1e-8)
         return float(correlation)

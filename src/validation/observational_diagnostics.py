@@ -381,7 +381,7 @@ def fit_lensed_host_observation(
 
     best_fit_parameters = {
         parameter_name: float(value)
-        for parameter_name, value in zip(parameter_names, best_fit_vector, strict=True)
+        for parameter_name, value in zip(parameter_names, best_fit_vector)
     }
 
     return ObservationalFitResult(

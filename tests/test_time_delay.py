@@ -6,6 +6,9 @@ Tests the calculation of time delays and inference of H0 from lensing observatio
 
 import pytest
 import numpy as np
+
+# NumPy 1.x/2.x compat
+_np_trapezoid = getattr(np, 'trapezoid', getattr(np, 'trapz', None))
 from src.lens_models import LensSystem, PointMassProfile, NFWProfile
 from src.time_delay import (
     calculate_time_delays,
@@ -217,7 +220,7 @@ class TestH0Inference:
         result = infer_h0(observed, images, source, point_mass, n_grid=100)
         
         # Integral of posterior should be ~1
-        integral = np.trapezoid(result['posterior'], result['h0_grid'])
+        integral = _np_trapezoid(result['posterior'], result['h0_grid'])
         assert np.abs(integral - 1.0) < 0.01
     
     def test_chi2_minimum_at_best_h0(self, point_mass):

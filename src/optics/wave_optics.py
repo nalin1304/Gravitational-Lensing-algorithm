@@ -194,9 +194,15 @@ class WaveOpticsEngine:
         # wave_phase = ωτ(θ,β) is already computed above.
         dtheta_rad = (2.0 * grid_extent / grid_size) * arcsec_to_rad  # rad/pixel
         d2theta = dtheta_rad**2  # solid angle per pixel [rad²]
-        omega_rad = 2.0 * jnp.pi * c_light / wavelength_m  # radiation angular frequency [rad/s]
+        # Dimensionless effective frequency ω_eff = 2πf × T_0 where
+        # T_0 = (1+z_l)·D_l·D_s/(c·D_ls) is the geometric time-delay scale.
+        # This converts the EM angular frequency to the lens-plane frequency
+        # that appears in the N&D (1999) / T&N (2003) Eq. 3 prefactor.
+        T_0 = geometric_factor / c_light  # geometric time-delay scale [seconds]
+        omega_rad = 2.0 * jnp.pi * c_light / wavelength_m  # EM angular frequency [rad/s]
+        omega_eff = omega_rad * T_0  # dimensionless effective frequency
         integrand = jnp.exp(1j * wave_phase)  # per-pixel complex phase field
-        F_omega = (omega_rad / (2.0 * jnp.pi * 1j)) * jnp.sum(integrand) * d2theta  # scalar complex
+        F_omega = (omega_eff / (2.0 * jnp.pi * 1j)) * jnp.sum(integrand) * d2theta  # scalar complex
         magnification_wave = float(jnp.abs(F_omega)**2)  # scalar |F(ω)|²
 
         result = {

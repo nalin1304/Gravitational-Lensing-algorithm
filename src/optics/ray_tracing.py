@@ -264,8 +264,10 @@ def compute_magnification(x: float, y: float, lens_model, dx: float = 0.01) -> f
     
     # Magnification
     if jnp.abs(det_A) < 1e-10:
-        # Near critical curve - set to large value
-        mu = jnp.sign(det_A) * 1000.0
+        # Near critical curve — clamp to large value.
+        # Use copysign with a tiny positive bias so that det_A == 0 yields +1000
+        # instead of 0 (jnp.sign(0) == 0 would silently zero out the result).
+        mu = jnp.copysign(1000.0, det_A + 1e-20)
     else:
         mu = 1.0 / det_A
     

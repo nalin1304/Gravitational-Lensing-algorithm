@@ -445,6 +445,7 @@ def main() -> int:
 
     if args.n_trials < 1:
         parser.error("--n-trials must be >= 1")
+    outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
     results = run_ablation_suite(

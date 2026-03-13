@@ -235,14 +235,14 @@ def validate_single_lens(
     t0 = time.time()
 
     ground_truth, pixel_scale = generate_ground_truth(entry, grid_size)
-    dl = MASTDownloader()
+    dl = MASTDownloader() if MAST_AVAILABLE else None
     lens_system = LensSystem(z_lens=entry["z_lens"], z_source=entry["z_source"])
     lens_model = NFWProfile(
         M_vir=sigma_v_to_virial_mass(entry["sigma_v"]),
         concentration=10.0,
         lens_system=lens_system,
     )
-    empirical_psf = load_empirical_psf(dl.cache_dir, entry["name"])
+    empirical_psf = load_empirical_psf(dl.cache_dir, entry["name"]) if dl is not None else None
     psf_kernel = build_hst_psf_kernel(
         pixel_scale_arcsec=pixel_scale,
         empirical_psf=empirical_psf,

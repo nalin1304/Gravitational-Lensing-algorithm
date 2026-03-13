@@ -16,6 +16,9 @@ where D_Δt is the time delay distance that depends on H0:
 """
 
 import numpy as np
+
+# NumPy 1.x/2.x compat: trapezoid was added in 2.0, replacing trapz
+_np_trapezoid = getattr(np, 'trapezoid', getattr(np, 'trapz', None))
 from typing import Tuple, List, Dict, Union, Optional
 from astropy import units as u
 from astropy import constants as const
@@ -367,7 +370,7 @@ def infer_h0(
     # Compute posterior (assume flat prior)
     # P(H0|data) ∝ exp(-χ²/2)
     posterior = np.exp(-0.5 * (chi2_grid - chi2_min))
-    norm = np.trapezoid(posterior, h0_grid)
+    norm = _np_trapezoid(posterior, h0_grid)
     if norm > 0:
         posterior /= norm
     else:

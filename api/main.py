@@ -275,7 +275,7 @@ class InferenceResponse(BaseModel):
 
 class BatchJobRequest(BaseModel):
     """Request for batch processing"""
-    job_ids: List[str]
+    job_ids: List[str] = Field(..., min_length=1, max_length=100)
 
 
 class BatchJobStatus(BaseModel):
@@ -841,12 +841,13 @@ async def pi_sbi_simulate(req: PISBISimulateRequest):
             "gw_model": "nakamura_deguchi_1999",
         }
     except Exception as e:
+        logger.exception("PI-SBI simulation error")
         raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
 
 
 class PISBIPosteriorRequest(BaseModel):
-    kappa_map: list = Field(..., description="2D convergence map as nested list")
-    gw_spectrum: list = Field(..., description="GW spectrum |F(ω)|² values")
+    kappa_map: List[List[float]] = Field(..., description="2D convergence map as nested list")
+    gw_spectrum: List[float] = Field(..., description="GW spectrum |F(ω)|² values")
     n_samples: int = Field(500, ge=50, le=2000, description="Number of posterior samples")
 
 
@@ -900,6 +901,7 @@ async def pi_sbi_posterior(req: PISBIPosteriorRequest):
             "reference": "Cranmer et al. (2020), PNAS 117, 9449",
         }
     except Exception as e:
+        logger.exception("PI-SBI posterior estimation error")
         raise HTTPException(status_code=500, detail=f"Posterior estimation failed: {str(e)}")
 
 
@@ -921,11 +923,11 @@ async def pi_sbi_status():
     }
 
     if training_summary.exists():
-        with open(training_summary) as f:
-            summ = json.load(f)
-        status["training_n_sims"] = summ.get("n_sims")
-        status["final_nll"] = summ.get("final_nll")
-        status["evaluation_mode"] = summ.get("evaluation_mode")
+        summ = _load_json_artifact(training_summary)
+        if isinstance(summ, dict):
+            status["training_n_sims"] = summ.get("n_sims")
+            status["final_nll"] = summ.get("final_nll")
+            status["evaluation_mode"] = summ.get("evaluation_mode")
 
     return status
 
@@ -1279,7 +1281,8 @@ async def survey_epsf(req: EPSFRequest):
             fig.savefig(buf, format="png", dpi=80, bbox_inches="tight", pad_inches=0)
             plt.close(fig)
             kernel_b64 = base64.b64encode(buf.getvalue()).decode()
-        except Exception:
+        except Exception as e:
+            logger.warning("ePSF kernel PNG rendering failed: %s", e)
             kernel_b64 = None
 
         # Zernike wavefront RMS at this position
@@ -1393,7 +1396,8 @@ async def survey_blinding_unblind(req: BlindingUnblindRequest):
         try:
             report = json.loads(gate_report.read_text())
             checks_passed = bool(report.get("publication_gate_passed", False))
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to parse publication gate report: %s", e)
             checks_passed = False
         if not checks_passed:
             return {

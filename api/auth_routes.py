@@ -66,7 +66,7 @@ class UserRegister(BaseModel):
     email: str
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8)
-    full_name: Optional[str] = None
+    full_name: Optional[str] = Field(None, max_length=255)
 
     @field_validator("email")
     @classmethod
@@ -106,7 +106,7 @@ class UserResponse(BaseModel):
 class UserUpdate(BaseModel):
     """User update request"""
     email: Optional[str] = None
-    full_name: Optional[str] = None
+    full_name: Optional[str] = Field(None, max_length=255)
     password: Optional[str] = Field(None, min_length=8)
 
     @field_validator("email")

@@ -7,7 +7,7 @@ Author: Phase 12 Implementation
 Date: October 2025
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status as http_status
+from fastapi import APIRouter, Depends, HTTPException, Query, status as http_status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
@@ -54,10 +54,10 @@ router = APIRouter(prefix="/api/v1", tags=["Analysis"])
 class AnalysisCreate(BaseModel):
     """Analysis creation request"""
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=2000)
     type: str = Field(..., description="synthetic, real_data, inference, batch, custom")
     config: Dict[str, Any] = Field(..., description="Analysis configuration")
-    tags: Optional[List[str]] = None
+    tags: Optional[List[str]] = Field(None, max_length=20)
 
 
 class AnalysisResponse(BaseModel):
@@ -81,9 +81,9 @@ class AnalysisResponse(BaseModel):
 class AnalysisUpdate(BaseModel):
     """Analysis update request"""
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=2000)
     is_public: Optional[bool] = None
-    tags: Optional[List[str]] = None
+    tags: Optional[List[str]] = Field(None, max_length=20)
 
 
 class JobResponse(BaseModel):
@@ -182,7 +182,7 @@ async def list_analyses(
     type: Optional[str] = None,
     status: Optional[str] = None,
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(default=100, le=500),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -228,7 +228,7 @@ async def list_analyses(
 @router.get("/analyses/public", response_model=List[AnalysisResponse])
 async def list_public_analyses(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = Query(default=100, le=500),
     db: Session = Depends(get_db)
 ):
     """

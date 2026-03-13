@@ -176,9 +176,9 @@ class NFW_PINN(LensingPINN):
             x_in: Input tensor (3,) = [r, log_mass, concentration]
                 Internally expanded to 5 features: [r_norm, log(1+r_norm), 1/(1+r_norm), log_mass, conc]
         """
-        r = x_in[0]
+        r = jnp.abs(x_in[0])  # radius is non-negative
         log_mass = x_in[1]
-        conc = x_in[2]
+        conc = jnp.clip(x_in[2], 1.0, 100.0)  # physical concentration range
         
         # r_vir [kpc] from M_vir [M_sun] at z=0 Planck 2018 cosmology
         # ρ_crit(z=0) = 3 H0² / (8πG) ≈ 126 M_sun/kpc³  (H0=67.4 km/s/Mpc)
@@ -188,11 +188,11 @@ class NFW_PINN(LensingPINN):
         r_vir = (M_vir_msun / (4.0 * jnp.pi / 3.0 * 200.0 * rho_crit0)) ** (1.0 / 3.0)
         r_s = r_vir / conc
         
-        r_norm = r / r_s
+        r_norm = r / (r_s + 1e-10)
         
         features = jnp.array([
             r_norm,
-            jnp.log(1 + r_norm),
+            jnp.log1p(r_norm),  # log1p is more stable than log(1+x) near x≈0
             1 / (1 + r_norm),
             log_mass,
             conc

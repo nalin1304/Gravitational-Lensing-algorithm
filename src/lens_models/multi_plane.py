@@ -190,20 +190,17 @@ class MultiPlaneLens:
         
         Notes
         -----
-        Implements the recursive multi-plane lens equation:
-            θ_{j+1} = θ_j − (D_{j,j+1} / D_{j+1}) α_j(θ_j)
+        Implements the non-recursive multi-plane lens equation
+        (Schneider, Ehlers & Falco 1992, Eq. 9.1–9.3):
+
+            θ_j = θ₁ − Σ_{i=1}^{j-1} (D_{i,j} / D_j) α_i(θ_i)
 
         and the source-plane mapping:
-            β = θ_N
+
+            β = θ₁ − Σ_{i=1}^{N} (D_{i,s} / D_s) α_i(θ_i)
+
         Ref: Schneider, Ehlers & Falco (1992), Eq. 9.1–9.3
         Ref: McCully et al. (2014) ApJ 836, 141, Eq. 2
-
-        Algorithm:
-        1. Start at image plane with position θ
-        2. For each lens plane i:
-           a. Compute deflection αᵢ at current position θᵢ
-           b. Update position: θᵢ₊₁ = θᵢ − (Dᵢ,ᵢ₊₁/Dᵢₛ) αᵢ
-        3. Final position is source plane coordinate β
         """
         # Handle input shape
         input_shape = theta.shape
@@ -214,51 +211,45 @@ class MultiPlaneLens:
         else:
             single_point = False
         
-        # Track position through planes
-        current_pos = theta.copy()
+        theta_1 = theta.copy()
         
         if return_intermediate:
-            positions = [current_pos.copy()]
+            positions = [theta_1.copy()]
         
-        # Trace through each plane
+        # Store deflections at each plane for the summation
+        deflections = []
+        
         for i, plane in enumerate(self.planes):
-            # Compute position relative to plane center
-            rel_pos = current_pos - np.array(plane.center)
+            # Position at plane i: θ_i = θ₁ − Σ_{j<i} (D_{j,i}/D_i) α_j
+            theta_i = theta_1.copy()
+            for j in range(i):
+                D_ji = self.cosmology.angular_diameter_distance_z1z2(
+                    self.planes[j].redshift, plane.redshift
+                ).value  # Mpc
+                theta_i = theta_i - (D_ji / plane.Dd) * deflections[j]
             
-            # Get deflection angle from this plane
-            # Extract x and y components
-            rel_x = rel_pos[..., 0]
-            rel_y = rel_pos[..., 1]
-            alpha_x, alpha_y = plane.profile.deflection_angle(rel_x, rel_y)
-            alpha_i = np.stack([alpha_x, alpha_y], axis=-1)
-            
-            # Multi-plane recurrence weight for the next plane:
-            #   theta_{i+1} = theta_i - (D_{i,i+1} / D_{i+1}) * alpha_i(theta_i)
-            if i < len(self.planes) - 1:
-                next_plane = self.planes[i + 1]
-                D_ij = self.cosmology.angular_diameter_distance_z1z2(
-                    plane.redshift, next_plane.redshift
-                ).value  # in Mpc
-                weight = D_ij / next_plane.Dd
-            else:
-                # Final mapping to source plane
-                weight = plane.Dds / self.Ds
-            
-            # Update position
-            current_pos = current_pos - weight * alpha_i
+            # Deflection at this plane
+            rel_pos = theta_i - np.array(plane.center)
+            alpha_x, alpha_y = plane.profile.deflection_angle(
+                rel_pos[..., 0], rel_pos[..., 1]
+            )
+            deflections.append(np.stack([alpha_x, alpha_y], axis=-1))
             
             if return_intermediate:
-                positions.append(current_pos.copy())
+                positions.append(theta_i.copy())
         
-        # Source plane position
-        beta = current_pos
+        # Source position: β = θ₁ − Σ_i (D_{i,s}/D_s) α_i(θ_i)
+        beta = theta_1.copy()
+        for i, plane in enumerate(self.planes):
+            beta = beta - (plane.Dds / self.Ds) * deflections[i]
         
         if return_intermediate:
+            # Append source position
+            positions.append(beta.copy() if not single_point else beta.copy())
             return positions
         else:
-            # Return in original shape
             if single_point:
-                return beta[0]  # Return (2,) array
+                return beta[0]
             else:
                 return beta
     

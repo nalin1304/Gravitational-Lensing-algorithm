@@ -140,7 +140,7 @@ class Analysis(Base):
     __tablename__ = "analyses"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     
     # Analysis details
     name = Column(String(255), nullable=False)
@@ -184,8 +184,8 @@ class Job(Base):
     __tablename__ = "jobs"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    analysis_id = Column(Integer, ForeignKey("analyses.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    analysis_id = Column(Integer, ForeignKey("analyses.id"), index=True)
     
     # Job details
     job_type = Column(String(50), nullable=False)  # synthetic, inference, etc.
@@ -230,7 +230,7 @@ class Result(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
-    analysis_id = Column(Integer, ForeignKey("analyses.id"))
+    analysis_id = Column(Integer, ForeignKey("analyses.id"), index=True)
     
     # Result data
     result_type = Column(String(50), nullable=False)  # convergence_map, inference, etc.
@@ -265,9 +265,7 @@ class Notification(Base):
     __tablename__ = "notifications"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
-    # Notification details
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
     type = Column(String(50))  # success, error, warning, info
@@ -296,7 +294,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
     
     # Action details
     action = Column(String(100), nullable=False)  # create, update, delete, login, etc.
