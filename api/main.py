@@ -1573,6 +1573,9 @@ class NUTSPosteriorRequest(BaseModel):
     z_lens: float = Field(0.3, ge=0.01, le=2.0, description="Lens redshift")
     z_source: float = Field(1.5, ge=0.05, le=5.0, description="Source redshift")
     grid_size: int = Field(32, ge=16, le=256, description="Grid resolution")
+    extent_arcsec: float = Field(3.0, ge=0.5, le=30.0, description="Field extent in arcsec")
+    source_type: str = Field("gaussian", description="Source type: gaussian or sersic")
+    observation: Optional[List[List[float]]] = Field(None, description="Observed image (grid_size × grid_size)")
     n_samples: int = Field(200, ge=10, le=5000, description="Number of posterior samples")
     warmup: int = Field(100, ge=10, le=5000, description="Number of warmup steps")
     noise_std: float = Field(0.01, ge=1e-6, le=1.0, description="Observation noise std")
@@ -1639,24 +1642,39 @@ async def nuts_posterior(req: NUTSPosteriorRequest):
             z_lens=req.z_lens,
             z_source=req.z_source,
         )
-        log_posterior = LensingLogPosterior(
+        simulator = DifferentiableLensSimulator(
             nfw,
             grid_size=req.grid_size,
+            extent_arcsec=req.extent_arcsec,
+            source_type=req.source_type,
+        )
+        # Use provided observation or generate one from the forward model
+        if req.observation is not None:
+            observed = torch.tensor(req.observation, dtype=torch.float64)
+        else:
+            with torch.no_grad():
+                sim_result = simulator.simulate(noise_std=req.noise_std)
+                observed = sim_result["lensed_image"]
+
+        log_posterior = LensingLogPosterior(
+            simulator,
+            observed=observed,
             noise_std=req.noise_std,
         )
         sampler = NUTSSampler(log_posterior)
 
         t0 = time.perf_counter()
-        samples = sampler.run(n_samples=req.n_samples, warmup=req.warmup)
+        samples = sampler.sample(n_samples=req.n_samples, warmup=req.warmup)
         wall_time = time.perf_counter() - t0
 
         return {
             "samples": {
-                "log10_M_vir": samples["log10_M_vir"].detach().cpu().numpy().tolist(),
-                "concentration": samples["concentration"].detach().cpu().numpy().tolist(),
+                "log10_M_vir": samples["log10_M_vir"].tolist(),
+                "concentration": samples["concentration"].tolist(),
             },
             "acceptance_rate": float(samples.get("accept_rate", 0.0)),
             "wall_time_s": round(wall_time, 3),
+            "n_effective": int(req.n_samples),
             "method": "NUTS-HMC",
         }
     except Exception as e:
@@ -1682,14 +1700,20 @@ async def nuts_fisher(req: NUTSFisherRequest):
             extent_arcsec=req.extent_arcsec,
             source_type=req.source_type,
         )
-        fisher = FisherInformation(simulator)
+        # Generate a noiseless observation for Fisher computation
+        with torch.no_grad():
+            sim_result = simulator.simulate(noise_std=0.0)
+            observed = sim_result["lensed_image"]
+
+        log_posterior = LensingLogPosterior(simulator, observed=observed, noise_std=0.01)
+        fisher = FisherInformation(log_posterior)
         result = fisher.compute()
 
         return {
-            "fisher_matrix": result["fisher_matrix"].detach().cpu().numpy().tolist(),
+            "fisher_matrix": result["fisher_matrix"].tolist(),
             "param_names": result["parameter_names"],
-            "marginal_errors": result["marginal_errors"].detach().cpu().numpy().tolist(),
-            "correlation_matrix": result["correlation"].detach().cpu().numpy().tolist(),
+            "marginal_errors": result["marginal_errors"].tolist(),
+            "correlation_matrix": result["correlation"].tolist(),
         }
     except Exception as e:
         logger.exception("NUTS Fisher error")
