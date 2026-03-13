@@ -6,7 +6,7 @@ analytic solutions, observational data, and established lensing codes.
 
 Author: Gravitational Lensing Research Platform
 Version: 2.0
-Date: Phase 15
+Date: 2025
 """
 
 import numpy as np

@@ -3,7 +3,7 @@ Authentication routes for FastAPI
 
 Provides login, registration, token refresh, and user management endpoints
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 SECURITY: P1 fixes applied November 2025 (rate limiting)
 """
@@ -52,7 +52,7 @@ from database import (
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
-# P1 SECURITY FIX: Rate limiter to prevent brute-force attacks
+# Rate limiter to prevent brute-force attacks
 limiter = Limiter(key_func=get_remote_address)
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -214,7 +214,7 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")  # P1 SECURITY FIX: Limit login attempts to prevent brute-force
+@limiter.limit("5/minute")  # Limit login attempts to prevent brute-force
 async def login(
     request: Request,  # Required for rate limiting
     db: Session = Depends(get_db)

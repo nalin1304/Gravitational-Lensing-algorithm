@@ -3,7 +3,7 @@ Secure logging utilities with PII redaction
 
 Provides logging functions that automatically redact sensitive information.
 
-Author: P2 Security Remediation
+Author: Computational Imaging Research Group
 Date: November 2025
 """
 

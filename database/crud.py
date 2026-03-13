@@ -3,7 +3,7 @@ CRUD operations for database models
 
 Provides Create, Read, Update, Delete operations for all models
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

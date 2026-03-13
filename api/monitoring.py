@@ -4,7 +4,7 @@ API Monitoring and Metrics Collection
 Provides Prometheus-compatible metrics for monitoring API performance,
 security events, and system health.
 
-Author: P2 Infrastructure Improvements
+Author: Computational Imaging Research Group
 Date: November 2025
 """
 

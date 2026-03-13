@@ -8,7 +8,7 @@ Models:
 - Result: Stored analysis results
 - ApiKey: API key management
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

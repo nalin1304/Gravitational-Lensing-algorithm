@@ -9,8 +9,6 @@ This module provides physics-informed neural networks for:
 Hardware-Agnostic Backend: Detects JAX and reports unavailable otherwise.
 All sub-modules are guarded against missing dependencies.
 
-Phase 7: GPU acceleration and performance optimization
-Phase 9: Transfer learning, domain adaptation, Bayesian UQ
 """
 
 from typing import Any
@@ -106,7 +104,7 @@ except Exception:
     PINNLogger = None  # type: ignore
 
 # --------------------------------------------------------------------------
-# Performance utilities (Phase 7)
+# Performance utilities
 # --------------------------------------------------------------------------
 try:
     from .performance import (
@@ -123,7 +121,7 @@ except ImportError:
     cached_convergence = clear_cache = None
 
 # --------------------------------------------------------------------------
-# Transfer Learning (Phase 9)
+# Transfer Learning
 # --------------------------------------------------------------------------
 try:
     from .transfer_learning import (
@@ -167,7 +165,7 @@ __all__ = [
     'get_training_transforms',
     # Logging
     'PINNLogger',
-    # Performance (Phase 7)
+    # Performance
     'get_backend',
     'set_backend',
     'GPU_AVAILABLE',
@@ -177,7 +175,7 @@ __all__ = [
     'compare_cpu_gpu_performance',
     'cached_convergence',
     'clear_cache',
-    # Transfer Learning (Phase 9)
+    # Transfer Learning
     'TransferConfig',
     'DomainAdaptationNetwork',
     'MMDLoss',

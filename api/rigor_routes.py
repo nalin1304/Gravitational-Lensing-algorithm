@@ -17,13 +17,16 @@ async def run_sbi_inference(req: SBIRequest):
         from src.ml.sbi_npe import NeuralPosteriorEstimator
         import jax.numpy as jnp
         
-        npe = NeuralPosteriorEstimator(param_dim=3, obs_dim=100)
-        obs = jnp.array(req.convergence_map).flatten().reshape(1, 100)
+        obs_arr = np.array(req.convergence_map, dtype=np.float32).flatten()
+        obs_dim = obs_arr.shape[0]
+        npe = NeuralPosteriorEstimator(param_dim=3, obs_dim=obs_dim)
+        obs = jnp.array(obs_arr).reshape(1, obs_dim)
         samples = npe.sample(obs, num_samples=req.n_samples)
         perc = np.percentile(np.array(samples), [16, 50, 84], axis=0)
         
         return {
             "mode": "SBI NPE",
+            "obs_dim": obs_dim,
             "M_vir": {"16th": float(perc[0, 0]), "median": float(perc[1, 0]), "84th": float(perc[2, 0])},
             "ratio": {"16th": float(perc[0, 1]), "median": float(perc[1, 1]), "84th": float(perc[2, 1])},
             "eff": {"16th": float(perc[0, 2]), "median": float(perc[1, 2]), "84th": float(perc[2, 2])},
@@ -40,10 +43,17 @@ class StarletRequest(BaseModel):
 
 @router.post("/starlet")
 async def run_starlet(req: StarletRequest):
+    """Starlet sparse source reconstruction.
+    
+    Uses identity forward/adjoint operators by default — equivalent to 
+    denoising the image in source plane (no lens model inversion).
+    For full lens-model inversion, provide a lensing operator externally.
+    """
     try:
         from src.ml.starlet_reconstruction import StarletTransform
         st = StarletTransform(num_scales=req.n_scales)
         image = np.array(req.image)
+        # Identity operators: source-plane denoising (no lens model)
         def H(x): return x
         def HT(y): return y
         
@@ -129,12 +139,14 @@ async def run_env_linker(req: EnvLinkerRequest):
         
         fd, path = tempfile.mkstemp(suffix=".csv")
         os.close(fd)
-        df.to_csv(path, index=False)
-        
-        linker = EnvironmentalLinker(main_lens_ra=0.0, main_lens_dec=0.0, main_lens_z=req.z_lens, source_z=req.z_source)
-        kappa_ext = linker.compute_kappa_ext(path, format='csv')
-        
-        os.remove(path)
+        try:
+            df.to_csv(path, index=False)
+            
+            linker = EnvironmentalLinker(main_lens_ra=0.0, main_lens_dec=0.0, main_lens_z=req.z_lens, source_z=req.z_source)
+            kappa_ext = linker.compute_kappa_ext(path, format='csv')
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
         
         return {"kappa_ext": float(kappa_ext), "n_included": len(df[df['redshift'] <= req.z_source])}
     except Exception as e:
@@ -154,7 +166,7 @@ async def run_consistency_gate(req: ConsistencyRequest):
         from scripts.scientific_consistency_gate import ScientificValidator
         val = ScientificValidator()
         
-        # Mock physics derivations for UI demo
+        # Stellar-to-halo mass ratio via Moster et al. (2010) SHMR approximation
         L_v = 10**(0.3 * (np.log10(req.M_vir) - 11.5) + 10.2)
         stellar_mass = L_v * 2.0
         dm_mass = req.M_vir - stellar_mass

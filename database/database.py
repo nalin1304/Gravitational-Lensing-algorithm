@@ -3,7 +3,7 @@ Database connection and session management
 
 Provides database engine, session factory, and dependency injection for FastAPI
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

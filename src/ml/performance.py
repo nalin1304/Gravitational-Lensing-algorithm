@@ -1,5 +1,5 @@
 """
-Performance Optimization Module for Phase 7
+Performance Optimization Module
 
 This module provides GPU acceleration, vectorization, and performance utilities
 for the gravitational lensing toolkit.

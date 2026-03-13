@@ -1,5 +1,5 @@
 """
-Real Data Integration Module (Phase 8)
+Real Data Integration Module
 
 This module provides tools for loading and processing real observational data
 from telescopes like HST (Hubble Space Telescope) and JWST (James Webb Space Telescope).

@@ -7,7 +7,7 @@ and benchmark them against analytic solutions.
 Usage:
     python src/ml/train_pinn.py --model nfw --epochs 5000 --benchmark
 
-Author: Phase 14 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

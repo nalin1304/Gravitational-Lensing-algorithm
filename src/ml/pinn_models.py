@@ -4,7 +4,7 @@ Physics-Informed Neural Networks (PINNs) for Gravitational Lensing
 Implements PINNs that learn to solve the lensing equation while respecting
 physical constraints (Poisson equation, symmetries, boundary conditions).
 
-Refactored to JAX/Equinox for Hardware Acceleration (Phase 29).
+Refactored to JAX/Equinox for hardware acceleration.
 """
 
 try:

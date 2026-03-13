@@ -4,7 +4,7 @@ Training Data Generation for Physics-Informed Neural Network
 This module generates synthetic gravitational lensing images with known parameters
 for training the PINN model.
 
-Phase 7 Updates:
+Updates:
 - Vectorized convergence map generation (10-100x speedup)
 - Optional GPU acceleration via CuPy
 - Fixed NumPy deprecation warnings
@@ -35,7 +35,7 @@ def generate_convergence_map_vectorized(
     extent: float = 3.0
 ) -> np.ndarray:
     """
-    Generate convergence map for a lens model (VECTORIZED - Phase 7).
+    Generate convergence map for a lens model (vectorized).
     
     This is a fully vectorized implementation that computes all grid points
     at once, providing 10-100x speedup over the old nested loop version.
@@ -296,7 +296,7 @@ def generate_single_sample(
     else:
         raise ValueError(f"Unknown DM type: {dm_type}")
     
-    # Generate convergence map (VECTORIZED - Phase 7)
+    # Generate convergence map (vectorized)
     extent = np.random.uniform(2.0, 4.0)  # Vary field of view
     image = generate_convergence_map_vectorized(lens_model, grid_size, extent)
     

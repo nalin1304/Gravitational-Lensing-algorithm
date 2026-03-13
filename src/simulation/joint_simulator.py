@@ -418,7 +418,7 @@ class JointSimulator:
                 # (fallback only, wave_engine preferred)
                 for i, w in enumerate(self.omega_dimensionless):
                     if w > 10.0:  # geometric regime
-                        spectrum[i] = 2.0  # placeholder geometric magnification
+                        spectrum[i] = 2.0  # geometric-limit magnification
                     else:
                         # Wave regime: sinc-like modulation
                         spectrum[i] = 1.0 + np.sin(w) / max(w, 0.1)

@@ -3,7 +3,7 @@ Analysis routes for FastAPI
 
 Provides endpoints for managing analyses, jobs, and results
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 
@@ -250,7 +250,7 @@ async def get_analysis_by_id(
     Get analysis by ID
     
     Returns detailed information about a specific analysis.
-    FIXED P0 SECURITY: Now properly checks ownership before returning data.
+    Checks ownership before returning data.
     """
     analysis = get_analysis(db, analysis_id)
     if not analysis:
@@ -259,7 +259,7 @@ async def get_analysis_by_id(
             detail="Analysis not found"
         )
     
-    # P0 FIX: Check ownership or public access
+    # Check ownership or public access
     # This prevents IDOR vulnerability where users could access other users' private analyses
     if analysis.user_id != current_user.id and not analysis.is_public:
         raise HTTPException(

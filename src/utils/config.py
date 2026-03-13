@@ -1,5 +1,5 @@
 """
-Configuration Utilities for Gravitational Lensing (Phase 33)
+Configuration Utilities for Gravitational Lensing
 
 Replaces legacy loose YAML configuration dicts with a strictly-typed
 Pydantic "Caskade-style" validation schema pipeline. This guarantees

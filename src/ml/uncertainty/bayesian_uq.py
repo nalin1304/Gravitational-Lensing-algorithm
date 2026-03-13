@@ -11,7 +11,7 @@ Features:
 - Uncertainty calibration
 - Calibration curve visualization
 
-Author: Phase 15 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

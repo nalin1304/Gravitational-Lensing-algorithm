@@ -1,5 +1,5 @@
 """
-Transfer Learning and Domain Adaptation for Gravitational Lensing (Phase 9)
+Transfer Learning and Domain Adaptation for Gravitational Lensing
 
 This module implements advanced ML techniques to bridge the gap between
 synthetic simulations and real telescope observations:

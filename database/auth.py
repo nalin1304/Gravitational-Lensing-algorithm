@@ -3,7 +3,7 @@ Authentication and authorization utilities
 
 Provides JWT token handling, password hashing, and user authentication
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 
@@ -29,7 +29,7 @@ from .models import User, ApiKey, UserRole
 # JWT Configuration
 SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
 ALGORITHM = "HS256"
-# P0 SECURITY FIX: Reduced from 30 days (43200 minutes) to 15 minutes
+# Token expiry: 15 minutes (security best practice)
 # This limits the window of opportunity for token theft/misuse
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7

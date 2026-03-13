@@ -1,5 +1,5 @@
 """
-Zenodo API Integration (Phase 33)
+Zenodo API Integration
 Handles automated DOI minting for reproductive experimental artifacts, 
 securing structural publication traceability for IEEE evaluations.
 """

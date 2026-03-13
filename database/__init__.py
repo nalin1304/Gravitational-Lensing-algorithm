@@ -3,7 +3,7 @@ Database package for Gravitational Lensing Analysis Platform
 
 Provides database models, authentication, CRUD operations, and connection management
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

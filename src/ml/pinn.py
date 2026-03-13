@@ -1,7 +1,7 @@
 """
 Physics-Informed Neural Network for Gravitational Lens Parameter Inference
 
-Refactored to JAX/Equinox for Hardware Acceleration (Phase 29).
+Refactored to JAX/Equinox for hardware acceleration.
 """
 
 try:

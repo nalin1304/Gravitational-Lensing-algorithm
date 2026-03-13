@@ -8,8 +8,8 @@ This module provides a RESTful API for:
 - Computing uncertainty quantification
 - Health checks and monitoring
 
-Author: Phase 11 Implementation
-Date: October 2025
+Author: Computational Imaging Research Group
+Date: 2025
 """
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Depends
@@ -40,7 +40,7 @@ from src.utils.common import (
     compute_classification_entropy
 )
 from src.ml.generate_dataset import generate_synthetic_convergence
-# FIX P0 SECURITY: Import from database.auth for proper JWT verification with user database
+# Import from database.auth for proper JWT verification with user database
 from database.auth import get_current_user, get_current_active_user
 from database import User
 
@@ -51,15 +51,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import Phase 12 database and routes
+# Import database and routes
 try:
     from database import init_db, check_db_connection, get_db_info, get_db, Session
     from api.auth_routes import router as auth_router
     from api.analysis_routes import router as analysis_router
-    PHASE_12_ENABLED = True
+    DB_ENABLED = True
 except ImportError as e:
-    logger.warning(f"Phase 12 features not available: {e}")
-    PHASE_12_ENABLED = False
+    logger.warning(f"Database features not available: {e}")
+    DB_ENABLED = False
     # Minimal compatibility type for endpoint annotations when DB layer is unavailable.
     class Session:  # type: ignore
         pass
@@ -71,14 +71,14 @@ async def app_lifespan(_: FastAPI):
     logger.info("Starting Gravitational Lensing API...")
     logger.info(f"GPU Available: {torch.cuda.is_available()}")
 
-    # Initialize database if Phase 12 enabled
-    if PHASE_12_ENABLED:
+    # Initialize database if available
+    if DB_ENABLED:
         logger.info("Initializing database...")
         try:
             init_db()
             db_info = get_db_info()
             logger.info(f"Database connected: {db_info['type']} at {db_info['host']}")
-            logger.info("Phase 12 features: Authentication, User Management, Database Persistence")
+            logger.info("Database features: Authentication, User Management, Persistence")
         except Exception as e:
             logger.error(f"Database initialization failed: {e}")
             logger.warning("Continuing without database features")
@@ -95,7 +95,7 @@ async def app_lifespan(_: FastAPI):
 app = FastAPI(
     title="Gravitational Lensing API",
     description="REST API for gravitational lensing analysis using Physics-Informed Neural Networks",
-    version="2.0.0",  # Phase 12
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=app_lifespan,
@@ -107,7 +107,7 @@ NEXT_UI_DIR = PROJECT_ROOT / "web_ui"
 if NEXT_UI_DIR.exists():
     app.mount("/ui-static", StaticFiles(directory=str(NEXT_UI_DIR)), name="ui-static")
 
-# P1 SECURITY FIX: Initialize rate limiter
+# Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 
@@ -132,11 +132,11 @@ async def rate_limit_exception_handler(request, exc):
 
 app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
-# Include Phase 12 routers
-if PHASE_12_ENABLED:
+# Include database routers
+if DB_ENABLED:
     app.include_router(auth_router)
     app.include_router(analysis_router)
-    logger.info("Phase 12 features enabled: Authentication and Database")
+    logger.info("Database features enabled: Authentication and Persistence")
 
 # Include Next-Gen Rigor
 try:
@@ -550,8 +550,8 @@ async def health_check():
         "gpu_available": torch.cuda.is_available()
     }
     
-    # Add database status if Phase 12 enabled
-    if PHASE_12_ENABLED:
+    # Add database status if available
+    if DB_ENABLED:
         try:
             db_connected = check_db_connection()
             health_data["database_connected"] = db_connected
@@ -1305,7 +1305,7 @@ async def survey_epsf(req: EPSFRequest):
 
 
 def _estimate_fwhm(kernel: np.ndarray) -> float:
-    """Estimate FWHM of a 2-D PSF using the encircled-energy method."""
+    """Estimate FWHM of a 2-D PSF using the half-maximum radius method."""
     peak = kernel.max()
     half = peak / 2
     cy, cx = np.unravel_index(kernel.argmax(), kernel.shape)
@@ -1437,7 +1437,7 @@ async def survey_covariance(req: CovarianceRequest):
             build_drizzle_covariance, apply_covariance_whitening,
             effective_noise_correlation_length,
         )
-        rng = np.random.RandomState(42)
+        rng = np.random.default_rng(42)
         rms_map = np.full((req.image_size, req.image_size), req.sigma)
         cov = build_drizzle_covariance(rms_map, req.pixfrac, req.scale, req.kernel)
         eigvals = np.linalg.eigvalsh(cov)
