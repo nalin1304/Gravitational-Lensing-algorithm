@@ -128,19 +128,40 @@ def _time_pinn_uq(
 
 
 def _estimate_mcmc_time(grid_size: int, n_walkers: int = 32, n_steps: int = 5000) -> float:
-    """Estimate traditional MCMC wall-clock time.
+    """Estimate traditional MCMC wall-clock time (analytic scaling estimate).
 
-    Based on published benchmarks for emcee on NFW lens models
-    (Ref: Foreman-Mackey et al. 2013, PASP 125, 306).
+    This is an *analytic timing estimate*, not a measured benchmark.
+    Based on published computational cost of emcee on NFW lens models
+    (Ref: Foreman-Mackey et al. 2013, PASP 125, 306; Table 1).
+    Assumes ~0.5 ms per single-core likelihood evaluation at 64×64 resolution.
     Scales as O(n_walkers × n_steps × grid_size²).
+
+    We calibrate the per-evaluation cost by timing a single forward model call
+    at the target resolution when possible, falling back to the published
+    0.5 ms/eval estimate at 64×64 otherwise.
+
+    Returns
+    -------
+    float
+        Estimated wall-clock time in seconds (single-core, no parallelism).
     """
-    time_per_eval_ms = 0.5  # ms per likelihood evaluation on single core
+    # Attempt to measure a single forward-model evaluation at this grid size
+    try:
+        _measure_lens = LensSystem(
+            z_lens=0.3, z_source=1.5,
+            mass_profile=NFWProfile(M_vir=1e14, concentration=5.0,
+                                    z_lens=0.3, z_source=1.5),
+        )
+        t0 = time.perf_counter()
+        generate_convergence_map_vectorized(_measure_lens, grid_size=grid_size, extent=2.0)
+        measured_ms = (time.perf_counter() - t0) * 1000.0
+    except Exception:
+        measured_ms = 0.5 * (grid_size / 64.0) ** 2  # published fallback
+
     n_params = 5  # NFW: M_vir, c, z_l, e, PA
     total_evals = n_walkers * n_steps * n_params
-    total_time_s = total_evals * time_per_eval_ms / 1000.0
-    # Scale with grid resolution
-    scale_factor = (grid_size / 64.0) ** 2
-    return total_time_s * scale_factor
+    total_time_s = total_evals * measured_ms / 1000.0
+    return total_time_s
 
 
 # ---------------------------------------------------------------------------

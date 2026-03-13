@@ -789,7 +789,7 @@ class ScientificValidator:
                 alpha = coeffs[0]
                 
                 return float(alpha)
-            except:
+            except Exception:
                 return 0.0
         else:
             # Direct power law fit (less stable)
@@ -804,7 +804,7 @@ class ScientificValidator:
                 )
                 
                 return float(popt[1])
-            except:
+            except Exception:
                 return 0.0
     
     # ========================================================================

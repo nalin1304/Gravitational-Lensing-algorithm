@@ -284,7 +284,7 @@ def check_component_health(component: str, check_func: Callable) -> bool:
             try:
                 db.execute("SELECT 1")
                 return True
-            except:
+            except Exception:
                 return False
         
         check_component_health("database", check_db)
