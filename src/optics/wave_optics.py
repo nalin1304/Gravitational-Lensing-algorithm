@@ -35,10 +35,11 @@ class WaveOpticsEngine:
     the finite wavelength of light, which can produce interference patterns
     and differs from geometric optics predictions.
     
-    The key equation is:
-    F(θ) = exp(i × k × Φ(θ))
-    
-    where Φ(θ) is the Fermat potential (time delay surface) and k = 2π/λ.
+    The key equation is (Nakamura & Deguchi 1999, Eq. 4.2):
+    F(ω) = (ω / 2πi) ∫ d²θ exp[iω τ(θ,β)]
+
+    where τ(θ,β) is the Fermat potential (time delay surface) and
+    ω = 2πc/λ is the radiation angular frequency [rad/s].
     
     Parameters
     ----------
@@ -85,17 +86,15 @@ class WaveOpticsEngine:
         1. Compute Fermat potential on lens plane grid:
            Φ(θ) = 0.5|θ − β|² − ψ(θ)    — Eq. 4.14 in Schneider (1992)
            where ψ is the lensing potential from lens_model
-           
-        2. Calculate wave phase:
-           φ(θ) = (2π/λ) × Φ(θ) × (geometric scale factor)
-           
-        3. Complex amplification:
-           F(θ) = exp(i × φ(θ))
-           
-        4. Propagate to observer using FFT:
-           F_obs = FFT2D(F(θ))
-           
-        5. Compute intensity: |F_obs|²
+
+        2. Calculate wave phase ωτ(θ,β):
+           wave_phase = (2πc/λ) × Δt(θ)  — dimensionless, equals ω×τ(θ,β)
+
+        3. Evaluate N&D (1999) Eq. 4.2 scalar integral:
+           F(ω) = (ω/2πi) ∫ d²θ exp[iωτ(θ,β)]
+           where ω = 2πc/λ is the radiation angular frequency.
+
+        4. Compute scalar magnification: |F(ω)|²
         
         Parameters
         ----------
@@ -116,8 +115,9 @@ class WaveOpticsEngine:
         -------
         result : dict
             Dictionary containing:
-            - 'amplitude_map': 2D array of intensity |F|²
-            - 'phase_map': 2D array of phase angle(F) in radians
+            - 'F_omega': complex amplification factor F(ω) [scalar]
+            - 'magnification_wave': |F(ω)|² scalar magnification
+            - 'wave_phase': 2D array of phase ωτ(θ,β) [radians]
             - 'grid_x': 1D array of x-coordinates in arcsec
             - 'grid_y': 1D array of y-coordinates in arcsec
             - 'wavelength': wavelength used in nm
@@ -190,30 +190,24 @@ class WaveOpticsEngine:
         # φ = 2π × c × Δt / λ
         wave_phase = 2.0 * jnp.pi * c_light * time_delay / wavelength_m
         
-        # Step 5: Complex amplification field
-        F_lens = jnp.exp(1j * wave_phase)
-        
-        # Step 6: Propagate to observer plane using 2D FFT
-        # The FFT simulates Fresnel diffraction
-        F_obs = jnp.fft.fft2(F_lens)
-        F_obs = jnp.fft.fftshift(F_obs)  # Center zero frequency
-        
-        # Step 7: Compute observables
-        amplitude_map = jnp.abs(F_obs)**2
-        phase_map = np.angle(F_obs)
-        
-        # Normalize amplitude map (total flux should be conserved)
-        amplitude_map = amplitude_map / jnp.sum(amplitude_map) * grid_size**2
-        
+        # Step 5 → 6: N&D (1999) Eq. 4.2: F(ω) = (ω/2πi) ∫ d²θ exp[iωτ(θ,β)]
+        # wave_phase = ωτ(θ,β) is already computed above.
+        dtheta_rad = (2.0 * grid_extent / grid_size) * arcsec_to_rad  # rad/pixel
+        d2theta = dtheta_rad**2  # solid angle per pixel [rad²]
+        omega_rad = 2.0 * jnp.pi * c_light / wavelength_m  # radiation angular frequency [rad/s]
+        integrand = jnp.exp(1j * wave_phase)  # per-pixel complex phase field
+        F_omega = (omega_rad / (2.0 * jnp.pi * 1j)) * jnp.sum(integrand) * d2theta  # scalar complex
+        magnification_wave = float(jnp.abs(F_omega)**2)  # scalar |F(ω)|²
+
         result = {
-            'amplitude_map': amplitude_map,
-            'phase_map': phase_map,
-            'grid_x': x,
-            'grid_y': y,
+            'F_omega': complex(F_omega),
+            'magnification_wave': magnification_wave,
+            'wave_phase': np.array(wave_phase),
+            'grid_x': np.array(x),
+            'grid_y': np.array(y),
             'wavelength': wavelength,
-            'fermat_potential': fermat_potential,
-            'wave_phase': wave_phase,
-            'grid_extent': grid_extent
+            'fermat_potential': np.array(fermat_potential),
+            'grid_extent': grid_extent,
         }
         
         # Step 8: Optionally compute geometric optics for comparison
@@ -324,7 +318,9 @@ class WaveOpticsEngine:
         if 'geometric_comparison' not in wave_result:
             raise ValueError("Wave result must include geometric comparison")
         
-        amplitude_map = wave_result['amplitude_map']
+        # Derive 2D interference field from wave phase for spatial comparison
+        wave_phase_2d = np.asarray(wave_result['wave_phase'])
+        amplitude_map = (1.0 + np.cos(wave_phase_2d)) * 0.5  # normalized to [0, 1]
         convergence_map = wave_result['geometric_comparison']['convergence_map']
         
         # Normalize both maps for comparison
@@ -381,45 +377,46 @@ class WaveOpticsEngine:
             fontsize=16, color='white', y=0.98
         )
         
-        amplitude_map = wave_result['amplitude_map']
-        phase_map = wave_result['phase_map']
+        wave_phase_2d = np.asarray(wave_result['wave_phase'])
+        interference_map = (1.0 + np.cos(wave_phase_2d)) * 0.5  # [0,1] normalized
         fermat_potential = wave_result['fermat_potential']
         extent = wave_result['grid_extent']
         extent_plot = [-extent, extent, -extent, extent]
         
-        # 1. Amplitude (intensity) map
+        # 1. Interference map: (1+cos(ωτ))/2 — constructive/destructive regions
         ax1 = axes[0, 0]
         im1 = ax1.imshow(
-            amplitude_map,
+            interference_map,
             extent=extent_plot,
             origin='lower',
-            cmap='hot',
-            aspect='auto'
+            cmap='RdBu_r',
+            aspect='auto',
+            vmin=0, vmax=1
         )
         ax1.set_xlabel('θ_x (arcsec)', color='white')
         ax1.set_ylabel('θ_y (arcsec)', color='white')
-        ax1.set_title('Intensity |F|²', color='white', fontsize=12)
+        ax1.set_title('Interference Pattern (1+cos(ωτ))/2', color='white', fontsize=12)
         ax1.tick_params(colors='white')
         ax1.set_facecolor('#0a0a0a')
-        plt.colorbar(im1, ax=ax1, label='Normalized Intensity')
+        plt.colorbar(im1, ax=ax1, label='Normalized Field')
         
-        # 2. Phase map
+        # 2. Wave phase ωτ(θ,β) map (mod 2π for display)
         ax2 = axes[0, 1]
         im2 = ax2.imshow(
-            phase_map,
+            np.mod(wave_phase_2d, 2.0 * np.pi),
             extent=extent_plot,
             origin='lower',
             cmap='twilight',
             aspect='auto',
-            vmin=-jnp.pi,
-            vmax=jnp.pi
+            vmin=0,
+            vmax=2.0 * np.pi
         )
         ax2.set_xlabel('θ_x (arcsec)', color='white')
         ax2.set_ylabel('θ_y (arcsec)', color='white')
-        ax2.set_title('Phase ∠F (radians)', color='white', fontsize=12)
+        ax2.set_title('Wave Phase ωτ(θ,β) mod 2π', color='white', fontsize=12)
         ax2.tick_params(colors='white')
         ax2.set_facecolor('#0a0a0a')
-        plt.colorbar(im2, ax=ax2, label='Phase (rad)')
+        plt.colorbar(im2, ax=ax2, label='Phase mod 2π (rad)')
         
         # 3. Fermat potential
         ax3 = axes[1, 0]
@@ -439,8 +436,8 @@ class WaveOpticsEngine:
         
         # 4. Radial profile showing fringes
         ax4 = axes[1, 1]
-        y_center = amplitude_map.shape[0] // 2
-        radial_profile = amplitude_map[y_center, :]
+        y_center = interference_map.shape[0] // 2
+        radial_profile = interference_map[y_center, :]
         x_coords = wave_result['grid_x']
         
         ax4.plot(x_coords, radial_profile, color='#00ff41', linewidth=2)
@@ -453,7 +450,7 @@ class WaveOpticsEngine:
         
         # Detect and annotate fringes
         fringe_info = self.detect_fringes(
-            amplitude_map, x_coords, wave_result['grid_y']
+            interference_map, x_coords, wave_result['grid_y']
         )
         
         textstr = (
@@ -560,22 +557,23 @@ def plot_wave_vs_geometric(
             markeredgecolor='white', markeredgewidth=1.5, label='Source')
     ax1.legend(loc='upper right', fontsize=8)
     
-    # 2. Wave optics (amplitude map)
+    # 2. Wave optics: interference pattern from N&D (1999) phase
     ax2 = axes[0, 1]
-    wave_map = wave_result['amplitude_map']
+    wave_map = (1.0 + np.cos(np.asarray(wave_result['wave_phase']))) * 0.5
     im2 = ax2.imshow(
         wave_map,
         extent=extent_plot,
         origin='lower',
-        cmap='hot',
-        aspect='auto'
+        cmap='RdBu_r',
+        aspect='auto',
+        vmin=0, vmax=1
     )
     ax2.set_xlabel('θ_x (arcsec)', color='white')
     ax2.set_ylabel('θ_y (arcsec)', color='white')
-    ax2.set_title('Wave Optics (Interference)', color='white', fontsize=12)
+    ax2.set_title('Wave Optics (N&D 1999 Phase)', color='white', fontsize=12)
     ax2.tick_params(colors='white')
     ax2.set_facecolor('#0a0a0a')
-    plt.colorbar(im2, ax=ax2, label='Intensity |F|²')
+    plt.colorbar(im2, ax=ax2, label='(1+cos(ωτ))/2')
     
     # 3. Fractional difference map
     ax3 = axes[1, 0]

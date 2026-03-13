@@ -192,19 +192,15 @@ class NestedSampler:
             if log_remaining < log_evidence + np.log(tol):
                 break
 
-        # Add surviving live points using Skilling (2004) order-statistic volumes.
-        # Sort ascending by likelihood so the lowest-L point gets the largest
-        # remaining volume fraction.
-        # Ref: Skilling (2004), §4 — terminal live-point volume fractions.
+        # Add surviving live points using equal-weight volume fractions.
+        # Each terminal live point gets an equal share of the remaining prior volume
+        # X_remaining / N, which is the simplest unbiased estimator for terminal
+        # live-point contribution.
+        # Ref: Skilling (2004), §4; Feroz et al. (2009) MultiNest, Eq. (10).
         sorted_idx = np.argsort(live_logl)
         n = self.n_live
-        for rank, i in enumerate(sorted_idx):
-            # Expected remaining volume fraction for rank-th point out of n live points
-            if rank < n - 1:
-                frac = 1.0 / (n - rank)
-                log_dV = log_vol + np.log(frac) - np.log(n - rank + 1)
-            else:
-                log_dV = log_vol
+        log_dV = log_vol - np.log(n)   # equal-weight: X_remaining / N
+        for i in sorted_idx:
             dead_points.append(live_theta[i].copy())
             dead_logl.append(live_logl[i])
             dead_logvol.append(log_dV)
@@ -306,12 +302,16 @@ def model_selection_demo() -> Dict:
     rs = 0.5  # Scale radius
     kappa_s = 0.3  # Characteristic convergence
     x = r_data / rs
+    # Use clipped arguments inside each branch so that np.where's eager
+    # evaluation of both branches never computes sqrt of a negative number.
+    x_lt1 = np.clip(x, 1e-6, 1.0 - 1e-6)
+    x_gt1 = np.clip(x, 1.0 + 1e-6, None)
     kappa_nfw_true = np.where(
-        x < 1,
-        kappa_s * 2 / (x**2 - 1) * (1 - np.arccosh(1/x) / np.sqrt(1 - x**2)),
+        x < 1.0 - 1e-6,
+        kappa_s * 2 / (x_lt1**2 - 1) * (1 - np.arccosh(1/x_lt1) / np.sqrt(1 - x_lt1**2)),
         np.where(
-            x > 1,
-            kappa_s * 2 / (x**2 - 1) * (1 - np.arccos(1/x) / np.sqrt(x**2 - 1)),
+            x > 1.0 + 1e-6,
+            kappa_s * 2 / (x_gt1**2 - 1) * (1 - np.arccos(1/x_gt1) / np.sqrt(x_gt1**2 - 1)),
             kappa_s * 2.0 / 3.0
         )
     )
@@ -323,13 +323,17 @@ def model_selection_demo() -> Dict:
         ks, r_s = params
         if ks <= 0 or r_s <= 0:
             return -1e10
+        # Use clipped arguments inside each branch so that np.where's eager
+        # evaluation of both branches never computes sqrt of a negative number.
         x = r_data / r_s
+        x_lt1 = np.clip(x, 1e-6, 1.0 - 1e-6)
+        x_gt1 = np.clip(x, 1.0 + 1e-6, None)
         kappa = np.where(
-            x < 1 - 1e-6,
-            ks * 2 / (x**2 - 1) * (1 - np.arccosh(1/np.clip(x, 1e-6, 1-1e-6)) / np.sqrt(1 - x**2)),
+            x < 1.0 - 1e-6,
+            ks * 2 / (x_lt1**2 - 1) * (1 - np.arccosh(1/x_lt1) / np.sqrt(1 - x_lt1**2)),
             np.where(
-                x > 1 + 1e-6,
-                ks * 2 / (x**2 - 1) * (1 - np.arccos(1/np.clip(x, 1+1e-6, 100)) / np.sqrt(x**2 - 1)),
+                x > 1.0 + 1e-6,
+                ks * 2 / (x_gt1**2 - 1) * (1 - np.arccos(1/x_gt1) / np.sqrt(x_gt1**2 - 1)),
                 ks * 2.0 / 3.0
             )
         )

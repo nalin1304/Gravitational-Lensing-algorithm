@@ -187,7 +187,7 @@ export function render() {
           </button>
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
             <p class="section-desc" style="font-size:0.75rem;color:var(--text-muted)">
-              ⚠ The phrase is processed locally — it is never sent to the server or stored.
+              ⚠ The phrase is sent to the server to compute the HMAC offset and is not stored server-side.
               Write it down before closing this tab.
             </p>
           </div>
@@ -520,11 +520,12 @@ export async function init() {
         try {
             const resp = await P.api("/api/v1/survey/blinding/apply", {
                 method: "POST",
-                body: { phrase, h0: h0Raw, omega_m: 0.315, sigma8: 0.811 },
+                body: { phrase, h0: h0Raw, dtd, omega_m: 0.315, sigma8: 0.811 },
             });
             if (resp) {
                 const h0Blind = resp.h0_blind ?? h0Raw;
-                _blindState = { h0Blind, dtdBlind: dtd, phrase };
+                const dtdBlind = resp.dtd_blind ?? dtd;
+                _blindState = { h0Blind, dtdBlind, phrase };
                 document.getElementById("blState").innerHTML = `
       <div class="metric-row"><span class="metric-key">H₀ (true)</span><span class="metric-val">${h0Raw.toFixed(3)} km/s/Mpc</span></div>
       <div class="metric-row"><span class="metric-key">H₀ (blinded)</span><span class="metric-val" style="color:var(--warning)">${h0Blind.toFixed(3)} km/s/Mpc</span></div>
@@ -539,7 +540,11 @@ export async function init() {
     `;
                 document.getElementById("blStateCard").style.display = "";
                 document.getElementById("blH0Blind").value = h0Blind.toFixed(4);
-                document.getElementById("blDtdBlind").value = dtd.toFixed(2);
+                document.getElementById("blDtdBlind").value = dtdBlind.toFixed(2);
+                if (resp.dtd_blind !== undefined) {
+                    const dtdEl = document.getElementById('blDtdBlind') || document.getElementById('blindDtdResult');
+                    if (dtdEl) dtdEl.value = resp.dtd_blind.toFixed(2);
+                }
                 P.toast("Blinding applied via server HMAC-SHA256", "success");
             }
         } catch (e) {

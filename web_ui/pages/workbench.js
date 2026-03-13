@@ -241,6 +241,10 @@ export function init() {
       document.getElementById("wStd").textContent = P.fmtSci(s.std);
       renderPlots(_synResp.convergence_map);
       document.getElementById("wMethodsOutput").textContent = JSON.stringify({ request: _synReq, metadata: _synResp.metadata }, null, 2);
+      // Store for rigor SBI consumption
+      if (_synResp.convergence_map) {
+        sessionStorage.setItem('lastConvergenceMap', JSON.stringify(_synResp.convergence_map));
+      }
       P.toast("Convergence map generated", "success");
     } catch (e) { P.toast(`Generation failed: ${e.message}`, "error"); }
     finally { P.hideLoading(); }

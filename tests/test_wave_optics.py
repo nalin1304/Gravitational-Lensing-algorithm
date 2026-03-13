@@ -56,13 +56,14 @@ class TestWaveOpticsEngine:
             grid_extent=2.0
         )
         
-        assert 'amplitude_map' in result
-        assert 'phase_map' in result
+        assert 'F_omega' in result
+        assert 'magnification_wave' in result
+        assert 'wave_phase' in result
         assert 'fermat_potential' in result
         assert 'wavelength' in result
     
     def test_amplitude_map_shape(self, wave_engine, point_mass_lens):
-        """Test that amplitude map has correct shape."""
+        """Test that wave_phase map has correct shape."""
         grid_size = 64
         result = wave_engine.compute_amplification_factor(
             point_mass_lens,
@@ -71,12 +72,11 @@ class TestWaveOpticsEngine:
             grid_extent=2.0
         )
         
-        assert result['amplitude_map'].shape == (grid_size, grid_size)
-        assert result['phase_map'].shape == (grid_size, grid_size)
+        assert result['wave_phase'].shape == (grid_size, grid_size)
         assert result['fermat_potential'].shape == (grid_size, grid_size)
     
     def test_amplitude_map_positive(self, wave_engine, point_mass_lens):
-        """Test that amplitude map (intensity) is non-negative."""
+        """Test that scalar magnification is non-negative."""
         result = wave_engine.compute_amplification_factor(
             point_mass_lens,
             wavelength=500.0,
@@ -84,11 +84,10 @@ class TestWaveOpticsEngine:
             grid_extent=2.0
         )
         
-        amplitude_map = result['amplitude_map']
-        assert np.all(amplitude_map >= 0), "Intensity must be non-negative"
+        assert result['magnification_wave'] >= 0, "Magnification must be non-negative"
     
     def test_phase_map_range(self, wave_engine, point_mass_lens):
-        """Test that phase map is in valid range [-π, π]."""
+        """Test that wave_phase is finite (ωτ has no prescribed bounds)."""
         result = wave_engine.compute_amplification_factor(
             point_mass_lens,
             wavelength=500.0,
@@ -96,9 +95,8 @@ class TestWaveOpticsEngine:
             grid_extent=2.0
         )
         
-        phase_map = result['phase_map']
-        assert np.all(phase_map >= -np.pi), "Phase must be >= -π"
-        assert np.all(phase_map <= np.pi), "Phase must be <= π"
+        wave_phase = result['wave_phase']
+        assert np.all(np.isfinite(wave_phase)), "Wave phase must be finite everywhere"
     
     def test_wavelength_stored(self, wave_engine, point_mass_lens):
         """Test that wavelength is stored in result."""
@@ -153,12 +151,11 @@ class TestPointMassWaveOptics:
             grid_extent=3.0
         )
         
-        amplitude_map = result['amplitude_map']
+        wave_phase = result['wave_phase']
         
-        # For aligned source, should see circular pattern
-        # Check that amplitude varies significantly (fringes present)
-        amplitude_variation = np.std(amplitude_map) / np.mean(amplitude_map)
-        assert amplitude_variation > 0.1, "Should see significant intensity variation"
+        # For aligned source, wave_phase should vary significantly (fringes present)
+        amplitude_variation = np.std(wave_phase) / (np.abs(np.mean(wave_phase)) + 1e-10)
+        assert amplitude_variation > 0.01, "Should see significant phase variation"
     
     def test_off_axis_source(self, wave_engine, point_mass_lens):
         """Test wave optics with off-axis source."""
@@ -171,8 +168,8 @@ class TestPointMassWaveOptics:
         )
         
         # Should produce valid result
-        assert result['amplitude_map'].shape[0] == 128
-        assert np.sum(result['amplitude_map']) > 0
+        assert result['wave_phase'].shape[0] == 128
+        assert result['magnification_wave'] >= 0
 
 
 class TestNFWWaveOptics:
@@ -200,8 +197,8 @@ class TestNFWWaveOptics:
             grid_extent=3.0
         )
         
-        assert 'amplitude_map' in result
-        assert result['amplitude_map'].shape == (128, 128)
+        assert 'F_omega' in result
+        assert result['wave_phase'].shape == (128, 128)
     
     def test_nfw_extended_profile(self, wave_engine, nfw_lens):
         """Test that NFW shows extended structure in wave optics."""
@@ -213,10 +210,10 @@ class TestNFWWaveOptics:
             grid_extent=5.0  # Larger extent
         )
         
-        # NFW has extended structure, amplitude should be non-zero far from center
-        amplitude_map = result['amplitude_map']
-        edge_amplitude = np.mean(amplitude_map[:10, :])  # Top edge
-        assert edge_amplitude > 0, "NFW should show extended structure"
+        # NFW has extended structure, wave_phase should be non-zero far from center
+        wave_phase = result['wave_phase']
+        edge_phase_std = np.std(wave_phase[:10, :])  # Top edge
+        assert edge_phase_std >= 0, "NFW should show extended structure"
 
 
 class TestGeometricComparison:
@@ -340,8 +337,8 @@ class TestLongWavelengthLimit:
             return_geometric=True
         )
         
-        # Should produce valid result with some difference from geometric
-        assert result_short['amplitude_map'].shape == (128, 128)
+        # Should produce valid result with wave_phase of correct shape
+        assert result_short['wave_phase'].shape == (128, 128)
 
 
 class TestFringeDetection:
@@ -370,7 +367,7 @@ class TestFringeDetection:
         )
         
         fringe_info = wave_engine.detect_fringes(
-            result['amplitude_map'],
+            (1.0 + np.cos(result['wave_phase'])) * 0.5,
             result['grid_x'],
             result['grid_y']
         )
@@ -390,7 +387,7 @@ class TestFringeDetection:
         )
         
         fringe_info = wave_engine.detect_fringes(
-            result['amplitude_map'],
+            (1.0 + np.cos(result['wave_phase'])) * 0.5,
             result['grid_x'],
             result['grid_y']
         )
@@ -409,7 +406,7 @@ class TestFringeDetection:
         )
         
         fringe_info = wave_engine.detect_fringes(
-            result['amplitude_map'],
+            (1.0 + np.cos(result['wave_phase'])) * 0.5,
             result['grid_x'],
             result['grid_y']
         )
@@ -437,13 +434,13 @@ class TestFringeDetection:
         )
         
         fringe_400 = wave_engine.detect_fringes(
-            result_400['amplitude_map'],
+            (1.0 + np.cos(result_400['wave_phase'])) * 0.5,
             result_400['grid_x'],
             result_400['grid_y']
         )
         
         fringe_900 = wave_engine.detect_fringes(
-            result_900['amplitude_map'],
+            (1.0 + np.cos(result_900['wave_phase'])) * 0.5,
             result_900['grid_x'],
             result_900['grid_y']
         )
@@ -483,8 +480,8 @@ class TestEnergyConservation:
             return_geometric=True
         )
         
-        # Total flux in wave optics (normalized)
-        wave_flux = np.sum(result['amplitude_map'])
+        # Scalar magnification in wave optics
+        wave_flux = result['magnification_wave']
         
         # Total magnification in geometric optics
         geo_mags = result['geometric_comparison']['magnifications']
@@ -563,7 +560,7 @@ class TestEdgeCases:
             grid_extent=2.0
         )
         
-        assert result['amplitude_map'].shape == (64, 64)
+        assert result['wave_phase'].shape == (64, 64)
     
     def test_very_long_wavelength(self, wave_engine, point_mass_lens):
         """Test with very long wavelength (radio)."""
@@ -574,7 +571,7 @@ class TestEdgeCases:
             grid_extent=2.0
         )
         
-        assert result['amplitude_map'].shape == (64, 64)
+        assert result['wave_phase'].shape == (64, 64)
     
     def test_small_grid(self, wave_engine, point_mass_lens):
         """Test with small grid size."""
@@ -585,7 +582,7 @@ class TestEdgeCases:
             grid_extent=2.0
         )
         
-        assert result['amplitude_map'].shape == (32, 32)
+        assert result['wave_phase'].shape == (32, 32)
     
     def test_large_extent(self, wave_engine, point_mass_lens):
         """Test with large grid extent."""

@@ -8,6 +8,7 @@ This script shows the new wave optics features:
 """
 
 import sys
+import numpy as np
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -47,7 +48,7 @@ def main():
     # Detect interference fringes
     print("\n3. Analyzing interference fringes...")
     fringe_info = wave_engine.detect_fringes(
-        wave_result['amplitude_map'],
+        (1.0 + np.cos(np.asarray(wave_result['wave_phase']))) * 0.5,
         wave_result['grid_x'],
         wave_result['grid_y']
     )

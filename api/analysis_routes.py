@@ -7,7 +7,7 @@ Author: Phase 12 Implementation
 Date: October 2025
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status as http_status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
@@ -124,7 +124,7 @@ class UserStatsResponse(BaseModel):
 # Analysis Endpoints
 # ============================================================================
 
-@router.post("/analyses", response_model=AnalysisResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/analyses", response_model=AnalysisResponse, status_code=http_status.HTTP_201_CREATED)
 async def create_new_analysis(
     analysis_data: AnalysisCreate,
     current_user: User = Depends(get_current_active_user),
@@ -140,7 +140,7 @@ async def create_new_analysis(
         analysis_type = AnalysisType(analysis_data.type)
     except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid analysis type. Must be one of: {[t.value for t in AnalysisType]}"
         )
     
@@ -198,7 +198,7 @@ async def list_analyses(
             analysis_type = AnalysisType(type)
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid analysis type. Must be one of: {[t.value for t in AnalysisType]}"
             )
     
@@ -208,7 +208,7 @@ async def list_analyses(
             job_status = JobStatus(status)
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status. Must be one of: {[s.value for s in JobStatus]}"
             )
     
@@ -255,7 +255,7 @@ async def get_analysis_by_id(
     analysis = get_analysis(db, analysis_id)
     if not analysis:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Analysis not found"
         )
     
@@ -263,7 +263,7 @@ async def get_analysis_by_id(
     # This prevents IDOR vulnerability where users could access other users' private analyses
     if analysis.user_id != current_user.id and not analysis.is_public:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this analysis"
         )
     
@@ -285,14 +285,14 @@ async def update_analysis_by_id(
     analysis = get_analysis(db, analysis_id)
     if not analysis:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Analysis not found"
         )
     
     # Check ownership
     if analysis.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this analysis"
         )
     
@@ -322,7 +322,7 @@ async def update_analysis_by_id(
     return updated_analysis
 
 
-@router.delete("/analyses/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/analyses/{analysis_id}", status_code=http_status.HTTP_204_NO_CONTENT)
 async def delete_analysis_by_id(
     analysis_id: int,
     current_user: User = Depends(get_current_active_user),
@@ -336,14 +336,14 @@ async def delete_analysis_by_id(
     analysis = get_analysis(db, analysis_id)
     if not analysis:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Analysis not found"
         )
     
     # Check ownership
     if analysis.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this analysis"
         )
     
@@ -351,7 +351,7 @@ async def delete_analysis_by_id(
     success = delete_analysis(db, analysis_id)
     if not success:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete analysis"
         )
     
@@ -392,7 +392,7 @@ async def list_jobs(
             job_status = JobStatus(status)
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=http_status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid status. Must be one of: {[s.value for s in JobStatus]}"
             )
     
@@ -423,14 +423,14 @@ async def get_job_by_id(
     job = get_job_by_job_id(db, job_id)
     if not job:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=http_status.HTTP_404_NOT_FOUND,
             detail="Job not found"
         )
     
     # Check ownership
     if job.user_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this job"
         )
     
@@ -461,7 +461,7 @@ async def list_results(
         job = get_job(db, job_id)
         if not job or job.user_id != current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access these results"
             )
     
@@ -469,7 +469,7 @@ async def list_results(
         analysis = get_analysis(db, analysis_id)
         if not analysis or analysis.user_id != current_user.id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=http_status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to access these results"
             )
     

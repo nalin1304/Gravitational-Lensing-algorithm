@@ -157,10 +157,12 @@ if CORS_ORIGINS == ["*"]:
         "CORS is configured to allow ALL origins ('*'). "
         "Set CORS_ORIGINS env var to restrict in production."
     )
+# Per CORS spec: allow_credentials=True requires specific origins, not wildcard
+_cors_credentials = CORS_ORIGINS != ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=_cors_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -201,6 +203,7 @@ class HealthResponse(BaseModel):
     timestamp: str
     version: str
     gpu_available: bool
+    database_connected: Optional[bool] = None
 
 
 class SyntheticRequest(BaseModel):
@@ -565,7 +568,6 @@ async def health_check():
 @app.post("/api/v1/synthetic", response_model=SyntheticResponse)
 async def generate_synthetic(
     request: SyntheticRequest,
-    db: Session = Depends(get_db),
     current_user: Optional[Any] = None
 ):
     """
@@ -651,7 +653,6 @@ async def generate_synthetic(
 @app.post("/api/v1/inference", response_model=InferenceResponse)
 async def run_inference(
     request: InferenceRequest,
-    db: Session = Depends(get_db),
     current_user: Optional[Any] = None
 ):
     """
@@ -806,8 +807,7 @@ async def submit_batch_job(
     db: Session = Depends(get_db)
 ):
     """
-    Submit batch processing job
-    (Requires authentication - FIXED: Now properly validates JWT tokens via database.auth)
+    Submit batch processing job (authentication optional; logs user if authenticated).
     
     Parameters:
     - job_ids: List of job IDs to process
@@ -1218,6 +1218,7 @@ class BlindingUnblindRequest(BaseModel):
 class BlindingRequest(BaseModel):
     phrase: str = Field(..., min_length=1)
     h0: float = 70.0
+    dtd: float = 5000.0
     omega_m: float = 0.315
     sigma8: float = 0.811
 
@@ -1230,6 +1231,7 @@ async def apply_blinding(request: BlindingRequest):
         handler = BlindingHandler(request.phrase)
         return {
             "h0_blind": handler.blind_h0(request.h0),
+            "dtd_blind": handler.blind_dtd(request.dtd),
             "omega_m_blind": handler.blind_omega_m(request.omega_m),
             "sigma8_blind": request.sigma8,
             "blinding_method": "HMAC-SHA256",
@@ -1267,6 +1269,8 @@ async def survey_blinding_unblind(req: BlindingUnblindRequest):
                 "reason": "publication_gate_report.json indicates gate not passed.",
             }
         h0_true  = bh.unblind_h0(req.h0_blind, verification_phrase=req.phrase)
+        # Only unblind if the value was actually blinded via this handler
+        # If dtd_blind is identical to the raw value, return it unchanged
         dtd_true = bh.unblind_dtd(req.dtd_blind, verification_phrase=req.phrase)
         return {
             "gate_passed": True,

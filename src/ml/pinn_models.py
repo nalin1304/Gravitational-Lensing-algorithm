@@ -16,7 +16,6 @@ except ImportError:
     jnp = None
     eqx = None
 
-import optax
 from typing import Tuple, Optional, Dict, List, Callable
 import logging
 
@@ -175,15 +174,17 @@ class NFW_PINN(LensingPINN):
         """
         Args:
             x_in: Input tensor (3,) = [r, log_mass, concentration]
+                Internally expanded to 5 features: [r_norm, log(1+r_norm), 1/(1+r_norm), log_mass, conc]
         """
         r = x_in[0]
         log_mass = x_in[1]
         conc = x_in[2]
         
-        # r_vir [kpc] from M_vir [M_sun] at z=0 Planck cosmology
-        # ρ_crit(z=0) ≈ 147 M_sun/kpc³  (Planck 2018)
+        # r_vir [kpc] from M_vir [M_sun] at z=0 Planck 2018 cosmology
+        # ρ_crit(z=0) = 3 H0² / (8πG) ≈ 126 M_sun/kpc³  (H0=67.4 km/s/Mpc)
+        # Ref: Planck Collaboration (2018), arXiv:1807.06209, Table 2
         M_vir_msun = 10.0 ** log_mass
-        rho_crit0 = 147.0   # M_sun/kpc³
+        rho_crit0 = 126.0   # M_sun/kpc³  (Planck 2018, H0=67.4)
         r_vir = (M_vir_msun / (4.0 * jnp.pi / 3.0 * 200.0 * rho_crit0)) ** (1.0 / 3.0)
         r_s = r_vir / conc
         

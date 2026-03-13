@@ -40,7 +40,7 @@ import warnings
 G_SI = 6.67430e-11         # m³ kg⁻¹ s⁻²
 c_SI = 2.99792458e8        # m/s
 M_sun = 1.98892e30         # kg
-kpc_to_m = 3.0857e19       # m
+kpc_to_m = 3.085677581e19  # m (IAU 2012 / CODATA 2018)
 arcsec_to_rad = 4.8481e-6  # radians
 
 
@@ -224,12 +224,32 @@ def predict_velocity_dispersion(
     # Convert to km/s
     sigma_los_kms = np.sqrt(np.abs(sigma_los2)) / 1e3
 
-    # Luminosity-weighted average within aperture
+    # Aperture-weighted average using projected surface brightness I(R)
+    # I(R) = 2 ∫_R^∞ ν(r) r/√(r²-R²) dr  (Abel projection)
+    # Ref: Binney & Tremaine (2008) §4.2; Mamon & Łokas (2005) Eq. 28
     r_aper_kpc = r_aperture * arcsec_to_rad * D_A_kpc
+
+    from scipy.integrate import quad as _quad_aper
+    from scipy.interpolate import interp1d as _interp1d_aper
+    nu_interp_aper = _interp1d_aper(r_kpc, nu, kind='linear', bounds_error=False, fill_value=0.0)
+    I_proj = np.zeros_like(r_kpc)
+    for _ki, _R in enumerate(r_kpc):
+        if _R >= r_kpc[-1]:
+            continue
+        def _surf_integrand(_rr):
+            return float(nu_interp_aper(_rr)) * _rr / np.sqrt(max(_rr**2 - _R**2, 1e-30))
+        I_proj[_ki], _ = _quad_aper(_surf_integrand, _R + 1e-6, r_kpc[-1], limit=50)
+    I_proj *= 2.0  # Abel prefactor
+
     mask = r_kpc <= r_aper_kpc
     if np.any(mask):
-        weights = nu[mask] * r_kpc[mask]  # Luminosity weighting
-        sigma_avg = np.average(sigma_los_kms[mask], weights=weights)
+        # Weight by projected surface brightness × ring area element R dR
+        weights = I_proj[mask] * r_kpc[mask]
+        weights = np.maximum(weights, 0.0)
+        if weights.sum() > 0:
+            sigma_avg = np.average(sigma_los_kms[mask], weights=weights)
+        else:
+            sigma_avg = sigma_los_kms[0]
     else:
         sigma_avg = sigma_los_kms[0]
 

@@ -128,7 +128,9 @@ export async function init() {
     document.getElementById("sedRunBtn").addEventListener("click", async () => {
         document.getElementById("sedResults").innerHTML = "Solving linear ML estimator...";
         try {
-            const resp = await P.api("/api/v1/rigor/sed", { method: "POST", body: { flux_g: 0, flux_r: 0, flux_i: 0 }, auth: false });
+            // Demo values: typical lensed galaxy SED (AB magnitudes → linear fluxes)
+            // flux in nanomaggies: g=12, r=18, i=22 (typical lensed system at z~0.5)
+            const resp = await P.api("/api/v1/rigor/sed", { method: "POST", body: { flux_g: 12.0, flux_r: 18.0, flux_i: 22.0 }, auth: false });
             document.getElementById("sedResults").innerHTML = `<div class="metric-row"><span class="metric-key">Amplitudes solved</span><span class="metric-val">${resp.amplitudes.length} bands</span></div>`;
             P.toast("SED Amplitudes found", "success");
         } catch (e) { P.toast(e.message, "error"); }

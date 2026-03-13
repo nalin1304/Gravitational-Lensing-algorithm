@@ -550,6 +550,11 @@ def revoke_shared_link(db: Session, token: str) -> bool:
 # Statistics and Analytics
 # ============================================================================
 
+def get_user_api_keys(db: Session, user_id: int) -> List[ApiKey]:
+    """Get all active API keys for a user"""
+    return db.query(ApiKey).filter(ApiKey.user_id == user_id, ApiKey.is_active == True).all()
+
+
 def get_user_stats(db: Session, user_id: int) -> dict:
     """Get user statistics"""
     analyses_count = db.query(Analysis).filter(Analysis.user_id == user_id).count()

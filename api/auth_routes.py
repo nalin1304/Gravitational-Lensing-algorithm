@@ -264,15 +264,19 @@ async def login(
     }
 
 
+class TokenRefreshRequest(BaseModel):
+    refresh_token: str
+
+
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+async def refresh_token(request: TokenRefreshRequest, db: Session = Depends(get_db)):
     """
     Refresh access token using refresh token
     
     Generates a new access token when the current one expires.
     """
     # Decode refresh token
-    payload = decode_token(refresh_token)
+    payload = decode_token(request.refresh_token)
     
     # Check token type
     if payload.get("type") != "refresh":
@@ -378,6 +382,24 @@ async def update_current_user(
 # ============================================================================
 # API Key Management
 # ============================================================================
+
+@router.get("/api-keys", response_model=List[ApiKeyResponse])
+async def list_api_keys(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """List all API keys for the current user."""
+    from database.crud import get_user_api_keys
+    keys = get_user_api_keys(db, current_user.id)
+    return [ApiKeyResponse(
+        id=k.id,
+        name=k.name or "",
+        key_prefix=k.key_prefix,
+        scopes=k.scopes or [],
+        created_at=k.created_at,
+        expires_at=k.expires_at,
+    ) for k in keys]
+
 
 @router.post("/api-keys", response_model=ApiKeyResponse, status_code=status.HTTP_201_CREATED)
 async def create_user_api_key(

@@ -28,7 +28,7 @@ async function api(path, { method = "GET", body = null, auth = true } = {}) {
   if (!resp.ok) {
     if (resp.status === 401) {
       // Try refresh
-      const refreshToken = getRefreshToken() || localStorage.getItem('refresh_token') || sessionStorage.getItem('gh_lens_refresh');
+      const refreshToken = getRefreshToken();
       if (refreshToken) {
         const refreshResp = await fetch('/api/v1/auth/refresh', {
           method: 'POST',
@@ -50,6 +50,9 @@ async function api(path, { method = "GET", body = null, auth = true } = {}) {
           return retryResp.json();
         }
       }
+      // After failed refresh attempt, clear auth to prevent infinite loop
+      clearAuth();
+      location.hash = '#login';
     }
     const err = await resp.json().catch(() => ({ detail: resp.statusText }));
     throw new Error(err.detail || err.error || resp.statusText);

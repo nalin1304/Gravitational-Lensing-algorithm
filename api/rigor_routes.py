@@ -178,6 +178,8 @@ async def run_consistency_gate(req: ConsistencyRequest):
             "is_valid": is_valid,
             "M_L_ratio": M_L,
             "f_DM_proxy": f_DM_proxy,
+            "computation_mode": "demo_approximation",
+            "note": "M_L_ratio and f_DM_proxy use analytical approximations. Use full inference for publication.",
             "reason": "Within empirical 3-sigma bounds" if is_valid else "Astro-physical violation"
         }
     except HTTPException:
