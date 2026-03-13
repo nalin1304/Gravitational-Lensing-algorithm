@@ -293,8 +293,8 @@ async function runNuts() {
       ...readSimParams(),
       observation: lastSimResult.convergence_map,
       n_samples: parseInt(document.getElementById('infNSamples').value, 10),
-      n_warmup: parseInt(document.getElementById('infWarmup').value, 10),
-      noise_sigma: parseFloat(document.getElementById('infNoiseSigma').value),
+      warmup: parseInt(document.getElementById('infWarmup').value, 10),
+      noise_std: parseFloat(document.getElementById('infNoiseSigma').value),
     };
     const resp = await P().api('/api/v1/nuts/posterior', { method: 'POST', body });
     if (!resp) { P().toast('Posterior returned empty', 'error'); return; }

@@ -404,14 +404,33 @@ def _lens_finder_status() -> dict[str, Any]:
 
 
 def _load_json_artifact(path: Path) -> Optional[Any]:
-    """Load a JSON artifact if it exists and is parseable."""
+    """Load a JSON artifact if it exists and is parseable.
+    
+    Replaces NaN/Infinity with None for JSON compliance.
+    """
     if not path.exists():
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        raw = path.read_text(encoding="utf-8")
+        data = json.loads(raw)
+        return _sanitize_floats(data)
     except (OSError, json.JSONDecodeError):
         logger.warning("Could not parse JSON artifact at %s", path)
         return None
+
+
+def _sanitize_floats(obj: Any) -> Any:
+    """Recursively replace NaN/Infinity with None for JSON compliance."""
+    import math
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+    elif isinstance(obj, dict):
+        return {k: _sanitize_floats(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_sanitize_floats(v) for v in obj]
+    return obj
 
 
 def _load_regression_summary() -> Optional[dict[str, Any]]:
@@ -1596,7 +1615,7 @@ async def nuts_simulate(req: NUTSSimulateRequest):
         )
         result = simulator.forward()
         return {
-            "convergence": result["convergence"].detach().cpu().numpy().tolist(),
+            "convergence_map": result["convergence"].detach().cpu().numpy().tolist(),
             "lensed_image": result["lensed_image"].detach().cpu().numpy().tolist(),
             "source_image": result["source_image"].detach().cpu().numpy().tolist(),
             "status": "ok",
@@ -1636,7 +1655,7 @@ async def nuts_posterior(req: NUTSPosteriorRequest):
                 "log10_M_vir": samples["log10_M_vir"].detach().cpu().numpy().tolist(),
                 "concentration": samples["concentration"].detach().cpu().numpy().tolist(),
             },
-            "accept_rate": float(samples.get("accept_rate", 0.0)),
+            "acceptance_rate": float(samples.get("accept_rate", 0.0)),
             "wall_time_s": round(wall_time, 3),
             "method": "NUTS-HMC",
         }
@@ -1668,9 +1687,9 @@ async def nuts_fisher(req: NUTSFisherRequest):
 
         return {
             "fisher_matrix": result["fisher_matrix"].detach().cpu().numpy().tolist(),
-            "parameter_names": result["parameter_names"],
+            "param_names": result["parameter_names"],
             "marginal_errors": result["marginal_errors"].detach().cpu().numpy().tolist(),
-            "correlation": result["correlation"].detach().cpu().numpy().tolist(),
+            "correlation_matrix": result["correlation"].detach().cpu().numpy().tolist(),
         }
     except Exception as e:
         logger.exception("NUTS Fisher error")
