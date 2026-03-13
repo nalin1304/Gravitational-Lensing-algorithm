@@ -3,8 +3,7 @@ Security utilities for API
 
 Provides file upload validation, sanitization, and security checks.
 
-Author: P0 Security Remediation
-Date: November 2025
+Author: Computational Imaging Research Group
 """
 
 from fastapi import HTTPException, UploadFile, status

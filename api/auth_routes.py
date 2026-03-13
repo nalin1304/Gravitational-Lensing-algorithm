@@ -2,10 +2,9 @@
 Authentication routes for FastAPI
 
 Provides login, registration, token refresh, and user management endpoints
+with rate limiting and input validation.
 
 Author: Computational Imaging Research Group
-Date: October 2025
-SECURITY: P1 fixes applied November 2025 (rate limiting)
 """
 
 from datetime import timedelta, datetime, timezone

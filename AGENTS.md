@@ -4,7 +4,7 @@ Operational context for humans and coding agents working in this repository.
 Use this as the working source-of-truth for architecture, validation workflow,
 and current branch/release state.
 
-Last updated: 2026-03-11
+Last updated: 2026-03-13
 
 ---
 
@@ -29,11 +29,11 @@ Observed local runtime:
 - Python: `3.14.3`
 - JAX backend: auto-detected via `src/ml/__init__.BACKEND`
 
-Verified on 2026-03-11:
+Verified on 2026-03-13:
 
 ```bash
 python3 -m pytest tests/ -q
-# 554 passed, 31 skipped   (verified Mar 13 2026)
+# 627 passed, 1 skipped   (verified Mar 13 2026)
 
 python3 scripts/publication_gate.py --quick
 # Publication Gate: PASS

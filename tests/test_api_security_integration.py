@@ -1,12 +1,10 @@
 """
 Integration tests for API security and functionality
 
-Tests all P0 and P1 security fixes to ensure they work correctly.
+Validates authentication, authorization, rate limiting, file upload,
+and PII redaction across all secured endpoints.
 
 Run with: pytest tests/test_api_security_integration.py -v
-
-Author: Security Verification Suite
-Date: November 2025
 """
 
 import pytest
@@ -65,11 +63,11 @@ def admin_user(db_session):
 
 
 # ============================================================================
-# P0 Security Tests - Authentication
+# Authentication Tests
 # ============================================================================
 
 class TestAuthentication:
-    """Test P0 authentication fixes."""
+    """Test authentication enforcement."""
     
     def test_unauthenticated_request_rejected(self):
         """Test that requests without authentication are rejected."""
@@ -103,11 +101,11 @@ class TestAuthentication:
 
 
 # ============================================================================
-# P0 Security Tests - Authorization (IDOR)
+# Authorization Tests
 # ============================================================================
 
 class TestAuthorization:
-    """Test P0 authorization (IDOR) fixes."""
+    """Test authorization and IDOR protection."""
     
     def test_user_cannot_access_other_user_analysis(
         self, db_session, test_user, auth_headers
@@ -197,11 +195,11 @@ class TestAuthorization:
 
 
 # ============================================================================
-# P1 Security Tests - Rate Limiting
+# Rate Limiting Tests
 # ============================================================================
 
 class TestRateLimiting:
-    """Test P1 rate limiting fixes."""
+    """Test rate limiting enforcement."""
     
     def test_login_rate_limit_enforced(self):
         """Test that login endpoint enforces rate limiting (5/minute)."""
@@ -241,11 +239,11 @@ class TestRateLimiting:
 
 
 # ============================================================================
-# P1 Security Tests - File Upload Validation
+# File Upload Validation Tests
 # ============================================================================
 
 class TestFileUploadSecurity:
-    """Test P1 file upload security fixes."""
+    """Test file upload validation."""
     
     def test_validate_fits_file_extension(self):
         """Test that non-FITS files are rejected."""
@@ -294,11 +292,11 @@ class TestFileUploadSecurity:
 
 
 # ============================================================================
-# P2 Security Tests - PII Redaction
+# PII Redaction Tests
 # ============================================================================
 
 class TestPIIRedaction:
-    """Test P2 PII redaction in logs."""
+    """Test PII redaction in logs."""
     
     def test_email_redaction(self):
         """Test that emails are redacted from logs."""

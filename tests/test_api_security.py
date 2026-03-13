@@ -1,10 +1,7 @@
 """
 API Integration Tests
 
-Tests the complete API security and functionality after remediation.
-
-Author: P2 Quality Assurance
-Date: November 2025
+Tests the complete API security and functionality.
 """
 
 import pytest

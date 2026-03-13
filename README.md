@@ -93,7 +93,7 @@ cp .env.example .env
 docker-compose up -d
 
 # Access the app
-# Streamlit: http://localhost:8501
+# Web UI: http://localhost:8000/ui
 # API: http://localhost:8000
 # API Docs: http://localhost:8000/docs
 ```
@@ -191,6 +191,26 @@ Generate convergence maps from NFW profiles with:
 - **Savage-Dickey Density Ratios**: Statistical matching for orbital eccentricities
 - **Pydantic Configurations**: Strictly-typed Caskade pipelines (`demos/*.yaml` mapping)
 
+### 9. Differentiable NUTS-HMC Inference
+- **Differentiable lensing simulator** with autograd-backed parameter Jacobians
+- **No-U-Turn Sampler (NUTS)**: Hoffman & Gelman (2014) with dual averaging
+- **Fisher matrix analysis**: Cramér-Rao bounds from automatic differentiation
+
+### 10. Physics-Informed Simulation-Based Inference (PI-SBI)
+- **Neural posterior estimation** amortized over physics-constrained simulations
+- **Multi-messenger support**: Joint optical + gravitational-wave likelihood
+- **CNN summary network** encoding convergence maps to compressed statistics
+
+### 11. Stellar Kinematics & Mass-Sheet Degeneracy
+- **Jeans equation solver** for velocity dispersion prediction
+- **Mass-sheet degeneracy test**: λ = M_lens / M_kin with Jeffreys interpretation
+- **Joint lensing+kinematics**: Inverse-variance weighted constraint (Treu & Koopmans 2004)
+
+### 12. Advanced Optics
+- **Wave optics diffraction integral**: Nakamura & Deguchi (1999) F(ω) amplification factor
+- **Spatially-varying ePSF**: Zernike polynomial model (Z4–Z22) across detector FOV
+- **Pixel covariance**: Drizzled image correlated noise with Cholesky whitening
+
 ## 🧪 Testing
 
 ```powershell
@@ -206,14 +226,14 @@ python -m pytest tests/test_mass_profiles.py -v
 python scripts/check_imports.py
 ```
 
-**Current Test Status**: ✅ 513 passed, 38 skipped (`python3 -m pytest tests/ -q`, run on March 10, 2026)
+**Current Test Status**: ✅ 627 passed, 1 skipped (`python3 -m pytest tests/ -q`, run on March 13, 2026)
 
 ## ✅ Publication Readiness
 
 - Full reproducibility and validation record: `JOURNAL_PUBLICATION_READINESS.md`
 - Executable publication gate: `python3 scripts/publication_gate.py`
 - Latest release gate summary:
-  - `513 passed, 38 skipped` (full test suite)
+  - `627 passed, 1 skipped` (full test suite)
   - `mypy src/` clean when developer tooling is installed; publication gate falls back to `py_compile` syntax sweep in bare runtimes
   - Python compile sanity clean
   - Known-system validation script passes (`scripts/validate_known_systems.py`)
@@ -226,7 +246,7 @@ gravitational-lensing-algorithm/
 │   ├── main.py                  # API server with JWT auth
 │   ├── auth_routes.py           # Authentication endpoints
 │   └── analysis_routes.py       # Analysis endpoints
-├── web_ui/                       # FastAPI-served non-Streamlit frontend
+├── web_ui/                       # FastAPI-served static frontend
 │   ├── index.html               # Main journal-workbench shell
 │   ├── styles.css               # Shared visual theme and layout
 │   └── app.js                   # API-backed interaction logic
@@ -256,7 +276,6 @@ gravitational-lensing-algorithm/
 ├── .github/workflows/            # CI/CD pipelines
 │   └── ci-cd.yml                # Automated testing & deployment
 ├── Dockerfile                    # Production API container (multi-stage)
-├── Dockerfile.streamlit          # Streamlit container (multi-stage)
 ├── docker-compose.yml            # Local development stack
 ├── requirements.txt              # Runtime dependencies (35 packages)
 ├── requirements-dev.txt          # Development tools (pytest, mypy, jupyter)
@@ -273,7 +292,7 @@ gravitational-lensing-algorithm/
    - ~40% smaller Docker images
 
 2. **Docker Optimization**
-   - Multi-stage builds for API and Streamlit containers
+   - Multi-stage builds for API containers
    - Non-root user execution for security
    - Optimized layer caching for faster builds
    - Removed unnecessary files from final images
@@ -355,7 +374,7 @@ This project was developed for submission to IEEE Transactions on Computational 
 - Combines ML with physics constraints (not pure black-box)
 - Post-Newtonian Schwarzschild deflection with controlled PN corrections
 - Known-system raw Einstein-radius errors below 2.3% on the current validation gate
-- Production-ready with a 513-test passing baseline (+38 skipped tests)
+- Production-ready with a 627-test passing baseline (+1 skipped test)
 
 ## 🤝 Contributing
 

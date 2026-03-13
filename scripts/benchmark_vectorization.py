@@ -1,5 +1,5 @@
 """
-Phase 7 Performance Benchmark Script
+Vectorization Performance Benchmark
 
 Demonstrates the massive speedup from vectorized convergence map generation.
 This script compares:
@@ -8,7 +8,7 @@ This script compares:
 3. GPU acceleration (if CuPy available)
 
 Usage:
-    python scripts/benchmark_phase7.py
+    python scripts/benchmark_vectorization.py
 """
 
 import numpy as np
@@ -40,7 +40,7 @@ def old_nested_loop_version(lens_model, grid_size=64, extent=3.0):
     """
     Old slow version using nested loops (for comparison).
     
-    This is what we had in Phase 5, generating ~125,000 warnings.
+    Old nested-loop approach, generating ~125,000 warnings.
     """
     # Create coordinate grid
     x = np.linspace(-extent, extent, grid_size)
@@ -64,7 +64,7 @@ def old_nested_loop_version(lens_model, grid_size=64, extent=3.0):
 def benchmark_old_vs_new():
     """Compare old nested-loop vs new vectorized version."""
     print("=" * 70)
-    print("Phase 7 Performance Benchmark: Old vs New")
+    print("Vectorization Performance Benchmark: Old vs New")
     print("=" * 70)
     
     # Create test lens model
@@ -239,7 +239,7 @@ def main():
     
     # Final summary
     print("\n" + "=" * 70)
-    print("Summary of Phase 7 Improvements")
+    print("Summary of Vectorization Improvements")
     print("=" * 70)
     print("✅ Vectorized convergence map generation: 10-100x speedup")
     print("✅ Fixed 125,952 NumPy deprecation warnings")
@@ -248,7 +248,7 @@ def main():
     print("✅ GPU acceleration ready (install CuPy to enable)")
     print("✅ Memory-efficient for large grids (up to 512x512+)")
     print("=" * 70)
-    print("\n✨ Phase 7 Complete! Ready for large-scale dataset generation.")
+    print("\ Benchmark complete! Ready for large-scale dataset generation.")
     print("=" * 70 + "\n")
 
 

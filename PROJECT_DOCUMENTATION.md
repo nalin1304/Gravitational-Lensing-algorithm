@@ -3,7 +3,7 @@
 **Version**: 1.0.0  
 **Status**: ✅ Production Ready  
 **Security Score**: 95/100  
-**Last Updated**: November 5, 2025  
+**Last Updated**: March 13, 2026  
 **Platform**: Windows/Linux/macOS  
 **Python**: 3.8+
 
@@ -42,7 +42,7 @@ An advanced gravitational lensing simulation and analysis toolkit combining **Ph
 - **🎯 Bayesian Uncertainty**: Rigorous uncertainty quantification
 - **🔬 Scientific Validation**: Automated validation against known systems
 - **🔭 Substructure Detection**: Dark matter sub-halo identification
-- **📈 Interactive Web Interface**: Professional Streamlit dashboard
+- **📈 Interactive Web Interface**: FastAPI-served research workbench
 
 ### 🏆 Achievements
 
@@ -53,7 +53,7 @@ An advanced gravitational lensing simulation and analysis toolkit combining **Ph
 | **Test Coverage** | 78% | +73% |
 | **Vulnerabilities** | 0 | -100% |
 | **Documentation** | 3,395+ lines | Comprehensive |
-| **Performance** | 134.6 img/s | 134× target |
+| **Performance** | 134.6 img/s | Analytic profile evaluation throughput |
 
 ---
 
@@ -77,7 +77,7 @@ python -c "import secrets; print('DB_PASSWORD=' + secrets.token_urlsafe(32))" >>
 docker-compose up -d
 
 # Access application
-# Streamlit: http://localhost:8501
+# Web UI: http://localhost:8000/ui
 # API: http://localhost:8000
 # API Docs: http://localhost:8000/docs
 ```
@@ -96,11 +96,10 @@ python -m venv .venv
 # Install dependencies
 pip install -r requirements.txt
 
-# Launch Streamlit (NEW multi-page structure)
-streamlit run app/Home.py
-
-# OR launch API
+# Launch FastAPI backend + web UI
 uvicorn api.main:app --reload
+
+# Access the web UI at http://localhost:8000/ui
 ```
 
 ### ✅ Verify Installation
@@ -116,7 +115,7 @@ pytest tests/ -v
 pip-audit
 
 # Access web interface
-Start-Process "http://localhost:8501"
+Start-Process "http://localhost:8000/ui"
 ```
 
 ---
@@ -357,7 +356,6 @@ torch>=2.0.0
 numpy>=1.21.0
 astropy>=5.0
 matplotlib>=3.5.0
-streamlit>=1.28.0
 fastapi>=0.104.0
 sqlalchemy>=2.0.0
 python-jose[cryptography]>=3.3.0
@@ -544,108 +542,95 @@ pip-audit
 
 ```
 gravitational-lensing-algorithm/
-├── app/                              # Streamlit web interface (multi-page)
-│   ├── Home.py                      # NEW: Main entry point (150 lines)
-│   ├── main.py                      # Deprecation notice
-│   ├── main_legacy.py               # Original backup (3,142 lines)
-│   ├── styles.py                    # Custom CSS
-│   ├── error_handler.py             # Error handling utilities
-│   ├── pages/                       # Multi-page structure
-│   │   ├── 01_Home.py              # Landing page
-│   │   ├── 02_Simple_Lensing.py    # Basic lensing demo
-│   │   ├── 03_PINN_Inference.py    # Neural network inference
-│   │   ├── 04_Multi_Plane.py       # Multi-plane lensing
-│   │   ├── 05_Real_Data.py         # FITS file analysis
-│   │   ├── 06_Training.py          # Model training
-│   │   ├── 07_Validation.py        # Scientific validation
-│   │   ├── 08_Bayesian_UQ.py       # Uncertainty quantification
-│   │   └── 09_Settings.py          # Configuration
-│   └── utils/                       # Shared utilities
-│       ├── session_state.py         # State management
-│       ├── plotting.py              # Visualization
-│       └── helpers.py               # Validation
 ├── api/                              # FastAPI REST backend
-│   ├── main.py                      # API server with JWT auth
+│   ├── main.py                      # API server with JWT auth + all endpoints
 │   ├── auth_routes.py               # Authentication endpoints
 │   ├── analysis_routes.py           # Analysis CRUD
-│   ├── security_utils.py            # File validation (186 lines)
-│   ├── secure_logging.py            # PII redaction (273 lines)
+│   ├── rigor_routes.py              # Scientific rigor endpoints
+│   ├── security_utils.py            # File validation
+│   ├── secure_logging.py            # PII redaction
 │   └── monitoring.py                # Prometheus metrics
+├── web_ui/                           # FastAPI-served static frontend
+│   ├── index.html                   # Shell with sidebar nav + router
+│   ├── styles.css                   # NASA-inspired dark theme
+│   ├── app.js                       # SPA router + auth/API utilities
+│   └── pages/                       # 10 dynamic page modules
+│       ├── dashboard.js             # System status, GPU, API stats
+│       ├── workbench.js             # Simulation controls, Plotly visuals
+│       ├── validation.js            # SLACS, calibration, ablation
+│       ├── analyses.js              # Analysis CRUD with tabs
+│       ├── account.js               # Auth flow, API keys
+│       ├── survey.js                # Stage IV survey tools
+│       ├── inference.js             # NUTS-HMC inference engine
+│       ├── pi-sbi.js                # Physics-informed SBI
+│       ├── kinematics.js            # Stellar kinematics
+│       └── api-explorer.js          # OpenAPI request builder
 ├── src/                              # Core scientific library
-│   ├── lens_models/                 # Mass profiles, lens systems
-│   │   ├── __init__.py
-│   │   ├── nfw.py                  # NFW profile
-│   │   ├── elliptical_nfw.py       # Elliptical NFW
-│   │   ├── lens_system.py          # Lens system class
-│   │   └── multiplane.py           # Multi-plane lensing
-│   ├── ml/                          # Machine learning
-│   │   ├── pinn.py                 # Physics-Informed NN
-│   │   ├── generate_dataset.py     # Data generation
-│   │   ├── transfer_learning.py    # Domain adaptation
-│   │   ├── uncertainty.py          # Bayesian UQ
-│   │   └── physics_unit_safe.py    # Unit-safe physics (358 lines)
-│   ├── optics/                      # Ray tracing, geodesics
+│   ├── lens_models/                 # Mass profiles, lens systems, multi-plane
+│   │   ├── mass_profiles.py         # NFW, SIS, WDM, SIDM, power-law
+│   │   ├── lens_system.py           # Cosmological distances (Planck 2018)
+│   │   ├── advanced_profiles.py     # Extended profile families
+│   │   └── multi_plane.py           # Multi-plane ray tracing
+│   ├── ml/                          # Machine learning (~25 modules)
+│   │   ├── pinn.py                  # Physics-Informed Neural Network
+│   │   ├── pinn_models.py           # LensingPINN, NFW_PINN
+│   │   ├── neural_ode.py            # AnalyticFusingNODE
+│   │   ├── nested_sampling.py       # Bayesian model evidence
+│   │   ├── source_models.py         # GP-regularized source reconstruction
+│   │   ├── pi_sbi.py               # Physics-Informed SBI (novel)
+│   │   ├── lens_finder.py           # LenNet object detection
+│   │   ├── joint_survey.py          # Multi-resolution survey engine
+│   │   └── physics_constrained_loss.py  # Poisson, gradient, mass losses
+│   ├── inference/                   # Differentiable inference engine
+│   │   ├── differentiable_simulator.py  # Autograd lensing simulator
+│   │   └── nuts_hmc.py             # NUTS-HMC sampler
+│   ├── optics/                      # Ray tracing, geodesics, wave optics
 │   │   ├── ray_tracing.py
-│   │   └── geodesics.py            # GR integration
-│   ├── data/                        # FITS loading, PSF
-│   │   ├── real_data_loader.py
-│   │   └── psf.py
-│   ├── validation/                  # Scientific validators
-│   │   ├── validator.py
-│   │   └── known_systems.py
-│   ├── dark_matter/                 # Substructure detection
-│   │   └── substructure.py
-│   └── utils/                       # Constants, utilities
-│       └── constants.py
-├── database/                         # PostgreSQL models
-│   ├── models.py                    # SQLAlchemy models
-│   ├── database.py                  # DB session
-│   ├── crud.py                      # CRUD operations
-│   ├── auth.py                      # JWT authentication
-│   ├── ssl/                         # SSL certificates
-│   └── SSL_SETUP_GUIDE.md
-├── tests/                            # Test suite (78% coverage)
-│   ├── test_api_security_integration.py  # Security tests (500+ lines)
-│   ├── test_lens_system.py
-│   ├── test_ml.py
-│   ├── test_validation.py
-│   └── ... (20+ test modules)
+│   │   ├── geodesic_integration.py
+│   │   ├── wave_optics.py           # Diffraction integral F(ω)
+│   │   └── epsf_model.py            # Zernike ePSF (Z4–Z22)
+│   ├── data/                        # Data loading and preprocessing
+│   │   ├── mast_downloader.py       # Cache/MAST-backed HST loader
+│   │   └── pixel_covariance.py      # Drizzled noise covariance
+│   ├── validation/                  # Scientific validation
+│   │   ├── kinematics.py            # Jeans equation, MSD test
+│   │   ├── hst_targets.py           # SLACS catalog
+│   │   ├── observational_diagnostics.py  # PSF-convolved fitting
+│   │   ├── mu_glance.py             # Magnification residuals
+│   │   └── bayes_factor.py          # Bayesian evidence
+│   ├── time_delay/                  # Fermat potential and cosmography
+│   │   └── cosmography.py
+│   └── utils/                       # Constants, blinding, common
+│       ├── constants.py             # CODATA 2018 + Planck 2018
+│       └── blinding.py              # TDCOSMO-style cryptographic blinding
+├── database/                         # SQLAlchemy models and CRUD
+├── tests/                            # 627+ passing tests
+├── scripts/                          # Benchmark and publication scripts
 ├── benchmarks/                       # Performance profiling
-├── notebooks/                        # Jupyter tutorials
-├── docs/                             # Documentation
-├── migrations/                       # Alembic DB migrations
-├── monitoring/                       # Prometheus/Grafana
-│   ├── prometheus.yml
-│   └── grafana/dashboards/
+├── paper/                            # IEEE TCI manuscript + references
+├── migrations/                       # Alembic database migrations
+├── monitoring/                       # Prometheus/Grafana configs
 ├── docker-compose.yml                # Multi-service orchestration
-├── Dockerfile                        # API container
-├── Dockerfile.streamlit              # Streamlit container
+├── Dockerfile                        # Production API container
 ├── requirements.txt                  # Runtime dependencies
 ├── requirements-dev.txt              # Development tools
-├── setup_security_fixes.ps1          # Automated setup (100 lines)
-├── launch_streamlit.bat              # Quick launch
-├── PROJECT_DOCUMENTATION.md          # THIS FILE
+├── pyproject.toml                    # Project metadata
+├── CITATION.cff                      # Citation metadata
 └── LICENSE
 ```
 
-### 6.2 Multi-Page App Migration
+### 6.2 Web Architecture
 
-**Before** (Monolithic):
-- `app/main.py`: 3,142 lines ❌
-- Single file with all features
-- Slow startup (3.2 seconds)
-- Merge conflicts
+The web UI is a single-page application served by FastAPI at `/ui`:
+- `web_ui/index.html` — Shell with sidebar navigation and router container
+- `web_ui/app.js` — Hash-based router with 10 dynamically loaded pages
+- `web_ui/styles.css` — NASA-inspired dark theme (Inter font, cyan accents)
+- All 10 pages connect to corresponding API endpoints via `fetch()`
 
-**After** (Multi-Page):
-- `app/Home.py`: 150 lines ✅
-- `app/pages/*.py`: 11 separate pages
-- Fast startup (1.1 seconds, **-65%**)
-- No conflicts
-
-**New Launch Command**:
-```powershell
-streamlit run app/Home.py  # NEW
-# OLD: streamlit run app/main.py (deprecated)
+**Launch Command**:
+```bash
+uvicorn api.main:app --reload
+# Open http://localhost:8000/ui
 ```
 
 ### 6.3 Key Components
@@ -963,17 +948,12 @@ server {
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
 
-    # API
-    location /api/ {
+    # Web UI + API (single FastAPI server)
+    location / {
         proxy_pass http://localhost:8000;
+        proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    # Streamlit
-    location / {
-        proxy_pass http://localhost:8501;
-        proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
     }
@@ -1279,8 +1259,8 @@ print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
 - "Uses GR-derived thin-lens formalism for cosmological accuracy"
 
 **Slide 2: Live Demo - Synthetic (3 min)**
-1. Open http://localhost:8501
-2. Navigate to "Simple Lensing"
+1. Open http://localhost:8000/ui
+2. Navigate to "Workbench"
 3. Generate NFW convergence map
 4. Adjust mass → show Einstein radius
 5. "Generated using proper angular diameter distances in expanding universe"
@@ -1336,8 +1316,8 @@ print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
 ### 13.4 Pre-Competition Checklist
 
 **5 Minutes Before**:
-- [ ] Open http://localhost:8501
-- [ ] Test "Simple Lensing" page
+- [ ] Open http://localhost:8000/ui
+- [ ] Test "Workbench" page
 - [ ] Browser maximized
 - [ ] Close unnecessary tabs
 - [ ] Notifications off
@@ -1372,11 +1352,8 @@ print(f"Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
 ### 14.1 Essential Commands
 
-```powershell
-# Launch application (NEW multi-page)
-streamlit run app/Home.py
-
-# Launch API
+```bash
+# Launch application (API + Web UI)
 uvicorn api.main:app --reload
 
 # Run tests
@@ -1400,7 +1377,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ### 14.2 Important URLs
 
-- **Streamlit**: http://localhost:8501
+- **Web UI**: http://localhost:8000/ui
 - **API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 - **Prometheus**: http://localhost:9090
@@ -1412,12 +1389,12 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 | File | Purpose |
 |------|---------|
-| `app/Home.py` | Main entry point (NEW) |
+| `api/main.py` | API server + all endpoints |
+| `web_ui/index.html` | Web UI shell |
 | `.env` | Environment configuration |
 | `requirements.txt` | Runtime dependencies |
 | `docker-compose.yml` | Service orchestration |
 | `PROJECT_DOCUMENTATION.md` | This file |
-| `setup_security_fixes.ps1` | Automated setup |
 
 ### 14.4 Support & Resources
 
