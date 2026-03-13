@@ -83,7 +83,7 @@ export async function init() {
       dbEl.textContent = h.database_connected ? '✓ Connected' : '✗ Disconnected';
       dbEl.className = h.database_connected ? 'text-success' : 'text-danger';
     }
-  } catch { document.getElementById("dHealthStatus").textContent = "Offline"; }
+  } catch (e) { console.error("Health check failed:", e); document.getElementById("dHealthStatus").textContent = "Offline"; }
 
   try {
     const models = await P.api("/api/v1/models", { auth: false });
@@ -102,7 +102,7 @@ export async function init() {
     } else {
       el.innerHTML = `<p class="section-desc" style="color:var(--text-muted)">No model metadata available</p>`;
     }
-  } catch { document.getElementById("dModels").innerHTML = `<p class="section-desc" style="color:var(--text-muted)">Could not load models</p>`; }
+  } catch (e) { console.error("Models load failed:", e); document.getElementById("dModels").innerHTML = `<p class="section-desc" style="color:var(--text-muted)">Could not load models</p>`; }
 
   try {
     const stats = await P.api("/api/v1/stats", { auth: false });
@@ -130,5 +130,5 @@ export async function init() {
         tmEl.textContent = `${regression.publication_gate_passed ? 'Gate PASS' : 'Gate status unavailable'} · API jobs: ${stats.total_jobs ?? '—'}`;
       }
     }
-  } catch { document.getElementById("dStats").innerHTML = `<p class="section-desc" style="color:var(--text-muted)">Could not load stats</p>`; }
+  } catch (e) { console.error("Stats load failed:", e); document.getElementById("dStats").innerHTML = `<p class="section-desc" style="color:var(--text-muted)">Could not load stats</p>`; }
 }

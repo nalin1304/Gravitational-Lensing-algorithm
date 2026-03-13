@@ -110,8 +110,13 @@ export function render() {
 }
 
 export async function init() {
-  // Load status
-  await loadStatus();
+  // Load status with error handling
+  try {
+    await loadStatus();
+  } catch (e) {
+    const el = document.getElementById('statusContent');
+    if (el) el.innerHTML = `<p class="dim">Could not reach PI-SBI service.</p>`;
+  }
 
   document.getElementById('simBtn').addEventListener('click', runSimulation);
   document.getElementById('inferBtn').addEventListener('click', runPosterior);
@@ -178,58 +183,62 @@ async function runSimulation() {
     seed: 42,
   };
 
-  const resp = await P().api('/api/v1/pi-sbi/simulate', { method: 'POST', body });
-  btn.disabled = false;
-  btn.textContent = '▶ Simulate Observation';
+  try {
+    const resp = await P().api('/api/v1/pi-sbi/simulate', { method: 'POST', body });
+    if (!resp) { P().toast('Simulation returned empty', 'error'); return; }
 
-  if (!resp) { P().toast('Simulation failed', 'error'); return; }
+    lastSim = resp;
 
-  lastSim = resp;
+    // Show output row
+    document.getElementById('simOutputRow').style.display = '';
+    document.getElementById('posteriorCard').style.display = '';
 
-  // Show output row
-  document.getElementById('simOutputRow').style.display = '';
-  document.getElementById('posteriorCard').style.display = '';
+    // Plot κ map
+    if (window.Plotly && resp.kappa_map) {
+      Plotly.newPlot('kappaPlot', [{
+        z: resp.kappa_map,
+        type: 'heatmap',
+        colorscale: 'Plasma',
+        showscale: true,
+        colorbar: { title: 'κ', thickness: 14 },
+      }], {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#c9d1e0' },
+        margin: { t: 10, b: 40, l: 40, r: 10 },
+        xaxis: { title: 'θ_x (pixels)', color: '#8899aa' },
+        yaxis: { title: 'θ_y (pixels)', color: '#8899aa' },
+      }, { responsive: true, displayModeBar: false });
+    }
 
-  // Plot κ map
-  if (window.Plotly && resp.kappa_map) {
-    Plotly.newPlot('kappaPlot', [{
-      z: resp.kappa_map,
-      type: 'heatmap',
-      colorscale: 'Plasma',
-      showscale: true,
-      colorbar: { title: 'κ', thickness: 14 },
-    }], {
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      font: { color: '#c9d1e0' },
-      margin: { t: 10, b: 40, l: 40, r: 10 },
-      xaxis: { title: 'θ_x (pixels)', color: '#8899aa' },
-      yaxis: { title: 'θ_y (pixels)', color: '#8899aa' },
-    }, { responsive: true, displayModeBar: false });
+    // Plot GW spectrum
+    if (window.Plotly && resp.gw_spectrum) {
+      Plotly.newPlot('gwPlot', [{
+        x: resp.omega_dimensionless,
+        y: resp.gw_spectrum,
+        mode: 'lines+markers',
+        line: { color: '#4cc9f0', width: 2 },
+        marker: { size: 4 },
+        name: '|F(ω)|²',
+      }], {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#c9d1e0' },
+        margin: { t: 10, b: 50, l: 60, r: 10 },
+        xaxis: { title: 'ω (dimensionless)', type: 'log', color: '#8899aa',
+                 gridcolor: 'rgba(255,255,255,0.07)' },
+        yaxis: { title: '|F(ω)|²', color: '#8899aa',
+                 gridcolor: 'rgba(255,255,255,0.07)' },
+      }, { responsive: true, displayModeBar: false });
+    }
+
+    P().toast('Simulation complete', 'success');
+  } catch (e) {
+    P().toast(`Simulation failed: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Simulate Observation';
   }
-
-  // Plot GW spectrum
-  if (window.Plotly && resp.gw_spectrum) {
-    Plotly.newPlot('gwPlot', [{
-      x: resp.omega_dimensionless,
-      y: resp.gw_spectrum,
-      mode: 'lines+markers',
-      line: { color: '#4cc9f0', width: 2 },
-      marker: { size: 4 },
-      name: '|F(ω)|²',
-    }], {
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      font: { color: '#c9d1e0' },
-      margin: { t: 10, b: 50, l: 60, r: 10 },
-      xaxis: { title: 'ω (dimensionless)', type: 'log', color: '#8899aa',
-               gridcolor: 'rgba(255,255,255,0.07)' },
-      yaxis: { title: '|F(ω)|²', color: '#8899aa',
-               gridcolor: 'rgba(255,255,255,0.07)' },
-    }, { responsive: true, displayModeBar: false });
-  }
-
-  P().toast('Simulation complete', 'success');
 }
 
 async function runPosterior() {
@@ -245,67 +254,70 @@ async function runPosterior() {
     n_samples: 500,
   };
 
-  const resp = await P().api('/api/v1/pi-sbi/posterior', { method: 'POST', body });
-  btn.disabled = false;
-  btn.textContent = '🧠 Run PI-SBI Posterior';
+  try {
+    const resp = await P().api('/api/v1/pi-sbi/posterior', { method: 'POST', body });
+    if (!resp) { P().toast('Posterior returned empty', 'error'); return; }
 
-  if (!resp) { P().toast('Posterior failed', 'error'); return; }
+    const el = document.getElementById('posteriorContent');
 
-  const el = document.getElementById('posteriorContent');
+    if (resp.status === 'checkpoint_missing') {
+      el.innerHTML = `<div class="alert alert-warning">
+        <strong>Checkpoint not found.</strong> ${P().esc(resp.message || '')}
+      </div>`;
+      return;
+    }
 
-  if (resp.status === 'checkpoint_missing') {
-    el.innerHTML = `<div class="alert alert-warning">
-      <strong>Checkpoint not found.</strong> ${resp.message}
-    </div>`;
-    return;
+    const names = resp.param_names || [];
+    const mean = resp.posterior_mean || [];
+    const std = resp.posterior_std || [];
+
+    const labels = ['log₁₀(M<sub>vir</sub>)', 'log₁₀(r<sub>s</sub>)',
+                    'z<sub>l</sub>', 'z<sub>s</sub>', 'β<sub>x</sub>', 'β<sub>y</sub>'];
+    el.innerHTML = `
+      <table class="data-table" style="margin-bottom:1rem">
+        <thead><tr><th>Parameter</th><th>Mean</th><th>Std</th><th>95% CI</th></tr></thead>
+        <tbody>
+          ${mean.map((m, i) => `
+            <tr>
+              <td>${labels[i] || names[i]}</td>
+              <td>${m.toFixed(4)}</td>
+              <td>${(std[i] || 0).toFixed(4)}</td>
+              <td>[${(m - 2*(std[i]||0)).toFixed(3)}, ${(m + 2*(std[i]||0)).toFixed(3)}]</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+      <p class="dim small">
+        ${resp.n_samples} posterior samples · ${resp.inference_mode || ''} ·
+        Physics: <em>${resp.physics_constraint || ''}</em> ·
+        Ref: ${resp.reference || ''}
+      </p>
+    `;
+
+    // Posterior bar chart (mean ± 1σ)
+    if (window.Plotly && mean.length) {
+      document.getElementById('posteriorPlot').style.display = '';
+      Plotly.newPlot('posteriorPlot', [{
+        type: 'bar',
+        x: labels.map((l, i) => names[i] || l),
+        y: mean,
+        error_y: { type: 'data', array: std, visible: true, color: '#f72585' },
+        marker: { color: '#4361ee' },
+      }], {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { color: '#c9d1e0' },
+        margin: { t: 20, b: 60, l: 60, r: 20 },
+        xaxis: { color: '#8899aa' },
+        yaxis: { title: 'Posterior mean', color: '#8899aa',
+                 gridcolor: 'rgba(255,255,255,0.07)' },
+      }, { responsive: true, displayModeBar: false });
+    }
+
+    P().toast('Posterior complete', 'success');
+  } catch (e) {
+    P().toast(`Posterior failed: ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🧠 Run PI-SBI Posterior';
   }
-
-  const names = resp.param_names || [];
-  const mean = resp.posterior_mean || [];
-  const std = resp.posterior_std || [];
-
-  // Build table
-  const labels = ['log₁₀(M<sub>vir</sub>)', 'log₁₀(r<sub>s</sub>)',
-                  'z<sub>l</sub>', 'z<sub>s</sub>', 'β<sub>x</sub>', 'β<sub>y</sub>'];
-  el.innerHTML = `
-    <table class="data-table" style="margin-bottom:1rem">
-      <thead><tr><th>Parameter</th><th>Mean</th><th>Std</th><th>95% CI</th></tr></thead>
-      <tbody>
-        ${mean.map((m, i) => `
-          <tr>
-            <td>${labels[i] || names[i]}</td>
-            <td>${m.toFixed(4)}</td>
-            <td>${(std[i] || 0).toFixed(4)}</td>
-            <td>[${(m - 2*(std[i]||0)).toFixed(3)}, ${(m + 2*(std[i]||0)).toFixed(3)}]</td>
-          </tr>`).join('')}
-      </tbody>
-    </table>
-    <p class="dim small">
-      ${resp.n_samples} posterior samples · ${resp.inference_mode || ''} ·
-      Physics: <em>${resp.physics_constraint || ''}</em> ·
-      Ref: ${resp.reference || ''}
-    </p>
-  `;
-
-  // Posterior bar chart (mean ± 1σ)
-  if (window.Plotly) {
-    document.getElementById('posteriorPlot').style.display = '';
-    Plotly.newPlot('posteriorPlot', [{
-      type: 'bar',
-      x: labels.map((l, i) => names[i] || l),
-      y: mean,
-      error_y: { type: 'data', array: std, visible: true, color: '#f72585' },
-      marker: { color: '#4361ee' },
-    }], {
-      paper_bgcolor: 'rgba(0,0,0,0)',
-      plot_bgcolor: 'rgba(0,0,0,0)',
-      font: { color: '#c9d1e0' },
-      margin: { t: 20, b: 60, l: 60, r: 20 },
-      xaxis: { color: '#8899aa' },
-      yaxis: { title: 'Posterior mean', color: '#8899aa',
-               gridcolor: 'rgba(255,255,255,0.07)' },
-    }, { responsive: true, displayModeBar: false });
-  }
-
-  P().toast('Posterior complete', 'success');
 }

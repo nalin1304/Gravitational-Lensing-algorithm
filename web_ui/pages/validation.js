@@ -1,6 +1,6 @@
 /* Validation Page — SLACS, Calibration, Ablation */
 const L = () => window.LensPINN;
-const asBool = (value) => value === true || value === "true" || value === 1 || value === "1";
+const asBool = (value) => value === true || value === "true" || (typeof value === 'number' && value > 0);
 
 export function render() {
   return `

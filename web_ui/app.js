@@ -117,7 +117,7 @@ async function checkHealth() {
 
 const routes = {};
 let currentPage = null;
-const ASSET_VERSION = "2026-03-10-rigor-sync-2";
+const ASSET_VERSION = "2026-03-13-polish";
 
 function registerPage(name, mod) { routes[name] = mod; }
 
@@ -144,7 +144,9 @@ async function navigate() {
 
   currentPage = pageName;
   app.innerHTML = mod.render();
-  if (mod.init) mod.init();
+  if (mod.init) {
+    try { await mod.init(); } catch (e) { console.error(`[${pageName}] init error:`, e); }
+  }
 }
 
 // ---- Mobile Menu ----
@@ -163,34 +165,33 @@ function setupMenu() {
 
 async function boot() {
   // Load page modules
-  const mods = await Promise.all([
-    import(`/ui-static/pages/dashboard.js?v=${ASSET_VERSION}`),
-    import(`/ui-static/pages/workbench.js?v=${ASSET_VERSION}`),
-    import(`/ui-static/pages/validation.js?v=${ASSET_VERSION}`),
-    import(`/ui-static/pages/analyses.js?v=${ASSET_VERSION}`),
-    import(`/ui-static/pages/account.js?v=${ASSET_VERSION}`),
-    import(`/ui-static/pages/api-explorer.js?v=${ASSET_VERSION}`),
-    import(`/ui-static/pages/survey.js?v=${ASSET_VERSION}`),
-    import(`/ui-static/pages/rigor.js?v=${ASSET_VERSION}`),
-    import(`/ui-static/pages/pi_sbi.js?v=${ASSET_VERSION}`),
-  ]);
+  const pageEntries = [
+    ["dashboard", "dashboard.js"],
+    ["workbench", "workbench.js"],
+    ["validation", "validation.js"],
+    ["analyses", "analyses.js"],
+    ["account", "account.js"],
+    ["api", "api-explorer.js"],
+    ["survey", "survey.js"],
+    ["rigor", "rigor.js"],
+    ["pi-sbi", "pi_sbi.js"],
+  ];
 
-  registerPage("dashboard", mods[0]);
-  registerPage("workbench", mods[1]);
-  registerPage("validation", mods[2]);
-  registerPage("analyses", mods[3]);
-  registerPage("account", mods[4]);
-  registerPage("api", mods[5]);
-  registerPage("survey", mods[6]);
-  registerPage("rigor", mods[7]);
-  registerPage("pi-sbi", mods[8]);
+  const results = await Promise.allSettled(
+    pageEntries.map(([, file]) => import(`/ui-static/pages/${file}?v=${ASSET_VERSION}`))
+  );
+  results.forEach((r, i) => {
+    if (r.status === "fulfilled") registerPage(pageEntries[i][0], r.value);
+    else console.error(`Failed to load ${pageEntries[i][1]}:`, r.reason);
+  });
 
   setupMenu();
   updateUserDisplay();
   window.addEventListener("hashchange", navigate);
   navigate();
   checkHealth();
-  setInterval(checkHealth, 60000);
+  const healthInterval = setInterval(checkHealth, 60000);
+  window.addEventListener("beforeunload", () => clearInterval(healthInterval));
 }
 
 // Export shared utils for page modules
