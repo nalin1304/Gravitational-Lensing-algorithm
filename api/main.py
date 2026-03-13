@@ -1673,6 +1673,94 @@ async def nuts_fisher(req: NUTSFisherRequest):
         raise HTTPException(status_code=500, detail=f"Fisher computation failed: {str(e)}")
 
 
+# ---------------------------------------------------------------------------
+# Lensing Analysis: Critical Curves, Magnification Maps, Image Solver
+# ---------------------------------------------------------------------------
+
+@app.post("/api/v1/lensing/critical-curves", tags=["lensing-analysis"])
+async def compute_critical_curves(
+    M_vir: float = 1e14,
+    concentration: float = 5.0,
+    z_lens: float = 0.3,
+    z_source: float = 1.5,
+    grid_size: int = 200,
+    grid_range: float = 30.0,
+):
+    """Compute critical curves and caustics for an NFW lens profile."""
+    try:
+        from src.lens_models import LensSystem, NFWProfile
+        from src.lens_models.critical_curves import (
+            find_critical_curves,
+            find_caustics,
+            magnification_map as compute_magnification,
+        )
+
+        ls = LensSystem(z_lens=z_lens, z_source=z_source)
+        nfw = NFWProfile(M_vir=M_vir, concentration=concentration, lens_system=ls)
+
+        crit_x, crit_y = find_critical_curves(nfw, grid_size=grid_size, grid_range=grid_range)
+        caus_x, caus_y = find_caustics(nfw, grid_size=grid_size, grid_range=grid_range)
+
+        x1d = np.linspace(-grid_range, grid_range, grid_size)
+        y1d = np.linspace(-grid_range, grid_range, grid_size)
+        xx, yy = np.meshgrid(x1d, y1d)
+        mu = compute_magnification(nfw, xx.ravel(), yy.ravel())
+        mu_map = mu.reshape(grid_size, grid_size)
+
+        return {
+            "critical_curves": {"x": crit_x.tolist(), "y": crit_y.tolist()},
+            "caustics": {"x": caus_x.tolist(), "y": caus_y.tolist()},
+            "magnification_map": mu_map.tolist(),
+            "grid_range": grid_range,
+            "grid_size": grid_size,
+            "parameters": {
+                "M_vir": M_vir, "concentration": concentration,
+                "z_lens": z_lens, "z_source": z_source,
+            },
+        }
+    except Exception as e:
+        logger.exception("Critical curves computation failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/lensing/solve-images", tags=["lensing-analysis"])
+async def solve_image_positions(
+    M_vir: float = 1e14,
+    concentration: float = 5.0,
+    z_lens: float = 0.3,
+    z_source: float = 1.5,
+    source_x: float = 1.0,
+    source_y: float = 0.0,
+    grid_size: int = 200,
+    grid_range: float = 30.0,
+):
+    """Find multiple image positions for a source behind an NFW lens."""
+    try:
+        from src.lens_models import LensSystem, NFWProfile
+        from src.lens_models.critical_curves import solve_lens_equation
+
+        ls = LensSystem(z_lens=z_lens, z_source=z_source)
+        nfw = NFWProfile(M_vir=M_vir, concentration=concentration, lens_system=ls)
+
+        images = solve_lens_equation(
+            nfw, beta_x=source_x, beta_y=source_y,
+            grid_size=grid_size, grid_range=grid_range,
+        )
+
+        return {
+            "source_position": {"x": source_x, "y": source_y},
+            "images": images,
+            "n_images": len(images),
+            "parameters": {
+                "M_vir": M_vir, "concentration": concentration,
+                "z_lens": z_lens, "z_source": z_source,
+            },
+        }
+    except Exception as e:
+        logger.exception("Image position solver failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

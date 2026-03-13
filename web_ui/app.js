@@ -177,6 +177,7 @@ async function boot() {
     ["rigor", "rigor.js"],
     ["pi-sbi", "pi_sbi.js"],
     ["inference", "inference.js"],
+    ["lensing", "lensing.js"],
   ];
 
   const results = await Promise.allSettled(

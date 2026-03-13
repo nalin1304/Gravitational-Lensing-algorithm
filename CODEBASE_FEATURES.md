@@ -303,6 +303,43 @@ Returns `nan` (not π) for photons captured within r_s ≤ 1.5 r_Schwarz.
 
 ---
 
+## 4b. Critical Curves, Caustics & Image Solver
+
+**Module:** `src/lens_models/critical_curves.py`
+
+### Features
+- Lens Jacobian computation via centered finite differences
+- Magnification map μ = 1/det(A) with divergence clipping at ±1000
+- Convergence (κ) and shear (γ₁, γ₂) decomposition from the Jacobian
+- Critical curve extraction via marching-squares contour finding (det A = 0)
+- Caustic computation by source-plane mapping of critical curves
+- Tangential/radial critical curve separation via eigenvalue decomposition
+- Two-phase image position solver: coarse grid search → Newton-Raphson refinement
+- Image classification: minimum, saddle, maximum per Schneider (1992) §5.3
+- Parity assignment from sign of det(A)
+- Full lensing analysis convenience function
+
+### Key equations
+```
+Lens Jacobian:  A_ij = δ_ij - ∂²ψ/∂θ_i∂θ_j = δ_ij - ∂α_i/∂θ_j
+
+Magnification:  μ = 1/det(A) = 1/((1-κ)² - γ²)
+
+Critical curves: det(A) = 0  (loci of formally infinite magnification)
+
+Caustics:       β = θ - α(θ)  mapped from critical curves to source plane
+
+Image types:    det(A) > 0, tr(A) > 0 → minimum (Type I)
+                det(A) < 0           → saddle  (Type II)
+                det(A) > 0, tr(A) < 0 → maximum (Type III)
+```
+
+### References
+- Schneider, Ehlers & Falco (1992) §3.13–3.17 (lens mapping), §5.3–5.4 (image classification)
+- Birrer & Amara (2018) §3.1 — lenstronomy image-plane solver approach
+
+---
+
 ## 5. Wave Optics
 
 **Module:** `src/optics/wave_optics.py`

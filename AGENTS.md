@@ -33,7 +33,7 @@ Verified on 2026-03-13:
 
 ```bash
 python3 -m pytest tests/ -q
-# 627 passed, 1 skipped   (verified Mar 13 2026)
+# 646 passed, 1 skipped   (verified Mar 13 2026)
 
 python3 scripts/publication_gate.py --quick
 # Publication Gate: PASS
@@ -60,6 +60,10 @@ Expected non-fatal local warning:
     via hashed physical params (`hashlib.sha256` seed from M_vir, c, z_l, z_s).
   - `multi_plane.py`: Multi-plane ray-tracing with proper recurrence weights
     (`D_{i,i+1} / D_{i+1}`) and `lensing_potential` / `potential` interface.
+  - `critical_curves.py`: Caustic/critical-curve finder (marching squares),
+    magnification maps, convergence-shear decomposition, lens-equation image
+    solver (grid search + Newton-Raphson), image classification per
+    Schneider (1992) §5.3.
 - `src/optics/`: ray tracing, geodesics, wave optics.
   - `wave_optics.py`: Diffraction integral F(ω) = (ω/2πi)∫d²θ exp[iωτ(θ,β)]
     (Nakamura & Deguchi 1999, Prog.Theor.Phys.Suppl.133; Takahashi & Nakamura 2003, ApJ 595).
@@ -135,6 +139,7 @@ Expected non-fatal local warning:
   - `web_ui/pages/account.js` — Auth flow (login/register), API keys
   - `web_ui/pages/survey.js` — Stage IV Survey tools (Finder, ePSF, Blinding, Covariance, Joint)
   - `web_ui/pages/api-explorer.js` — OpenAPI-driven request builder
+  - `web_ui/pages/lensing.js` — Critical curves, magnification, image solver viz
 
 ### API + persistence
 - API entry: `api/main.py` (45 endpoints total)
@@ -196,6 +201,8 @@ Every backend endpoint is wired to a UI page:
 | `/api/v1/nuts/posterior` | POST | Inference | NUTS-HMC posterior sampling |
 | `/api/v1/nuts/fisher` | POST | Inference | Fisher information matrix |
 | `/docs` (OpenAPI) | GET | API Explorer | Schema-driven request builder |
+| `/api/v1/lensing/critical-curves` | POST | Lensing Analysis | Critical curves, caustics, magnification |
+| `/api/v1/lensing/solve-images` | POST | Lensing Analysis | Multi-image position solver |
 
 ---
 
@@ -241,6 +248,7 @@ Key source files link code to published equations:
 |------|-------------------|
 | `pinn.py` | ∇²ψ = 2κ — Schneider (1992), Eq. 3.11 |
 | `mass_profiles.py` | NFW: NFW (1997) Eq. 1; Wright & Brainerd (2000) Eq. 11–13; Bartelmann (1996) Eq. 13 |
+| `critical_curves.py` | Schneider (1992) §3.13–3.17, §5.3–5.4; Birrer & Amara (2018) §3.1 |
 | `multi_plane.py` | Schneider (1992) Eq. 9.1–9.3, 9.15, 4.14; Blandford & Narayan (1986) Eq. 2.4 |
 | `neural_ode.py` | Chen (2018) NeurIPS; Cranmer (2020); Greydanus (2019) |
 | `wave_optics.py` | Nakamura & Deguchi (1999) Eq. 4.2; Takahashi & Nakamura (2003) Eq. 3–5 |
@@ -376,6 +384,7 @@ bash scripts/reproduce.sh
 Scientific core:
 - `src/lens_models/lens_system.py`
 - `src/lens_models/mass_profiles.py`
+- `src/lens_models/critical_curves.py`
 - `src/lens_models/advanced_profiles.py`
 - `src/lens_models/multi_plane.py`
 - `src/optics/ray_tracing.py`
@@ -440,6 +449,7 @@ Paper:
 Validation/tests:
 - `tests/test_lens_system.py`
 - `tests/test_mass_profiles.py`
+- `tests/test_critical_curves.py`
 - `tests/test_ray_tracing.py`
 - `tests/test_time_delay.py`
 - `tests/test_physics_constrained_loss.py`
