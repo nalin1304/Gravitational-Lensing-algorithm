@@ -36,7 +36,8 @@ with mathematical formulas, algorithmic descriptions, and literature citations f
 23. [Benchmark and Evaluation Suite](#23-benchmark-and-evaluation-suite)
 24. [Reproducibility Infrastructure](#24-reproducibility-infrastructure)
 25. [API and Web Interface](#25-api-and-web-interface)
-26. [Complete Reference List](#26-complete-reference-list)
+26. [Differentiable Inference Engine](#26-differentiable-inference-engine)
+27. [Complete Reference List](#27-complete-reference-list)
 
 ---
 
@@ -1167,7 +1168,91 @@ Generates full statistical rigor report with evaluation_mode disclosure for all 
 
 ---
 
-## 26. Complete Reference List
+## 26. Differentiable Inference Engine
+
+**Modules:** `src/inference/differentiable_simulator.py`, `src/inference/nuts_hmc.py`
+
+### Features
+- End-to-end differentiable lens forward model implemented as PyTorch `nn.Module` subclasses
+- `DifferentiableNFW` and `DifferentiableSIS` mass profiles with full autograd support
+- Forward pipeline: profile parameters → convergence κ → deflection α → ray-trace → lensed image
+- Wright & Brainerd (2000) Eq. 11–13 piecewise NFW convergence kernel with proper arccosh/arccos branches
+- Bartelmann (1996) Eq. 13 piecewise NFW deflection with matching branch structure
+- Gaussian cusp smoothing (σ=0.05) near x=1 singularity for continuous differentiability
+- No-U-Turn Sampler (NUTS) for posterior inference with autograd-provided gradients
+- Dual-averaging step-size adaptation (Hoffman & Gelman 2014, Algorithm 5)
+- Fisher information matrix via `torch.autograd.functional.hessian` on the log-posterior
+- `AmortizedRefinement` hybrid pipeline: fast PI-SBI amortized initialization → NUTS refinement
+
+### Differentiable Forward Model
+
+**NFW convergence (Wright & Brainerd 2000, Eq. 11–13):**
+```
+κ(x) = 2 r_s ρ_s / Σ_crit × g(x)
+
+g(x < 1) = (1 - arccosh(1/x) / √(1-x²)) / (x²-1)
+g(x > 1) = (1 - arccos(1/x) / √(x²-1)) / (x²-1)
+g(x ≈ 1) = Gaussian-blended interpolation (σ=0.05)
+```
+
+**NFW deflection (Bartelmann 1996, Eq. 13):**
+```
+α(x) = 4 r_s ρ_s / Σ_crit × h(x)
+
+h(x) = ln(x/2) + f(x)/x   (piecewise arccosh/arccos branches)
+```
+
+### NUTS-HMC Algorithm (Hoffman & Gelman 2014)
+
+**Leapfrog integrator:**
+```
+p_{i+½} = p_i - (ε/2) ∇U(q_i)
+q_{i+1}  = q_i + ε p_{i+½}
+p_{i+1}  = p_{i+½} - (ε/2) ∇U(q_{i+1})
+```
+
+**No-U-Turn criterion:**
+```
+(θ⁺ - θ⁻) · r⁺ ≥ 0  AND  (θ⁺ - θ⁻) · r⁻ ≥ 0
+```
+
+**Dual averaging step-size adaptation (Algorithm 5):**
+```
+log ε̄_m = μ - √m / (γ + √m) × H̄_m
+```
+
+### Fisher Information
+
+**Observed Fisher information matrix:**
+```
+I(θ) = -∇²_θ log p(d | θ)
+```
+Computed via `torch.autograd.functional.hessian` for exact second derivatives through the differentiable forward model.
+
+### AmortizedRefinement Pipeline
+1. **Stage 1 (PI-SBI):** Amortized neural posterior q_φ(θ|x) provides fast initialization (~ms per lens)
+2. **Stage 2 (NUTS):** Full NUTS-HMC sampling initialized from PI-SBI MAP, refining with exact likelihood
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/nuts/simulate` | POST | Differentiable forward model evaluation |
+| `/api/v1/nuts/posterior` | POST | NUTS-HMC posterior sampling |
+| `/api/v1/nuts/fisher` | POST | Fisher information matrix computation |
+
+### Web Interface
+- **Inference** page (`web_ui/pages/inference.js`): interactive NUTS-HMC controls, corner plot visualization, Fisher ellipse overlay
+
+### References
+- Hoffman & Gelman (2014), JMLR 15, 1593–1623 (NUTS algorithm)
+- Galan et al. (2022), A&A 668, A155 (differentiable lensing)
+- Wright & Brainerd (2000), ApJ 534, 34 (NFW convergence)
+- Bartelmann (1996), A&A 313, 697 (NFW deflection)
+
+---
+
+## 27. Complete Reference List
 
 1. **Bartelmann (1996)** — NFW deflection angles in gravitational lensing. *A&A* 313, 697–702.
 2. **Birrer et al. (2015)** — Gravitational lens modeling with basis sets. *ApJ* 813, 102.
@@ -1180,33 +1265,35 @@ Generates full statistical rigor report with evaluation_mode disclosure for all 
 9. **Cranmer et al. (2020)** — Lagrangian neural networks. *PNAS* 117, 9449.
 10. **Fruchter & Hook (2002)** — Drizzle: a method for the linear reconstruction of undersampled images. *PASP* 114, 144.
 11. **Gal & Ghahramani (2016)** — Dropout as a Bayesian approximation. *ICML* 2016.
-12. **Greydanus et al. (2019)** — Hamiltonian neural networks. *NeurIPS* 2019.
-13. **He et al. (2016)** — Deep residual learning for image recognition. *CVPR* 2016.
-14. **Hogg (1999)** — Distance measures in cosmology. arXiv:astro-ph/9905116.
-15. **Jacobs et al. (2017)** — Finding strong gravitational lenses with convolutional neural networks. *ApJS* 243, 17.
-16. **Jeffreys (1961)** — *Theory of Probability*, 3rd ed. Oxford University Press.
-17. **Kochanek & Dalal (2004)** — Tests for substructure in gravitational lenses. *ApJ* 610, 69.
-18. **Koopmans et al. (2009)** — The structure and dynamics of massive early-type galaxies. *ApJ* 703, L51.
-19. **Mamon & Łokas (2005)** — Dark matter in elliptical galaxies. *MNRAS* 363, 705.
-20. **Millon et al. (2020)** — TDCOSMO I. *A&A* 639, A101.
-21. **Nakamura & Deguchi (1999)** — Wave optics in gravitational lensing. *Prog. Theor. Phys. Suppl.* 133, 137–153.
-22. **NFW / Navarro, Frenk & White (1997)** — A universal density profile from hierarchical clustering. *ApJ* 490, 493.
-23. **Noll (1976)** — Zernike polynomials and atmospheric turbulence. *J. Opt. Soc. Am.* 66, 207.
-24. **Petrillo et al. (2019)** — CNN gravitational lens finding. *MNRAS* 482, 807.
-25. **Planck Collaboration (2020)** — Planck 2018 results VI: cosmological parameters. *A&A* 641, A6.
-26. **Raissi, Perdikaris & Karniadakis (2019)** — Physics-informed neural networks. *J. Comp. Phys.* 378, 686.
-27. **Rasmussen & Williams (2006)** — *Gaussian Processes for Machine Learning*. MIT Press.
-28. **Refsdal (1964)** — On the possibility of determining Hubble's parameter and the masses of galaxies from the gravitational lens effect. *MNRAS* 128, 307.
-29. **Rowe et al. (2015)** — GalSim: the modular galaxy image simulation toolkit. *A&C* 10, 121.
-30. **Schneider, Ehlers & Falco (1992)** — *Gravitational Lenses*. Springer.
-31. **Skilling (2004)** — Nested sampling. *AIP Conf. Proc.* 735, 395–405.
-32. **Suyu et al. (2006)** — Dissecting the gravitational lens B1938+666. *MNRAS* 371, 983.
-33. **Suyu et al. (2010)** — Dissecting the gravitational lens B1938+666 II. *ApJ* 711, 201.
-34. **Takahashi & Nakamura (2003)** — Wave effects in gravitational lensing of GWs. *ApJ* 595, 1039.
-35. **Treu & Koopmans (2004)** — The internal structure and formation of early-type galaxies. *ApJ* 611, 739.
-36. **Trujillo et al. (2001)** — The effects of seeing on Sérsic structural parameters. *MNRAS* 326, 869.
-37. **Verdinelli & Wasserman (1995)** — Computing Bayes factors using a generalization of the Savage-Dickey density ratio. *JASA* 90, 614.
-38. **Wright & Brainerd (2000)** — A new derivation of the lensing convergence for the NFW profile. *ApJ* 534, 34.
+12. **Galan et al. (2022)** — Differentiable strong lensing. *A&A* 668, A155.
+13. **Greydanus et al. (2019)** — Hamiltonian neural networks. *NeurIPS* 2019.
+14. **He et al. (2016)** — Deep residual learning for image recognition. *CVPR* 2016.
+15. **Hoffman & Gelman (2014)** — The No-U-Turn Sampler. *JMLR* 15, 1593–1623.
+16. **Hogg (1999)** — Distance measures in cosmology. arXiv:astro-ph/9905116.
+17. **Jacobs et al. (2017)** — Finding strong gravitational lenses with convolutional neural networks. *ApJS* 243, 17.
+18. **Jeffreys (1961)** — *Theory of Probability*, 3rd ed. Oxford University Press.
+19. **Kochanek & Dalal (2004)** — Tests for substructure in gravitational lenses. *ApJ* 610, 69.
+20. **Koopmans et al. (2009)** — The structure and dynamics of massive early-type galaxies. *ApJ* 703, L51.
+21. **Mamon & Łokas (2005)** — Dark matter in elliptical galaxies. *MNRAS* 363, 705.
+22. **Millon et al. (2020)** — TDCOSMO I. *A&A* 639, A101.
+23. **Nakamura & Deguchi (1999)** — Wave optics in gravitational lensing. *Prog. Theor. Phys. Suppl.* 133, 137–153.
+24. **NFW / Navarro, Frenk & White (1997)** — A universal density profile from hierarchical clustering. *ApJ* 490, 493.
+25. **Noll (1976)** — Zernike polynomials and atmospheric turbulence. *J. Opt. Soc. Am.* 66, 207.
+26. **Petrillo et al. (2019)** — CNN gravitational lens finding. *MNRAS* 482, 807.
+27. **Planck Collaboration (2020)** — Planck 2018 results VI: cosmological parameters. *A&A* 641, A6.
+28. **Raissi, Perdikaris & Karniadakis (2019)** — Physics-informed neural networks. *J. Comp. Phys.* 378, 686.
+29. **Rasmussen & Williams (2006)** — *Gaussian Processes for Machine Learning*. MIT Press.
+30. **Refsdal (1964)** — On the possibility of determining Hubble's parameter and the masses of galaxies from the gravitational lens effect. *MNRAS* 128, 307.
+31. **Rowe et al. (2015)** — GalSim: the modular galaxy image simulation toolkit. *A&C* 10, 121.
+32. **Schneider, Ehlers & Falco (1992)** — *Gravitational Lenses*. Springer.
+33. **Skilling (2004)** — Nested sampling. *AIP Conf. Proc.* 735, 395–405.
+34. **Suyu et al. (2006)** — Dissecting the gravitational lens B1938+666. *MNRAS* 371, 983.
+35. **Suyu et al. (2010)** — Dissecting the gravitational lens B1938+666 II. *ApJ* 711, 201.
+36. **Takahashi & Nakamura (2003)** — Wave effects in gravitational lensing of GWs. *ApJ* 595, 1039.
+37. **Treu & Koopmans (2004)** — The internal structure and formation of early-type galaxies. *ApJ* 611, 739.
+38. **Trujillo et al. (2001)** — The effects of seeing on Sérsic structural parameters. *MNRAS* 326, 869.
+39. **Verdinelli & Wasserman (1995)** — Computing Bayes factors using a generalization of the Savage-Dickey density ratio. *JASA* 90, 614.
+40. **Wright & Brainerd (2000)** — A new derivation of the lensing convergence for the NFW profile. *ApJ* 534, 34.
 
 ---
 

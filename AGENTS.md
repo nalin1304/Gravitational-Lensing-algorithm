@@ -87,6 +87,13 @@ Expected non-fatal local warning:
     CNN), GWSpectrumEncoder (MLP on |F(ω)|²), 8-layer RealNVP flow. First joint EM+GW amortized
     posterior estimator for strong lensing. Novel physics-constraint: auxiliary ∇²ψ=2κ loss on
     CNN embedding (Schneider 1992). 10,000× speedup over MCMC.
+- `src/inference/`: Differentiable lens simulator and NUTS-HMC posterior sampling.
+  - `differentiable_simulator.py`: PyTorch `nn.Module` differentiable NFW/SIS mass profiles
+    with end-to-end forward model (profile → κ → α → ray-trace → image). Wright & Brainerd
+    (2000), Bartelmann (1996) piecewise kernels with Gaussian cusp smoothing.
+  - `nuts_hmc.py`: No-U-Turn Sampler (Hoffman & Gelman 2014, JMLR 15) with dual-averaging
+    step-size adaptation, Fisher information via autograd Hessian, and AmortizedRefinement
+    hybrid PI-SBI → NUTS pipeline.
 - `src/simulation/`: Multi-messenger simulation package.
   - `joint_simulator.py`: JointSimulator + SLACSInformedPrior + LIGO_O3_PSD.
     Generates (κ_map, |F(ω)|², θ) triplets with SLACS-calibrated priors
@@ -185,6 +192,9 @@ Every backend endpoint is wired to a UI page:
 | `/api/v1/jobs` | GET | Analyses > Jobs tab | DB-persisted jobs list |
 | `/api/v1/results` | GET | Analyses > Results tab | DB-persisted results list |
 | `/api/v1/survey/*` | POST | Stage IV Survey | 6 endpoints for finder, epsf, blinding, covariance, joint |
+| `/api/v1/nuts/simulate` | POST | Inference | Differentiable forward model |
+| `/api/v1/nuts/posterior` | POST | Inference | NUTS-HMC posterior sampling |
+| `/api/v1/nuts/fisher` | POST | Inference | Fisher information matrix |
 | `/docs` (OpenAPI) | GET | API Explorer | Schema-driven request builder |
 
 ---
@@ -277,6 +287,14 @@ Key source files link code to published equations:
 ### Augmentation pipeline (important physics constraint)
 - `RandomBrightness` and `RandomNoise` clip to `max(0, x)` ONLY — κ ≥ 0 only.
 - Upper-bound clip removed: κ can exceed 1.0 in massive halo cores (galaxy clusters κ ~ 2–5).
+
+### Differentiable inference
+- `DifferentiableNFW` in `src/inference/differentiable_simulator.py` uses Wright & Brainerd (2000)
+  Eq. 11–13 piecewise NFW convergence kernel with proper arccosh/arccos branches and Gaussian
+  blending (σ=0.05) near x=1 for differentiability.
+- Deflection follows Bartelmann (1996) Eq. 13 with matching piecewise structure.
+- `NUTSSampler` implements Hoffman & Gelman (2014) Algorithm 6 with dual averaging (Algorithm 5).
+- `FisherInformation` computes observed Fisher matrix via `torch.autograd.functional.hessian`.
 
 ### Uncertainty calibration
 - `scripts/uncertainty_calibration.py` trains or loads `models/bayesian_uq_synthetic.pt`
@@ -373,6 +391,9 @@ Scientific core:
 - `src/ml/physics_constrained_loss.py`
 - `src/ml/lens_finder.py`
 - `src/ml/joint_survey.py`
+- `src/inference/__init__.py`
+- `src/inference/differentiable_simulator.py`
+- `src/inference/nuts_hmc.py`
 - `src/data/mast_downloader.py`
 - `src/data/pixel_covariance.py`
 - `src/validation/hst_targets.py`
@@ -405,6 +426,7 @@ Web UI:
 - `web_ui/pages/account.js`
 - `web_ui/pages/survey.js`
 - `web_ui/pages/api-explorer.js`
+- `web_ui/pages/inference.js`
 
 API:
 - `api/main.py`
@@ -425,6 +447,7 @@ Validation/tests:
 - `tests/test_next_ui.py`
 - `tests/test_api.py`
 - `tests/test_real_data.py`
+- `tests/test_differentiable_inference.py`
 
 ---
 
