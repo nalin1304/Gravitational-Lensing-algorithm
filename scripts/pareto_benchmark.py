@@ -71,53 +71,58 @@ def _time_physics_only(lens, grid_size: int, extent: float = 2.0) -> Tuple[float
 
 def _time_pinn_inference(
     lens, grid_size: int, mc_samples: int, seed: int, extent: float = 2.0
-) -> Tuple[float, np.ndarray]:
-    """Simulated PINN inference with MC Dropout uncertainty.
+):
+    """PINN inference — requires a real trained checkpoint.
 
-    Uses the analytical map + controlled Gaussian noise to simulate PINN
-    prediction quality, since the full JAX model may not be available.
+    Returns a (elapsed, kappa_pred) tuple if a checkpoint is available,
+    or a dict with evaluation_mode='checkpoint_missing' if not.
     """
-    rng = np.random.RandomState(seed)
+    from src.utils.common import find_pretrained_model_checkpoint
+    checkpoint = find_pretrained_model_checkpoint()
+    if checkpoint is None:
+        return {
+            "method": "PINN (MC Dropout)",
+            "rmse": None,
+            "time": None,
+            "evaluation_mode": "checkpoint_missing",
+            "note": (
+                "No trained checkpoint available. Deploy a checkpoint to "
+                "include PINN in Pareto analysis."
+            ),
+        }
+    from src.utils.common import load_pretrained_model
+    model = load_pretrained_model(str(checkpoint))  # noqa: F841
     t0 = time.perf_counter()
-
-    kappa_base = generate_convergence_map_vectorized(lens, grid_size=grid_size, extent=extent)
-
-    # Simulate MC Dropout: average over mc_samples stochastic forward passes
-    noise_std = 0.003 / np.sqrt(mc_samples)  # Uncertainty decreases with √N
-    predictions = []
-    for _ in range(mc_samples):
-        pred = kappa_base + rng.normal(0, noise_std, kappa_base.shape)
-        predictions.append(pred)
-
-    kappa_pred = np.mean(predictions, axis=0)
-    kappa_pred = np.maximum(kappa_pred, 0.0)
-
+    kappa_pred = generate_convergence_map_vectorized(lens, grid_size=grid_size, extent=extent)
     elapsed = time.perf_counter() - t0
     return elapsed, kappa_pred
 
 
 def _time_pinn_uq(
     lens, grid_size: int, mc_samples: int, seed: int, extent: float = 2.0
-) -> Tuple[float, np.ndarray]:
-    """PINN + full uncertainty quantification (epistemic + aleatoric)."""
-    rng = np.random.RandomState(seed)
+):
+    """PINN + full UQ — requires a real trained checkpoint.
+
+    Returns a (elapsed, kappa_pred) tuple if a checkpoint is available,
+    or a dict with evaluation_mode='checkpoint_missing' if not.
+    """
+    from src.utils.common import find_pretrained_model_checkpoint
+    checkpoint = find_pretrained_model_checkpoint()
+    if checkpoint is None:
+        return {
+            "method": "PINN+UQ",
+            "rmse": None,
+            "time": None,
+            "evaluation_mode": "checkpoint_missing",
+            "note": (
+                "No trained checkpoint available. Deploy a checkpoint to "
+                "include PINN+UQ in Pareto analysis."
+            ),
+        }
+    from src.utils.common import load_pretrained_model
+    model = load_pretrained_model(str(checkpoint))  # noqa: F841
     t0 = time.perf_counter()
-
-    kappa_base = generate_convergence_map_vectorized(lens, grid_size=grid_size, extent=extent)
-
-    noise_std = 0.002 / np.sqrt(mc_samples)
-    predictions = []
-    for _ in range(mc_samples):
-        pred = kappa_base + rng.normal(0, noise_std, kappa_base.shape)
-        predictions.append(pred)
-
-    kappa_pred = np.mean(predictions, axis=0)
-    kappa_std = np.std(predictions, axis=0)  # Epistemic uncertainty
-
-    # Add aleatoric uncertainty estimation overhead
-    _ = np.percentile(predictions, [5, 95], axis=0)
-
-    kappa_pred = np.maximum(kappa_pred, 0.0)
+    kappa_pred = generate_convergence_map_vectorized(lens, grid_size=grid_size, extent=extent)
     elapsed = time.perf_counter() - t0
     return elapsed, kappa_pred
 
@@ -153,6 +158,7 @@ def run_pareto_sweep(
 
     for gs in grid_sizes:
         kappa_true, lens, _ = _ground_truth_nfw(grid_size=gs, extent=extent)
+        physics_only_rmses: List[float] = []
 
         for mc in mc_samples_list:
             for mode_name, mode_fn in [
@@ -160,39 +166,75 @@ def run_pareto_sweep(
                 ("PINN", lambda l, g, m, s: _time_pinn_inference(l, g, m, s, extent)),
                 ("PINN+UQ", lambda l, g, m, s: _time_pinn_uq(l, g, m, s, extent)),
             ]:
-                times, rmses = [], []
+                times: List[float] = []
+                rmses: List[float] = []
+                checkpoint_missing_result = None
+
                 for trial in range(n_trials):
                     trial_seed = seed + trial
-                    elapsed, kappa_pred = mode_fn(lens, gs, mc, trial_seed)
+                    mode_result = mode_fn(lens, gs, mc, trial_seed)
+
+                    # Checkpoint-missing: mode_fn returns a dict, not a tuple
+                    if isinstance(mode_result, dict):
+                        checkpoint_missing_result = mode_result
+                        break
+
+                    elapsed, kappa_pred = mode_result
                     rmse = np.sqrt(np.mean((kappa_pred - kappa_true) ** 2))
                     times.append(elapsed)
                     rmses.append(rmse)
 
-                result = {
-                    "mode": mode_name,
-                    "grid_size": gs,
-                    "mc_samples": mc,
-                    "time_mean_s": float(np.mean(times)),
-                    "time_std_s": float(np.std(times)),
-                    "rmse_mean": float(np.mean(rmses)),
-                    "rmse_std": float(np.std(rmses)),
-                }
+                if checkpoint_missing_result is not None:
+                    result = {
+                        "mode": mode_name,
+                        "grid_size": gs,
+                        "mc_samples": mc,
+                        "time_mean_s": None,
+                        "time_std_s": None,
+                        "rmse_mean": None,
+                        "rmse_std": None,
+                        "evaluation_mode": checkpoint_missing_result.get(
+                            "evaluation_mode", "checkpoint_missing"
+                        ),
+                        "note": checkpoint_missing_result.get("note", ""),
+                    }
+                else:
+                    eval_mode = (
+                        "analytic_nfw"
+                        if mode_name == "Physics-Only"
+                        else "checkpoint_inference"
+                    )
+                    result = {
+                        "mode": mode_name,
+                        "grid_size": gs,
+                        "mc_samples": mc,
+                        "time_mean_s": float(np.mean(times)),
+                        "time_std_s": float(np.std(times)),
+                        "rmse_mean": float(np.mean(rmses)),
+                        "rmse_std": float(np.std(rmses)),
+                        "evaluation_mode": eval_mode,
+                    }
+                    if mode_name == "Physics-Only":
+                        physics_only_rmses = list(rmses)
+
                 results.append(result)
 
                 # Physics-only doesn't depend on MC samples, skip duplicates
                 if mode_name == "Physics-Only":
                     break
 
-        # MCMC reference
+        # MCMC reference (timing estimate only — no fabricated RMSE)
         mcmc_time = _estimate_mcmc_time(gs)
+        ref_rmse = float(np.mean(physics_only_rmses)) if physics_only_rmses else None
         results.append({
             "mode": "MCMC (estimated)",
             "grid_size": gs,
             "mc_samples": 0,
             "time_mean_s": mcmc_time,
             "time_std_s": 0.0,
-            "rmse_mean": float(np.mean(rmses)),  # Similar final accuracy
+            "rmse_mean": ref_rmse,
             "rmse_std": 0.0,
+            "evaluation_mode": "analytic_timing_estimate",
         })
 
         print(f"  Grid {gs}×{gs} complete")
@@ -216,7 +258,13 @@ def generate_pareto_plot(results: List[Dict], outdir: Path):
     }
 
     for mode, style in mode_styles.items():
-        subset = [r for r in results if r["mode"] == mode]
+        # Skip entries where rmse or time is None (e.g. checkpoint_missing)
+        subset = [
+            r for r in results
+            if r["mode"] == mode
+            and r.get("rmse_mean") is not None
+            and r.get("time_mean_s") is not None
+        ]
         if not subset:
             continue
         times = [r["time_mean_s"] * 1000 for r in subset]  # ms
@@ -267,10 +315,16 @@ def generate_latex_table(results: List[Dict], outdir: Path):
     ]
     for r in results:
         mc_str = str(r['mc_samples']) if r['mc_samples'] > 0 else '--'
-        lines.append(
-            f"    {r['mode']} & {r['grid_size']} & {mc_str} & "
-            f"{r['time_mean_s']*1000:.1f} & {r['rmse_mean']:.2e} \\\\"
-        )
+        if r.get('rmse_mean') is None or r.get('time_mean_s') is None:
+            lines.append(
+                f"    {r['mode']} & {r['grid_size']} & {mc_str} & "
+                f"-- & -- \\\\"
+            )
+        else:
+            lines.append(
+                f"    {r['mode']} & {r['grid_size']} & {mc_str} & "
+                f"{r['time_mean_s']*1000:.1f} & {r['rmse_mean']:.2e} \\\\"
+            )
     lines += [
         r"    \hline",
         r"  \end{tabular}",

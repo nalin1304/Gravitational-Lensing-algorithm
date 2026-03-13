@@ -192,16 +192,23 @@ class NestedSampler:
             if log_remaining < log_evidence + np.log(tol):
                 break
 
-        # Add surviving live points
-        log_vol_each = log_vol - np.log(self.n_live)
-        for i in range(self.n_live):
+        # Add surviving live points using Skilling (2004) order-statistic volumes.
+        # Sort ascending by likelihood so the lowest-L point gets the largest
+        # remaining volume fraction.
+        # Ref: Skilling (2004), §4 — terminal live-point volume fractions.
+        sorted_idx = np.argsort(live_logl)
+        n = self.n_live
+        for rank, i in enumerate(sorted_idx):
+            # Expected remaining volume fraction for rank-th point out of n live points
+            if rank < n - 1:
+                frac = 1.0 / (n - rank)
+                log_dV = log_vol + np.log(frac) - np.log(n - rank + 1)
+            else:
+                log_dV = log_vol
             dead_points.append(live_theta[i].copy())
             dead_logl.append(live_logl[i])
-            dead_logvol.append(log_vol_each)
-
-            log_evidence = np.logaddexp(
-                log_evidence, live_logl[i] + log_vol_each
-            )
+            dead_logvol.append(log_dV)
+            log_evidence = np.logaddexp(log_evidence, live_logl[i] + log_dV)
 
         # Build posterior samples
         dead_points = np.array(dead_points)

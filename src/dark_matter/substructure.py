@@ -87,8 +87,8 @@ class SubhaloPopulation:
         # Generate masses from power-law
         n_halos = int(1000 * (total_mass_fraction / 0.01))
         
-        rng = np.random.RandomState(random_seed) if random_seed is not None else np.random
-        
+        rng = np.random.default_rng(random_seed)
+
         # Power-law sampling
         u = rng.uniform(0, 1, n_halos)
         if self.alpha != -1:
@@ -308,8 +308,8 @@ def generate_training_data(
     X = []
     y = []
     
-    rng = np.random.RandomState(random_seed) if random_seed is not None else np.random
-    
+    rng = np.random.default_rng(random_seed)
+
     # Generate samples with substructure
     for _ in range(n_substructure):
         # Add anomalies

@@ -58,7 +58,7 @@ from __future__ import annotations
 from typing import Literal, Optional, Tuple
 
 import numpy as np
-from scipy.linalg import cho_factor, cho_solve
+from scipy.linalg import cho_factor, cho_solve, solve_triangular
 from scipy.ndimage import gaussian_filter
 
 
@@ -82,7 +82,7 @@ def _square_kernel_overlap(
 
     Ref: Fruchter & Hook (2002), Eq. 4
     """
-    w = pixfrac * scale  # half-width in output pixels (full width = 2w)
+    w = pixfrac * scale  # decorrelation length: kernel reaches zero at separation = w (Fruchter & Hook 2002)
     w = max(w, 1e-6)
     overlap_1d = np.maximum(0.0, 1.0 - np.abs(sep) / w)
     return overlap_1d
@@ -292,11 +292,14 @@ def apply_covariance_whitening(
         )
 
     c, low = cho_factor(cov, lower=True)
-    # Solve L x = r  →  x = L⁻¹r  (whitened residual)
-    chi = cho_solve((c, low), r)
     if return_chisq:
-        return float(np.dot(r, chi))
-    return chi
+        # r^T Σ⁻¹ r — cho_solve gives Σ⁻¹r, correct for chi-squared
+        chi_inv = cho_solve((c, low), r)
+        return float(np.dot(r, chi_inv))
+    # Whitened residual L⁻¹r where Σ = L L^T
+    # c from cho_factor (lower=True) is the lower-triangular Cholesky factor L
+    whitened = solve_triangular(c, r, lower=True)
+    return whitened
 
 
 def effective_noise_correlation_length(

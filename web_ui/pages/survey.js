@@ -510,37 +510,41 @@ export async function init() {
 
     // ── Blinding: Apply ──────────────────────────────────────────────────
     let _blindState = null;
-    document.getElementById("blBlindBtn").addEventListener("click", () => {
+    document.getElementById("blBlindBtn").addEventListener("click", async () => {
         const phrase = document.getElementById("blPhrase").value.trim();
-        const h0 = parseFloat(document.getElementById("blH0").value);
+        const h0Raw = parseFloat(document.getElementById("blH0").value);
         const dtd = parseFloat(document.getElementById("blDtd").value);
         if (!phrase) { P.toast("Enter a blinding phrase first", "warning"); return; }
 
-        // Local JS blinding — no server round-trip (phrase stays local)
-        // Approximate HMAC by deterministic hash: uses phrase+domain as seed
-        const offsetH0 = _localDeriveOffset(phrase, "h0", -5, 5);
-        const offsetDtd = 1.0 + _localDeriveOffset(phrase, "dtd", -0.15, 0.15);
-        const h0Blind = h0 + offsetH0;
-        const dtdBlind = dtd * offsetDtd;
-        _blindState = { h0Blind, dtdBlind, offsetH0, offsetDtd };
-
-        document.getElementById("blState").innerHTML = `
-      <div class="metric-row"><span class="metric-key">H₀ (true)</span><span class="metric-val">${h0.toFixed(3)} km/s/Mpc</span></div>
+        // Use server-side HMAC blinding to match server unblinding
+        try {
+            const resp = await P.api("/api/v1/survey/blinding/apply", {
+                method: "POST",
+                body: { phrase, h0: h0Raw, omega_m: 0.315, sigma8: 0.811 },
+            });
+            if (resp) {
+                const h0Blind = resp.h0_blind ?? h0Raw;
+                _blindState = { h0Blind, dtdBlind: dtd, phrase };
+                document.getElementById("blState").innerHTML = `
+      <div class="metric-row"><span class="metric-key">H₀ (true)</span><span class="metric-val">${h0Raw.toFixed(3)} km/s/Mpc</span></div>
       <div class="metric-row"><span class="metric-key">H₀ (blinded)</span><span class="metric-val" style="color:var(--warning)">${h0Blind.toFixed(3)} km/s/Mpc</span></div>
-      <div class="metric-row"><span class="metric-key">D_Δt (true)</span><span class="metric-val">${dtd.toFixed(1)} Mpc</span></div>
-      <div class="metric-row"><span class="metric-key">D_Δt (blinded)</span><span class="metric-val" style="color:var(--warning)">${dtdBlind.toFixed(1)} Mpc</span></div>
+      <div class="metric-row"><span class="metric-key">D_Δt</span><span class="metric-val">${dtd.toFixed(1)} Mpc</span></div>
       <div class="metric-row" style="margin-top:8px">
         <span class="metric-key">Protocol</span>
-        <span class="badge badge-warning">TDCOSMO additive H₀ + multiplicative D_Δt</span>
+        <span class="badge badge-warning">TDCOSMO HMAC-SHA256 server-side</span>
       </div>
       <p class="section-desc" style="font-size:0.75rem;color:var(--text-muted);margin-top:8px">
         ⚠ Record your blinded values. The unblinded true values are NOT stored.
       </p>
     `;
-        document.getElementById("blStateCard").style.display = "";
-        document.getElementById("blH0Blind").value = h0Blind.toFixed(4);
-        document.getElementById("blDtdBlind").value = dtdBlind.toFixed(2);
-        P.toast("Blinding applied — record the blinded values!", "warning");
+                document.getElementById("blStateCard").style.display = "";
+                document.getElementById("blH0Blind").value = h0Blind.toFixed(4);
+                document.getElementById("blDtdBlind").value = dtd.toFixed(2);
+                P.toast("Blinding applied via server HMAC-SHA256", "success");
+            }
+        } catch (e) {
+            P.toast(e.message, "error");
+        }
     });
 
     // ── Blinding: Unblind via API ─────────────────────────────────────────
@@ -663,16 +667,6 @@ export async function init() {
 }
 
 // ---------------------------------------------------------------------------
-// Local blinding offset (mirrors Python HMAC derivation approximately)
-// Uses a simple XOR-folded hash — sufficient for UI demonstration since the
-// true secret offset is computed server-side via HMAC-SHA256.
+// Note: blinding offsets are computed server-side via HMAC-SHA256.
+// Use POST /api/v1/survey/blinding/apply to blind parameters.
 // ---------------------------------------------------------------------------
-function _localDeriveOffset(phrase, domain, lo, hi) {
-    const str = `${domain}:blinding:lensing:${phrase}`;
-    let h = 0;
-    for (let i = 0; i < str.length; i++) {
-        h = Math.imul(31, h) + str.charCodeAt(i) | 0;
-    }
-    const unit = ((h >>> 0) / 4294967295);
-    return lo + unit * (hi - lo);
-}

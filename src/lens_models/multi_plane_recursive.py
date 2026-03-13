@@ -256,89 +256,29 @@ def multi_plane_trace(
             else:
                 logger.info(f"Plane {i} (z={z_i:.3f}): D_{i},s/D_s = {ratio:.6f}")
     
-    # Initialize: start from source position
-    theta = beta.copy()
-    
-    # Fixed-point iteration with adaptive relaxation for better convergence
-    relaxation = 0.7  # Initial relaxation factor
-    
-    delta = np.inf
+    # Solve β(θ) = β_target using the correct forward multi-plane mapping.
+    # multi_plane_deflection_forward is defined later in this module and is
+    # looked up at call-time, so no forward-declaration is needed.
+    from scipy.optimize import fsolve
 
-    # Fixed-point iteration to solve recursive equation
-    for iteration in range(max_iter):
-        theta_old = theta.copy()
-        
-        # Backward recursion from source to observer
-        # Start with source plane
-        theta_current = beta.copy()
-        
-        # Work backward through planes (N-1 to 0)
-        for i in range(N - 1, -1, -1):
-            plane = lens_planes[i]
-            alpha_func = plane['alpha_func']
-            ratio = ratios[i]
-            
-            # Compute deflection at current position
-            # Use current best estimate
-            theta_eval = theta
-            
-            alpha_x, alpha_y = alpha_func(theta_eval[0], theta_eval[1])
-            alpha = np.array([alpha_x, alpha_y], dtype=float)
-            
-            # Handle array outputs
-            if np.ndim(alpha_x) > 0:
-                alpha = np.array([alpha_x.flat[0], alpha_y.flat[0]], dtype=float)
-            
-            # Update position via recursive equation
-            # θᵢ = θᵢ₊₁ + (Dᵢ,ᵢ₊₁/Dᵢ₊₁) αᵢ(θᵢ)
-            theta_current = theta_current + ratio * alpha
-        
-        # Apply relaxation for stability
-        theta_new = relaxation * theta_current + (1 - relaxation) * theta_old
-        
-        # Check convergence
-        delta = float(np.linalg.norm(theta_new - theta_old))
-        
-        # Adapt relaxation: if converging well, increase; if oscillating, decrease
-        if iteration > 0 and delta < 0.1:
-            relaxation = min(0.9, relaxation * 1.05)
-        elif iteration > 0 and delta > 1.0:
-            relaxation = max(0.3, relaxation * 0.8)
-        
-        if verbose and iteration % 10 == 0:
-            logger.info(f"Iteration {iteration}: δ = {delta:.3e} arcsec, relax = {relaxation:.3f}")
-        
-        if delta < tolerance:
-            if verbose:
-                logger.info(f"Converged in {iteration + 1} iterations")
-            return theta_new
-        
-        theta = theta_new
-    
-    # If strict tolerance was missed but residual is already very small,
-    # accept the solution to avoid noisy warnings in practical use.
-    relaxed_residual_tolerance = max(tolerance * 1_000.0, 1e-4)
-    if np.isfinite(delta) and delta <= relaxed_residual_tolerance:
-        if verbose:
-            logger.info(
-                "Accepted relaxed convergence after %d iterations "
-                "(residual %.3e arcsec, strict tol %.3e)",
-                max_iter,
-                delta,
-                tolerance,
-            )
-        return theta
+    def _residual(theta_arr: np.ndarray) -> np.ndarray:
+        beta_pred = multi_plane_deflection_forward(
+            np.asarray(theta_arr, dtype=float), lens_planes, cosmology, z_source
+        )
+        return np.asarray(beta_pred, dtype=float) - beta
 
-    # Did not converge - issue warning
-    import warnings
-    warnings.warn(
-        f"multi_plane_trace did not converge in {max_iter} iterations. "
-        f"Final residual: {delta:.3e} arcsec",
-        RuntimeWarning,
-        stacklevel=2
+    theta_init = beta.copy()
+    theta_sol, _, ier, mesg = fsolve(
+        _residual, theta_init, full_output=True, xtol=tolerance, maxfev=max_iter
     )
-    
-    return theta
+    if ier != 1:
+        import warnings
+        warnings.warn(
+            f"multi_plane_trace fsolve did not converge: {mesg}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+    return np.asarray(theta_sol, dtype=float)
 
 
 def multi_plane_deflection_forward(

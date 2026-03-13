@@ -338,8 +338,8 @@ if JAX_AVAILABLE:
         
         raw_physics_residual = jnp.mean(residual_x**2 + residual_y**2)
         
-        M_vir_penalty = jax.nn.relu(0.1 - M_vir) + jax.nn.relu(M_vir - 1000.0)
-        r_s_penalty = jax.nn.relu(10.0 - r_s) + jax.nn.relu(r_s - 1000.0)
+        M_vir_penalty = jax.nn.relu(1e9  - M_vir) + jax.nn.relu(M_vir - 1e14)
+        r_s_penalty   = jax.nn.relu(0.1  - r_s)   + jax.nn.relu(r_s   - 500.0)
         regularization = jnp.mean(M_vir_penalty**2) + jnp.mean(r_s_penalty**2)
         
         physics_loss = raw_physics_residual + regularization

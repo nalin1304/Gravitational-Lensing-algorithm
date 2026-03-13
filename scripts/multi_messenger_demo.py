@@ -156,21 +156,13 @@ def compute_gw_amplification(
     for f in frequencies:
         omega = omega_scale * f
 
-        # Diffraction integral: F(ω) ∝ ∫ d²θ exp[iω τ(θ)]
+        # Diffraction integral: F(ω) = (ω/2πi) ∫ d²θ exp[iω τ(θ)]
         # Ref: Nakamura & Deguchi (1999), Eq. 4.2
         integrand = np.exp(1j * omega * fermat)
-        F_omega = np.sum(integrand) * dx**2
-
-        # Normalize by geometric optics limit
-        # Normalize the diffraction integral
-        # |F(ω)|² is the magnification in the wave optics regime
-        # Ref: Takahashi & Nakamura (2003), below Eq. 5
-        area = (2 * extent)**2
-        F_norm = F_omega * dx**2 / area
-        mu = float(np.abs(F_norm)**2)
-        # In the geometric optics limit (ω → ∞), μ → μ_geo
+        F_omega = (omega / (2.0 * np.pi * 1j)) * np.sum(integrand) * dx**2
+        mu_wave = float(np.abs(F_omega)**2)
         # Clamp to physically reasonable range for display
-        mu = np.clip(mu, 0.1, 100.0)
+        mu = np.clip(mu_wave, 0.1, 100.0)
 
         magnifications.append(mu)
         phases.append(np.angle(F_omega))
@@ -217,10 +209,16 @@ def compute_cross_correlation(optical: Dict, gw: Dict) -> Dict:
     gw_mean_mu = float(np.mean(gw['magnification']))
     gw_std_mu = float(np.std(gw['magnification']))
 
-    # Consistency: optical Einstein radius κ ≈ 1 ring should correlate
-    # with GW magnification peak frequency
+    # Geometric optics magnification at lens centre (κ only, γ ≈ 0 approx)
     kappa_max = float(np.max(kappa))
-    consistency = 1.0 - abs(kappa_max - gw_mean_mu) / max(kappa_max, gw_mean_mu, 1e-10)
+    kappa_center = float(kappa[center, center])
+    mu_geo = (1.0 / (1.0 - kappa_center) ** 2
+              if abs(1.0 - kappa_center) > 1e-3 else float('inf'))
+    # Fractional deviation of wave-optics mean magnification from geometric limit
+    if mu_geo > 0 and np.isfinite(mu_geo):
+        consistency = float(np.abs(gw_mean_mu / mu_geo - 1.0))
+    else:
+        consistency = float('nan')
 
     return {
         'radial_profile': profile,
@@ -228,7 +226,7 @@ def compute_cross_correlation(optical: Dict, gw: Dict) -> Dict:
         'gw_mean_magnification': gw_mean_mu,
         'gw_std_magnification': gw_std_mu,
         'kappa_max': kappa_max,
-        'consistency_metric': float(np.clip(consistency, 0, 1)),
+        'consistency_metric': consistency,
     }
 
 

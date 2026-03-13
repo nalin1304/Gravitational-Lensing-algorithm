@@ -233,15 +233,17 @@ class PhysicsConstrainedLayer(nn.Module):
     Ensures predictions satisfy physical constraints:
     - Mass conservation
     - Positive convergence (κ >= 0)
-    - Causality (shear γ <= κ)
     - Bounded parameter ranges
-    
+
+    NOTE: |γ| ≤ κ is NOT a general lensing constraint. Galaxy clusters have
+    regions where γ > κ. Only convergence positivity (κ ≥ 0) is enforced.
+
     Parameters
     ----------
     enforce_positivity : bool
         Ensure κ >= 0 using softplus activation
     enforce_causality : bool
-        Ensure γ <= κ (weak lensing approximation)
+        Retained for API backwards-compatibility; no longer clamps shear.
     """
     
     def __init__(self, enforce_positivity=True, enforce_causality=True):
@@ -270,17 +272,11 @@ class PhysicsConstrainedLayer(nn.Module):
         # Enforce positivity: κ >= 0
         if self.enforce_positivity:
             convergence = F.softplus(convergence)
-        
-        # Enforce causality: |γ| <= κ
-        if self.enforce_causality and shear_1 is not None and shear_2 is not None:
-            shear_mag = torch.sqrt(shear_1**2 + shear_2**2 + 1e-8)
-            
-            # Scale shear if it exceeds convergence
-            scale_factor = torch.minimum(torch.ones_like(shear_mag), 
-                                        convergence / (shear_mag + 1e-8))
-            shear_1 = shear_1 * scale_factor
-            shear_2 = shear_2 * scale_factor
-        
+
+        # NOTE: |γ| ≤ κ is NOT a general lensing constraint. Galaxy clusters have
+        # regions where γ > κ. Only convergence positivity (κ ≥ 0) is enforced.
+        # shear is unconstrained — do NOT clamp to ≤ convergence
+
         if shear_1 is not None and shear_2 is not None:
             return convergence, shear_1, shear_2
         else:
@@ -529,32 +525,37 @@ class PhysicsInformedLoss(nn.Module):
         self.lambda_conservation = lambda_conservation
         self.lambda_reg = lambda_reg
         
-    def lens_equation_residual(self, convergence_pred, convergence_true):
+    def convergence_smoothness_regularizer(self, convergence_pred, convergence_true):
         """
-        Compute residual of lens equation.
-        
-        Lens equation: β = θ - α(θ)
-        where α depends on κ via Poisson equation: ∇²ψ = 2κ
-        
+        Smoothness regularizer on convergence Laplacians.
+
+        NOTE: This is NOT the Poisson physics constraint ∇²ψ = 2κ
+        (Schneider 1992, Eq. 3.11). The physics Poisson constraint should be
+        computed from the lensing potential ψ, not κ.  This method penalises
+        differences in the Laplacian of κ between prediction and ground truth,
+        acting as a spatial-smoothness regularizer only.
+
         Parameters
         ----------
         convergence_pred : torch.Tensor
             Predicted convergence map
         convergence_true : torch.Tensor
             True convergence map
-            
+
         Returns
         -------
         residual : torch.Tensor
-            Lens equation residual
+            Smoothness regularization loss
         """
         # Compute Laplacian of convergence using finite differences
-        # ∇²κ should be smooth for physical halos
         laplacian = self._compute_laplacian(convergence_pred)
         laplacian_true = self._compute_laplacian(convergence_true)
-        
+
         residual = F.mse_loss(laplacian, laplacian_true)
         return residual
+
+    # Backward-compatibility alias — callers using the old name still work
+    lens_equation_residual = convergence_smoothness_regularizer
     
     def _compute_laplacian(self, field):
         """Compute 2D Laplacian using finite differences."""

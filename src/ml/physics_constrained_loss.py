@@ -151,76 +151,37 @@ class PhysicsConstrainedPINNLoss(nn.Module):
         """
         if not grid_coords.requires_grad:
             raise ValueError("grid_coords must have requires_grad=True for autograd")
-        
+
         B, C, H, W = psi.shape
-        
-        # Flatten spatial dimensions for easier gradient computation
-        psi_flat = psi.view(B, -1)  # [B, H*W]
-        coords_flat = grid_coords.view(B, 2, -1)  # [B, 2, H*W]
-        
-        # Initialize Laplacian
-        laplacian_flat = torch.zeros_like(psi_flat)
-        
-        # Compute second derivatives for each point
-        for i in range(psi_flat.shape[1]):  # For each spatial location
-            # First derivatives: ∂ψ/∂x and ∂ψ/∂y
-            grad_outputs = torch.ones_like(psi_flat[:, i])
-            
-            grad_psi = torch.autograd.grad(
-                outputs=psi_flat[:, i],
-                inputs=grid_coords,
-                grad_outputs=grad_outputs,
-                create_graph=True,  # CRITICAL: allow second derivatives
-                retain_graph=True,
-                allow_unused=True,
-            )[0]  # [B, 2, H, W]
-            if grad_psi is None:
-                raise ValueError(
-                    "psi must depend on grid_coords for autograd derivatives. "
-                    "Ensure psi is computed from grid_coords with requires_grad=True."
-                )
-            
-            dpsi_dx = grad_psi[:, 0].view(B, -1)[:, i]  # ∂ψ/∂x at location i
-            dpsi_dy = grad_psi[:, 1].view(B, -1)[:, i]  # ∂ψ/∂y at location i
-            
-            # Second derivatives: ∂²ψ/∂x²
-            if not dpsi_dx.requires_grad:
-                d2psi_dx2 = torch.zeros_like(grid_coords)
-            else:
-                d2psi_dx2 = torch.autograd.grad(
-                    outputs=dpsi_dx,
-                    inputs=grid_coords,
-                    grad_outputs=torch.ones_like(dpsi_dx),
-                    create_graph=True,
-                    retain_graph=True,
-                    allow_unused=True,
-                )[0]
-                if d2psi_dx2 is None:
-                    d2psi_dx2 = torch.zeros_like(grid_coords)
-            d2psi_dx2 = d2psi_dx2[:, 0].view(B, -1)[:, i]
-            
-            # ∂²ψ/∂y²
-            if not dpsi_dy.requires_grad:
-                d2psi_dy2 = torch.zeros_like(grid_coords)
-            else:
-                d2psi_dy2 = torch.autograd.grad(
-                    outputs=dpsi_dy,
-                    inputs=grid_coords,
-                    grad_outputs=torch.ones_like(dpsi_dy),
-                    create_graph=True,
-                    retain_graph=True,
-                    allow_unused=True,
-                )[0]
-                if d2psi_dy2 is None:
-                    d2psi_dy2 = torch.zeros_like(grid_coords)
-            d2psi_dy2 = d2psi_dy2[:, 1].view(B, -1)[:, i]
-            
-            # Laplacian = ∂²ψ/∂x² + ∂²ψ/∂y²
-            laplacian_flat[:, i] = d2psi_dx2 + d2psi_dy2
-        
-        # Reshape back to image
-        laplacian = laplacian_flat.view(B, 1, H, W)
-        
+
+        # First pass: ∂ψ/∂x and ∂ψ/∂y in one backward — shape [B, 2, H, W]
+        grad_out = torch.autograd.grad(
+            psi.sum(), grid_coords,
+            create_graph=True, retain_graph=True
+        )[0]  # [B, 2, H, W]
+
+        zeros_hw = torch.zeros(B, H, W, device=psi.device, dtype=psi.dtype)
+
+        # Second pass: ∂²ψ/∂x² — if grad_out has no graph (constant gradient), second derivative = 0
+        if grad_out is not None and grad_out.requires_grad:
+            _d2_dx2_raw = torch.autograd.grad(
+                grad_out[:, 0].sum(), grid_coords,
+                create_graph=True, retain_graph=True, allow_unused=True
+            )[0]
+            d2_dx2 = _d2_dx2_raw[:, 0] if _d2_dx2_raw is not None else zeros_hw
+
+            _d2_dy2_raw = torch.autograd.grad(
+                grad_out[:, 1].sum(), grid_coords,
+                create_graph=True, retain_graph=True, allow_unused=True
+            )[0]
+            d2_dy2 = _d2_dy2_raw[:, 1] if _d2_dy2_raw is not None else zeros_hw
+        else:
+            # Constant gradient → second derivatives are identically zero
+            d2_dx2 = zeros_hw
+            d2_dy2 = zeros_hw
+
+        laplacian = (d2_dx2 + d2_dy2).unsqueeze(1)  # [B, 1, H, W]
+
         return laplacian
     
     def compute_gradient_autograd(
@@ -379,8 +340,9 @@ class PhysicsConstrainedPINNLoss(nn.Module):
         # Penalize negative mass (unphysical)
         negative_penalty = F.relu(-total_mass).mean()
         
-        # Penalize extremely large mass (likely numerical error)
-        large_penalty = F.relu(total_mass - 1000.0).mean()
+        # Penalize extremely large mean κ (> 10 is unphysical even for galaxy clusters)
+        B, C, H, W = kappa.shape
+        large_penalty = F.relu(total_mass / (H * W) - 10.0).mean()
         
         loss = negative_penalty + large_penalty
         

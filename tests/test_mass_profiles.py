@@ -200,7 +200,28 @@ class TestNFWProfile:
         psi = self.halo.lensing_potential(1.0, 0.5)
         
         assert np.isfinite(psi)
-    
+
+    def test_nfw_lensing_potential_gradient_matches_deflection(self):
+        """NFW: dψ/dθ must equal α(θ) to <0.1% — validates the 4.0 coefficient fix.
+
+        Regression guard against reversion to the pre-fix coefficient of 2.0.
+        Reference: Wright & Brainerd (2000), Bartelmann (1996) Eq. 13.
+        """
+        import numpy as np
+        theta = np.array([0.5, 1.0, 1.5])
+        zeros = np.zeros_like(theta)
+        dx = 1e-5
+        psi_plus  = self.halo.lensing_potential(theta + dx, zeros)
+        psi_minus = self.halo.lensing_potential(theta - dx, zeros)
+        dpsi_dtheta = (psi_plus - psi_minus) / (2 * dx)
+        alpha_x, _ = self.halo.deflection_angle(theta, zeros)
+        for i in range(len(theta)):
+            ratio = float(dpsi_dtheta[i]) / float(alpha_x[i])
+            assert abs(ratio - 1.0) < 0.01, (
+                f"NFW lensing potential gradient mismatch at theta={theta[i]}: "
+                f"dψ/dθ={dpsi_dtheta[i]:.6f}, alpha={alpha_x[i]:.6f}, ratio={ratio:.6f} (expected 1.0)"
+            )
+
     def test_no_crash_at_origin(self):
         """Test that methods handle r=0 gracefully."""
         alpha_x, alpha_y = self.halo.deflection_angle(0.0, 0.0)

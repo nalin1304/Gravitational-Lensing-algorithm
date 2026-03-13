@@ -1215,6 +1215,31 @@ class BlindingUnblindRequest(BaseModel):
     dtd_blind: float
 
 
+class BlindingRequest(BaseModel):
+    phrase: str = Field(..., min_length=1)
+    h0: float = 70.0
+    omega_m: float = 0.315
+    sigma8: float = 0.811
+
+
+@app.post("/api/v1/survey/blinding/apply")
+async def apply_blinding(request: BlindingRequest):
+    """Apply HMAC-SHA256 blinding to cosmological parameters."""
+    try:
+        from src.utils.blinding import BlindingHandler
+        handler = BlindingHandler(request.phrase)
+        return {
+            "h0_blind": handler.blind_h0(request.h0),
+            "omega_m_blind": handler.blind_omega_m(request.omega_m),
+            "sigma8_blind": request.sigma8,
+            "blinding_method": "HMAC-SHA256",
+            "note": "Use /api/v1/survey/blinding/unblind with the same phrase to recover true values.",
+        }
+    except Exception as e:
+        logger.exception("Blinding apply error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/v1/survey/blinding/unblind")
 async def survey_blinding_unblind(req: BlindingUnblindRequest):
     """

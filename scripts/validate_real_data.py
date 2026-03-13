@@ -384,7 +384,7 @@ def validate_single_lens(
         "psnr": result_metrics["psnr"],
         "mass_conservation": (
             float("nan")
-            if validation_scope == "image_space_forward_model"
+            if validation_scope != "proxy_sensitivity"
             else result.metrics.get("mass_conservation_ratio", float("nan"))
         ),
         "annular_flux_ratio": annular_flux_ratio,

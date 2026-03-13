@@ -125,7 +125,7 @@ def predict_velocity_dispersion(
 
     # Convert arcsec to kpc (approximate)
     D_A_kpc = _angular_diameter_distance_kpc(z_lens)
-    r_kpc = r_bins * arcsec_to_rad * D_A_kpc * 1e3  # kpc
+    r_kpc = r_bins * arcsec_to_rad * D_A_kpc  # kpc
 
     # Enclosed 3D spherical mass M_3D(<r) via exact Abel deprojection
     from scipy.interpolate import interp1d
@@ -133,7 +133,7 @@ def predict_velocity_dispersion(
     
     # Generate extended grid for Abel transform integration out to essentially infinity
     r_ext_kpc = np.logspace(np.log10(max(1e-4, r_kpc[0] * 0.5)), np.log10(r_kpc[-1] * 100), 200)
-    r_ext_arcsec = r_ext_kpc / (arcsec_to_rad * D_A_kpc * 1e3)
+    r_ext_arcsec = r_ext_kpc / (arcsec_to_rad * D_A_kpc)
     
     kappa_ext = np.zeros_like(r_ext_arcsec)
     for i, r_val in enumerate(r_ext_arcsec):
@@ -179,28 +179,53 @@ def predict_velocity_dispersion(
 
     # Luminosity density (Hernquist profile approximation)
     a_H = r_eff / 1.8153  # Hernquist scale radius from R_eff
-    a_kpc = a_H * arcsec_to_rad * D_A_kpc * 1e3
+    a_kpc = a_H * arcsec_to_rad * D_A_kpc
     nu = 1.0 / (r_kpc / a_kpc * (1 + r_kpc / a_kpc)**3 + 1e-30)
     nu /= np.trapezoid(nu * 4 * np.pi * r_kpc**2, r_kpc)  # Normalize
 
-    # Jeans integration (backwards from outer boundary)
-    sigma_r2 = np.zeros_like(r_kpc)
-    integrand = nu * G_SI * M_enclosed * M_sun / (r_kpc * kpc_to_m)**2
-    integrand *= (r_kpc / r_kpc[-1]) ** (2 * beta_aniso)  # Anisotropy correction
-
-    # Integrate from outside in
+    # Correct constant-beta Jeans solution: accumulate integrand with r'^(2β) factor,
+    # then multiply outer r^(-2β)  (Ref: Mamon & Łokas 2005, Eq. 11)
+    M_sun_kg = M_sun  # already in kg
+    r_kpc_m = r_kpc * kpc_to_m
+    integrand_core = nu * G_SI * M_enclosed * M_sun_kg / (r_kpc_m)**2
+    jeans_integral = np.zeros_like(r_kpc)
     for i in range(len(r_kpc) - 2, -1, -1):
         dr = (r_kpc[i + 1] - r_kpc[i]) * kpc_to_m
-        sigma_r2[i] = sigma_r2[i + 1] + integrand[i] * dr / max(nu[i], 1e-30)
+        jeans_integral[i] = jeans_integral[i + 1] + integrand_core[i] * (r_kpc[i] * kpc_to_m) ** (2 * beta_aniso) * dr
+    sigma_r2 = np.where(nu > 1e-30,
+        (r_kpc_m) ** (-2 * beta_aniso) * jeans_integral / np.maximum(nu, 1e-30),
+        0.0)
 
-    # Line-of-sight projection: σ_LOS² = (1-β) σ_r² (isotropic approx)
-    sigma_los2 = (1.0 - beta_aniso) * sigma_r2
+    # Proper Abel-projection for line-of-sight dispersion (Binney & Tremaine 2008, §4.2)
+    nu_interp = interp1d(r_kpc, nu, kind='linear', bounds_error=False, fill_value=0.0)
+    sr2_interp = interp1d(r_kpc, sigma_r2, kind='linear', bounds_error=False, fill_value=0.0)
+
+    sigma_los2 = np.zeros_like(r_kpc)
+    for k, R in enumerate(r_kpc):
+        if R >= r_kpc[-1]:
+            sigma_los2[k] = 0.0
+            continue
+
+        def _integrand_num(r_val):
+            if r_val <= R:
+                return 0.0
+            factor = 1.0 - beta_aniso * (R / (r_val + 1e-30))**2
+            return factor * float(nu_interp(r_val)) * float(sr2_interp(r_val)) * r_val / np.sqrt(max(r_val**2 - R**2, 1e-30))
+
+        def _integrand_den(r_val):
+            if r_val <= R:
+                return 0.0
+            return float(nu_interp(r_val)) * r_val / np.sqrt(max(r_val**2 - R**2, 1e-30))
+
+        I_num, _ = quad(_integrand_num, R + 1e-6, r_kpc[-1], limit=50)
+        I_den, _ = quad(_integrand_den, R + 1e-6, r_kpc[-1], limit=50)
+        sigma_los2[k] = 2.0 * I_num / max(2.0 * I_den, 1e-30)
 
     # Convert to km/s
     sigma_los_kms = np.sqrt(np.abs(sigma_los2)) / 1e3
 
     # Luminosity-weighted average within aperture
-    r_aper_kpc = r_aperture * arcsec_to_rad * D_A_kpc * 1e3
+    r_aper_kpc = r_aperture * arcsec_to_rad * D_A_kpc
     mask = r_kpc <= r_aper_kpc
     if np.any(mask):
         weights = nu[mask] * r_kpc[mask]  # Luminosity weighting
@@ -330,7 +355,7 @@ def combine_lensing_kinematics(
     # Lensing mass estimate
     # M_lens = π R_eff² Σ_cr κ_eff
     D_A = _angular_diameter_distance_kpc(z_lens)
-    r_eff_kpc = r_eff * arcsec_to_rad * D_A * 1e3
+    r_eff_kpc = r_eff * arcsec_to_rad * D_A
 
     center = kappa_map.shape[0] // 2
     r_pix = r_eff / pixel_scale
