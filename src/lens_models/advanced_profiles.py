@@ -375,8 +375,10 @@ class SersicProfile(MassProfile):
         """
         Calculate Sérsic b_n parameter.
         
-        Uses the approximation: b_n ≈ 2n - 1/3 + 0.009876/n
-        which is accurate to ~0.1% for n > 0.5
+        Uses the exact inverse incomplete gamma function solution
+        (Ciotti 1991; Trujillo et al. 2001):
+            solve γ(2n, b_n) = Γ(2n)/2
+        i.e. regularized γ(2n, b_n) / Γ(2n) = 0.5
         
         Parameters
         ----------
@@ -388,7 +390,7 @@ class SersicProfile(MassProfile):
         b_n : float
             Sérsic b parameter
         """
-        return 2.0 * n - 1.0/3.0 + 0.009876 / n
+        return gammaincinv(2.0 * n, 0.5)
     
     def surface_brightness(self, r: np.ndarray) -> np.ndarray:
         """
@@ -434,7 +436,16 @@ class SersicProfile(MassProfile):
             Sigma_crit = self.lens_sys.critical_surface_density()
             kappa = (Sigma * self.M_L) / Sigma_crit
         else:
-            # Return unnormalized if no lens system
+            # Without a lens system, we cannot normalize to dimensionless κ.
+            # Return surface mass density in M☉/arcsec² as a proxy (not true convergence).
+            # Callers needing κ must provide a LensSystem via lens_sys parameter.
+            import warnings
+            warnings.warn(
+                "SersicProfile.convergence() called without lens_sys — returning "
+                "surface mass density [M☉/arcsec²], not dimensionless κ. "
+                "Pass lens_sys=LensSystem(...) for physical convergence.",
+                UserWarning, stacklevel=2
+            )
             kappa = Sigma * self.M_L
         
         return kappa

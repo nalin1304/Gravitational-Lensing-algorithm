@@ -98,7 +98,9 @@ async def run_sed(req: SEDRequest):
         amps = engine.optimize_sed_amplitudes_linear(images, noises, lens_ops, shared_morph)
         
         return {
-            "amplitudes": amps.tolist()
+            "amplitudes": amps.tolist(),
+            "computation_mode": "synthetic_morphology_demo",
+            "note": "Morphology is a fixed synthetic pattern; fluxes modulate amplitude ratios only.",
         }
     except Exception as e:
         logger.exception("SED Error")

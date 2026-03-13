@@ -318,14 +318,20 @@ if JAX_AVAILABLE:
         
         beta_x = pred_params[:, 2:3]
         beta_y = pred_params[:, 3:4]
-        M_vir = pred_params[:, 0:1]
-        r_s = pred_params[:, 1:2]
-        
-        M_vir = jnp.clip(M_vir, min=1e9, max=1e14)   # galaxy-to-cluster scale
-        r_s = jnp.clip(r_s, min=0.1, max=500.0)   # kpc
-        beta_x = jnp.clip(beta_x, min=-10.0, max=10.0)
-        beta_y = jnp.clip(beta_y, min=-10.0, max=10.0)
-        
+        M_vir_raw = pred_params[:, 0:1]
+        r_s_raw   = pred_params[:, 1:2]
+
+        # Physics bounds penalty on raw (pre-clip) predictions so the gradient
+        # signal is non-zero even when the network is out-of-range.
+        M_vir_penalty = jax.nn.relu(1e9  - M_vir_raw) + jax.nn.relu(M_vir_raw - 1e14)
+        r_s_penalty   = jax.nn.relu(0.1  - r_s_raw)   + jax.nn.relu(r_s_raw   - 500.0)
+
+        # Clip for physical forward pass (jnp.clip uses positional a_min/a_max)
+        M_vir  = jnp.clip(M_vir_raw, 1e9, 1e14)    # galaxy-to-cluster scale
+        r_s    = jnp.clip(r_s_raw,   0.1, 500.0)   # kpc
+        beta_x = jnp.clip(beta_x, -10.0, 10.0)
+        beta_y = jnp.clip(beta_y, -10.0, 10.0)
+
         alpha_x, alpha_y = compute_nfw_deflection(
             M_vir=M_vir,
             r_s=r_s,
@@ -337,9 +343,6 @@ if JAX_AVAILABLE:
         residual_y = theta_y - beta_y - alpha_y
         
         raw_physics_residual = jnp.mean(residual_x**2 + residual_y**2)
-        
-        M_vir_penalty = jax.nn.relu(1e9  - M_vir) + jax.nn.relu(M_vir - 1e14)
-        r_s_penalty   = jax.nn.relu(0.1  - r_s)   + jax.nn.relu(r_s   - 500.0)
         regularization = jnp.mean(M_vir_penalty**2) + jnp.mean(r_s_penalty**2)
         
         physics_loss = raw_physics_residual + regularization

@@ -25,6 +25,11 @@ export function render() {
         <div class="stat-value" id="dVersion">—</div>
         <div class="stat-meta">JAX/Equinox</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">Database</div>
+        <div class="stat-value" id="dbStatus">—</div>
+        <div class="stat-meta">Connectivity</div>
+      </div>
     </div>
 
     <div class="grid-2 gap-20">
@@ -73,6 +78,11 @@ export async function init() {
     document.getElementById("dGPU").textContent = h.gpu_available ? "Yes" : "CPU Only";
     document.getElementById("dGPU").style.color = h.gpu_available ? "var(--success)" : "var(--text-secondary)";
     document.getElementById("dVersion").textContent = h.version || "2.0";
+    const dbEl = document.getElementById('dbStatus');
+    if (dbEl) {
+      dbEl.textContent = h.database_connected ? '✓ Connected' : '✗ Disconnected';
+      dbEl.className = h.database_connected ? 'text-success' : 'text-danger';
+    }
   } catch { document.getElementById("dHealthStatus").textContent = "Offline"; }
 
   try {

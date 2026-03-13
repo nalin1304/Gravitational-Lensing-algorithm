@@ -33,7 +33,7 @@ Verified on 2026-03-11:
 
 ```bash
 python3 -m pytest tests/ -q
-# 513 passed, 38 skipped   (latest aggregate baseline in results/regression_summary.json)
+# 519 passed, 31 skipped   (verified Mar 13 2026)
 
 python3 scripts/publication_gate.py --quick
 # Publication Gate: PASS
@@ -44,6 +44,8 @@ Additional check:
 - NFW profile uses `critical_density(z_l)` at lens redshift (M200c convention).
 - API/UI inference now reports `checkpoint_missing` explicitly instead of using heuristic stand-ins.
 - SLACS validation artifacts are normalized to booleans and tagged as `image_space_diagnostic`.
+- `wave_optics.py` diffraction integral provenance pinned to Nakamura & Deguchi (1999) Eq. 4.2 and Takahashi & Nakamura (2003) Eq. 3–5; formula verified against published expressions.
+- `auth_routes.py` applies P1 security hardening: `slowapi` rate limiting on all auth endpoints to prevent brute-force attacks; email pattern validated via regex before DB lookup.
 
 Expected non-fatal local warning:
 - `slowapi` may emit a Python 3.14 deprecation warning from `asyncio.iscoroutinefunction`.
@@ -59,8 +61,10 @@ Expected non-fatal local warning:
   - `multi_plane.py`: Multi-plane ray-tracing with proper recurrence weights
     (`D_{i,i+1} / D_{i+1}`) and `lensing_potential` / `potential` interface.
 - `src/optics/`: ray tracing, geodesics, wave optics.
-  - `wave_optics.py`: Diffraction integral F(ω) with Nakamura & Deguchi (1999)
-    and Takahashi & Nakamura (2003) equation provenance.
+  - `wave_optics.py`: Diffraction integral F(ω) = (ω/2πi)∫d²θ exp[iωτ(θ,β)]
+    (Nakamura & Deguchi 1999, Prog.Theor.Phys.Suppl.133; Takahashi & Nakamura 2003, ApJ 595).
+    Returns scalar complex F(ω) and magnification |F(ω)|². Replaces legacy FFT Fraunhofer
+    approximation.
   - `epsf_model.py`: Spatially-varying Zernike ePSF kernels (Z4-Z22) across detector FOV.
 - `src/time_delay/`: Fermat potential and delay cosmography.
 - `src/ml/`: PINN models, training, physics losses, uncertainty, Bayesian evidence.
@@ -117,8 +121,8 @@ Expected non-fatal local warning:
   - `web_ui/pages/api-explorer.js` — OpenAPI-driven request builder
 
 ### API + persistence
-- API entry: `api/main.py`
-- Routers: `api/auth_routes.py`, `api/analysis_routes.py`
+- API entry: `api/main.py` (45 endpoints total)
+- Routers: `api/auth_routes.py` (note: `TokenRefreshRequest` uses Pydantic body; raw JSON body fix applied), `api/analysis_routes.py`
 - Database layer: `database/`
 - Alembic setup: `migrations/`, `alembic.ini`
 
@@ -137,12 +141,12 @@ Expected non-fatal local warning:
 - Benchmark and validation scripts include explicit mode metadata in outputs (`evaluation_mode`, `prediction_mode`) for downstream rigor checks.
 
 ### Paper (`paper/`)
-- `paper/main.tex`: IEEE TCI manuscript (15 numbered equations, 23 BibTeX refs)
+- `paper/main.tex`: IEEE TCI manuscript (12 numbered equations, 38 BibTeX entries in references.bib)
 - `paper/references.bib`: Bibliography with 2024-2025 citations
 - `paper/TIER1_TOPIC_AND_RIGOR.md`: Topic and rigor framing artifact
 
 ### Quality + ops
-- Tests: `tests/` (513 passing tests, 38 skipped — verified Mar 10 2026)
+- Tests: `tests/` (519 passing tests, 31 skipped — verified Mar 13 2026)
 - Benchmarks: `benchmarks/`
 - Validation/readiness docs:
   - `IEEE_SUBMISSION_CHECKLIST.md`

@@ -36,6 +36,9 @@ import numpy as np
 from typing import Dict, Optional, Tuple
 import warnings
 
+# NumPy 2.0+ renamed trapz → trapezoid; support both versions
+_np_trapezoid = getattr(np, 'trapezoid', np.trapz)
+
 # Physical constants (Ref: IAU 2015 nominal values, CODATA 2018)
 G_SI = 6.67430e-11         # m³ kg⁻¹ s⁻²
 c_SI = 2.99792458e8        # m/s
@@ -171,7 +174,7 @@ def predict_velocity_dispersion(
     for i in range(1, len(r_kpc)):
         r_sub = r_kpc[:i+1]
         rho_sub = rho_3d[:i+1]
-        M_enclosed[i] = max(0.0, np.trapezoid(4 * np.pi * r_sub**2 * rho_sub, r_sub))
+        M_enclosed[i] = max(0.0, _np_trapezoid(4 * np.pi * r_sub**2 * rho_sub, r_sub))
 
     # Solve Jeans equation: σ_r²(r) = (1/ν) ∫_r^∞ ν(r') GM(r')/r'² f(β) dr'
     # where ν is the luminosity density and f(β) corrects for anisotropy
@@ -181,7 +184,7 @@ def predict_velocity_dispersion(
     a_H = r_eff / 1.8153  # Hernquist scale radius from R_eff
     a_kpc = a_H * arcsec_to_rad * D_A_kpc
     nu = 1.0 / (r_kpc / a_kpc * (1 + r_kpc / a_kpc)**3 + 1e-30)
-    nu /= np.trapezoid(nu * 4 * np.pi * r_kpc**2, r_kpc)  # Normalize
+    nu /= _np_trapezoid(nu * 4 * np.pi * r_kpc**2, r_kpc)  # Normalize
 
     # Correct constant-beta Jeans solution: accumulate integrand with r'^(2β) factor,
     # then multiply outer r^(-2β)  (Ref: Mamon & Łokas 2005, Eq. 11)

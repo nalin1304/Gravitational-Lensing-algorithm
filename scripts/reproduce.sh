@@ -29,6 +29,13 @@ echo "==========================================================================
 
 mkdir -p "$RESULTS_DIR"
 
+# Python runner: use uv if available, else fall back to python3
+if command -v uv &>/dev/null; then
+    PY="uv run python"
+else
+    PY="python3"
+fi
+
 # ---- Step 1: Run test suite ----
 echo ""
 echo "▶ Step 1/6: Running test suite..."
@@ -46,32 +53,32 @@ fi
 # ---- Step 2: Run ablation study ----
 echo ""
 echo "▶ Step 2/6: Running ablation study..."
-uv run python scripts/ablation_study.py --grid 64 --n-trials 3 --n-calibration 6 --systems-per-trial 8 --outdir "$RESULTS_DIR" 2>&1 \
+$PY scripts/ablation_study.py --grid 64 --n-trials 3 --n-calibration 6 --systems-per-trial 8 --outdir "$RESULTS_DIR" 2>&1 \
     | tee -a "$RESULTS_DIR/ablation_output.txt"
 
 # ---- Step 3: Run real data validation ----
 echo ""
 echo "▶ Step 3/6: Running real data validation..."
-uv run python scripts/validate_real_data.py --grid 64 --use-real --strict-observational --outdir "$RESULTS_DIR/real_data" 2>&1 \
+$PY scripts/validate_real_data.py --grid 64 --use-real --strict-observational --outdir "$RESULTS_DIR/real_data" 2>&1 \
     | tee -a "$RESULTS_DIR/real_data_output.txt"
 
 # ---- Step 4: Run SOTA comparison ----
 echo ""
 echo "▶ Step 4/6: Running SOTA comparison..."
-uv run python scripts/sota_comparison.py --grid 64 --n-lenses 10 --n-calibration 6 --outdir "$RESULTS_DIR" 2>&1 \
+$PY scripts/sota_comparison.py --grid 64 --n-lenses 10 --n-calibration 6 --outdir "$RESULTS_DIR" 2>&1 \
     | tee -a "$RESULTS_DIR/sota_output.txt"
 
 # ---- Step 5: Run scalability benchmark ----
 echo ""
 echo "▶ Step 5/6: Running scalability benchmark..."
-uv run python scripts/scalability_benchmark.py --outdir "$RESULTS_DIR" 2>&1 \
+$PY scripts/scalability_benchmark.py --outdir "$RESULTS_DIR" 2>&1 \
     | tee -a "$RESULTS_DIR/scalability_output.txt"
 
 # ---- Step 6: Run uncertainty calibration ----
 echo ""
 echo "▶ Step 6/6: Running uncertainty calibration..."
 echo "  Training/loading checkpoint-backed Bayesian surrogate for held-out synthetic NFW analog calibration."
-uv run python scripts/uncertainty_calibration.py --grid 64 --n-samples 30 --seed 21 --dropout-rate 0.04 --outdir "$RESULTS_DIR" --model "$PROJECT_DIR/models/bayesian_uq_synthetic.pt" 2>&1 \
+$PY scripts/uncertainty_calibration.py --grid 64 --n-samples 30 --seed 21 --dropout-rate 0.04 --outdir "$RESULTS_DIR" --model "$PROJECT_DIR/models/bayesian_uq_synthetic.pt" 2>&1 \
     | tee -a "$RESULTS_DIR/calibration_output.txt"
 
 # ---- Verification hash ----

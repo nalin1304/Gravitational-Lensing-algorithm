@@ -804,7 +804,6 @@ async def submit_batch_job(
     request: BatchJobRequest,
     background_tasks: BackgroundTasks,
     current_user: Optional[Any] = None,
-    db: Session = Depends(get_db)
 ):
     """
     Submit batch processing job (authentication optional; logs user if authenticated).

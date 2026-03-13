@@ -11,8 +11,17 @@ Author: Phase 14 Implementation
 Date: October 2025
 """
 
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    _TORCH_AVAILABLE = True
+except ImportError:
+    torch = None
+    nn = None
+    optim = None
+    _TORCH_AVAILABLE = False
+
 import numpy as np
 import argparse
 import json
@@ -26,13 +35,21 @@ from .pinn_models import create_lensing_pinn, PhysicsLoss
 
 # Import benchmarks
 import sys
-sys.path.append(str(Path(__file__).parent.parent.parent))
-from benchmarks import (
-    calculate_all_metrics,
-    print_metrics_report,
-    time_profile,
-    compare_with_analytic
-)
+try:
+    sys.path.append(str(Path(__file__).parent.parent.parent / "benchmarks"))
+    from benchmarks import calculate_all_metrics, print_metrics_report, time_profile, compare_with_analytic
+except (ImportError, Exception):
+    def calculate_all_metrics(pred, true):
+        """Fallback metrics when benchmarks package unavailable."""
+        mse = float(np.mean((pred - true)**2))
+        return {"mse": mse, "rmse": float(np.sqrt(mse)), "evaluation_mode": "basic_metrics_fallback"}
+    def print_metrics_report(metrics):
+        for k, v in metrics.items():
+            print(f"  {k}: {v}")
+    def time_profile(fn):
+        return fn
+    def compare_with_analytic(pred, true):
+        return calculate_all_metrics(pred, true)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -313,12 +330,17 @@ def benchmark_trained_pinn(
         outputs = model(inputs)
         pred_kappa = outputs[:, 0].cpu().numpy().reshape(grid_size, grid_size)
     
-    # Analytic solution
-    r_vir = (test_mass / 1e12) ** (1/3) * 200.0
-    r_s = r_vir / test_conc
-    x = R / r_s
-    kappa_s = test_mass / (1e12 * r_s**2)
-    true_kappa = (kappa_s / (x * (1 + x)**2)).numpy()
+    # Analytic solution — use correct NFW projected convergence (Wright & Brainerd 2000)
+    from src.lens_models.mass_profiles import NFWProfile
+    from src.lens_models.lens_system import LensSystem
+    from astropy.cosmology import FlatLambdaCDM
+
+    cosmo = FlatLambdaCDM(H0=67.4, Om0=0.315)
+    lens_sys = LensSystem(z_lens=0.5, z_source=2.0, cosmology=cosmo)
+    nfw = NFWProfile(M_vir=test_mass, concentration=test_conc, lens_system=lens_sys)
+    x_range = np.linspace(-3.0, 3.0, grid_size)
+    x_grid, y_grid = np.meshgrid(x_range, x_range)
+    true_kappa = nfw.convergence(x_grid.ravel(), y_grid.ravel()).reshape(grid_size, grid_size)
     true_kappa = np.clip(true_kappa, 0, 10)
     
     # Calculate metrics

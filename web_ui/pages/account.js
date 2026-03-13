@@ -169,6 +169,35 @@ export async function init() {
         document.getElementById("acKeyForm").style.display = document.getElementById("acKeyForm").style.display === "none" ? "block" : "none";
     });
 
+    async function loadApiKeys() {
+        const keys = await P.api('/api/v1/auth/api-keys');
+        const container = document.getElementById('acKeys');
+        if (!container) return;
+        if (!keys || keys.length === 0) {
+            container.innerHTML = '<p class="dim">No API keys yet. Create one below.</p>';
+            return;
+        }
+        container.innerHTML = keys.map(k => `
+            <div class="key-row" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+                <div>
+                    <strong>${P.esc(k.name || 'Unnamed')}</strong>
+                    <span class="dim" style="margin-left:8px">${k.key_prefix}…</span>
+                    <span class="dim" style="margin-left:8px">Created: ${k.created_at ? k.created_at.slice(0,10) : '—'}</span>
+                </div>
+                <button class="btn btn-sm btn-danger" onclick="revokeKey(${k.id})">Revoke</button>
+            </div>
+        `).join('');
+    }
+
+    window.revokeKey = async function revokeKey(keyId) {
+        if (!confirm('Revoke this API key? This cannot be undone.')) return;
+        await P.api(`/api/v1/auth/api-keys/${keyId}`, { method: 'DELETE' });
+        P.toast('API key revoked', 'success');
+        loadApiKeys();
+    };
+
+    loadApiKeys();
+
     document.getElementById("acKeySubmit")?.addEventListener("click", async () => {
         try {
             const key = await P.api("/api/v1/auth/api-keys", {

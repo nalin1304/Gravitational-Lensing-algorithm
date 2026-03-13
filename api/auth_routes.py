@@ -431,7 +431,7 @@ async def create_user_api_key(
     )
     
     # Return with plain API key (only time it's visible)
-    response = ApiKeyResponse.from_orm(api_key_obj)
+    response = ApiKeyResponse.model_validate(api_key_obj)
     response.api_key = plain_key
     
     return response

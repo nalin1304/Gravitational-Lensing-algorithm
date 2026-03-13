@@ -9,9 +9,23 @@ This module provides state-of-the-art PINN architectures including:
 - Physics-constrained layers
 """
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    _TORCH_AVAILABLE = True
+except ImportError:
+    torch = None  # type: ignore[assignment]
+    F = None      # type: ignore[assignment]
+    _TORCH_AVAILABLE = False
+    # Minimal stub so class bodies can be parsed at import time.
+    # Classes will raise errors if instantiated without torch installed.
+    class _FakeNNModule:  # noqa: N801
+        def __init_subclass__(cls, **kwargs):
+            super().__init_subclass__(**kwargs)
+    class nn:  # type: ignore[no-redef]
+        Module = _FakeNNModule
+
 import numpy as np
 from typing import Tuple, List, Optional, Dict
 
@@ -477,7 +491,12 @@ class AdvancedPINN(nn.Module):
         classes_std : torch.Tensor
             Standard deviation of probabilities
         """
-        self.train()  # Enable dropout
+        self.eval()  # running stats for BatchNorm, dropout disabled initially
+        # Re-enable only Dropout layers for MC sampling.
+        # Reference: Gal & Ghahramani (2016) - MC Dropout protocol.
+        for m in self.modules():
+            if isinstance(m, (nn.Dropout, nn.Dropout2d)):
+                m.train()
         
         params_samples = []
         classes_samples = []

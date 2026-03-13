@@ -296,7 +296,7 @@ with dropout rate~$p$, the predictive mean and epistemic uncertainty are:
 \label{eq:mc_var}
 \end{align}
 where $\hat{\mathbf{w}}_t \sim q(\mathbf{w})$ denotes masked weights in
-pass~$t$. The archived calibration artifact uses $T=30$ and $p=0.05$, followed
+pass~$t$. The archived calibration artifact uses $T=30$ and $p=0.04$, followed
 by validation-set interval-width calibration on held-out synthetic systems.
 
 \subsection{Data Augmentation Pipeline}
@@ -392,7 +392,11 @@ analytic refits.
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=\columnwidth]{results/scalability_analysis.png}
+    \IfFileExists{results/scalability_analysis.png}{%
+      \includegraphics[width=\columnwidth]{results/scalability_analysis.png}%
+    }{%
+      \fbox{\parbox{\linewidth}{\centering\textit{Run \texttt{scripts/scalability\_benchmark.py} to generate this figure.}}}%
+    }
     \caption{Computational scalability of the proposed pipeline. 
     (a)~Inference time vs.\ grid resolution on log-log axes. 
     (b)~Peak memory consumption. 

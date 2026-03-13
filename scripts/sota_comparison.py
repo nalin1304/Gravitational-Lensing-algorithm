@@ -249,7 +249,7 @@ def evaluate_method(
         f"  RMSE: {summary['rmse']['mean']:.6f} ± {summary['rmse']['std']:.6f} | "
         f"SSIM: {summary['ssim']['mean']:.4f} ± {summary['ssim']['std']:.4f}"
     )
-    print(f"  Mode: {summary['evaluation_mode']} | Backend: {summary['inference_backend']}")
+    print(f"  Mode: {summary.get('evaluation_mode', 'unknown')} | Backend: {summary.get('inference_backend', 'unknown')}")
     return summary
 
 

@@ -283,8 +283,8 @@ def run_single_ablation(
         "gradient_error": [],
     }
     elapsed_values: list[float] = []
-    evaluation_mode = "unknown"
-    inference_backend = "unknown"
+    evaluation_mode = getattr(method, 'evaluation_mode', 'unknown')
+    inference_backend = getattr(method, 'inference_backend', 'unknown')
 
     for case in test_cases:
         predicted, elapsed, evaluation_mode, inference_backend = method(case)
@@ -443,7 +443,8 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     args = parser.parse_args()
 
-    outdir = Path(args.outdir)
+    if args.n_trials < 1:
+        parser.error("--n-trials must be >= 1")
     outdir.mkdir(parents=True, exist_ok=True)
 
     results = run_ablation_suite(
