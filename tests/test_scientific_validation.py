@@ -1,7 +1,7 @@
 """
-Test Suite for Phase 13: Scientific Validation & Benchmarking
+Test Suite for Scientific Validation & Benchmarking
 
-Author: Phase 13 Implementation
+Author: Implementation
 Date: October 2025
 """
 

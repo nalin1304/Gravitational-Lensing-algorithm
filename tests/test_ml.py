@@ -1,5 +1,5 @@
 """
-Unit tests for ML module (Phase 29: JAX Migration)
+Unit tests for ML module (JAX Migration)
 """
 
 import pytest

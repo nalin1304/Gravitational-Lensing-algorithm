@@ -1,5 +1,5 @@
 """
-Unit tests for Bayesian Factor evidence validation routines (Phase 32).
+Unit tests for Bayesian Factor evidence validation routines ().
 """
 
 import pytest

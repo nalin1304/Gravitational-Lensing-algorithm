@@ -1,5 +1,5 @@
 """
-Phase 12 Tests - Database, Authentication, and User Management
+Tests - Database, Authentication, and User Management
 
 Tests for:
 - Database models and CRUD operations
@@ -7,7 +7,7 @@ Tests for:
 - User management
 - Analysis and job tracking
 
-Author: Phase 12 Implementation
+Author: Implementation
 Date: October 2025
 """
 

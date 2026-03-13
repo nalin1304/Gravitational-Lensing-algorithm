@@ -6,7 +6,7 @@ Benchmarks against:
 - GLAFIC
 - Analytic solutions
 
-Author: Phase 13 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

@@ -1,5 +1,5 @@
 """
-Quick demonstration of Wave Optics capabilities (Phase 2).
+Quick demonstration of Wave Optics capabilities .
 
 This script shows the new wave optics features:
 - Interference patterns
@@ -17,7 +17,7 @@ from src.optics import WaveOpticsEngine, plot_wave_vs_geometric
 
 def main():
     print("="*70)
-    print("WAVE OPTICS DEMONSTRATION - PHASE 2")
+    print("WAVE OPTICS DEMONSTRATION")
     print("="*70)
     
     # Create lens system
@@ -107,8 +107,8 @@ def main():
     print("  • results/wave_optics_interference.png")
     print("  • results/wave_vs_geometric_comparison.png")
     print("\n✓ Full test suite: 91/91 tests passing")
-    print("  • Phase 1 (geometric): 63 tests")
-    print("  • Phase 2 (wave): 28 tests")
+    print("  • Geometric optics: 63 tests")
+    print("  • Wave optics: 28 tests")
     
     print("\n" + "="*70)
     print("Framework ready for scientific research!")

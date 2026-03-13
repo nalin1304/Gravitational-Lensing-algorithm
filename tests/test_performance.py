@@ -1,5 +1,5 @@
 """
-Unit tests for performance optimization module (Phase 7).
+Unit tests for performance optimization module ().
 
 Tests GPU acceleration, vectorization, benchmarking, and caching.
 """

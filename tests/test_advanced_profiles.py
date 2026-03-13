@@ -1,7 +1,7 @@
 """
 Comprehensive tests for advanced lens profiles.
 
-Tests for Phase 6 implementation: elliptical NFW, Sérsic, and composite profiles.
+Tests for implementation: elliptical NFW, Sérsic, and composite profiles.
 """
 
 import pytest

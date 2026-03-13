@@ -8,7 +8,7 @@ Usage:
     python -m benchmarks.runner --analytic
     python -m benchmarks.runner --visualize results/benchmark_results.json
 
-Author: Phase 13 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

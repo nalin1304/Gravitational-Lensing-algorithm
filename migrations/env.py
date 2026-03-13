@@ -3,7 +3,7 @@ Alembic environment configuration
 
 Handles database migrations for the Gravitational Lensing Platform
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

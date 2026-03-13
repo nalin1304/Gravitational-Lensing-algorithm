@@ -1,5 +1,5 @@
 """
-Unit tests for real data loading module (Phase 8).
+Unit tests for real data loading module ().
 
 Tests FITS loading, PSF modeling, and data preprocessing.
 """

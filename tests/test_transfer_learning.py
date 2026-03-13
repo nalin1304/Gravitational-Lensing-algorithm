@@ -1,5 +1,5 @@
 """
-Unit tests for Transfer Learning module (Phase 9).
+Unit tests for Transfer Learning module ().
 
 Tests domain adaptation, uncertainty quantification, and transfer learning
 from synthetic to real observations.

@@ -4,8 +4,8 @@ Unit-safe physics calculations using astropy.units
 This module provides unit-safe wrappers for physics calculations to prevent
 dimensional analysis bugs like the NFW deflection unit mismatch.
 
-Author: P1 Scientific Integrity Fix
-Date: November 2025
+Author: Computational Imaging Research Group
+Date: 2025
 """
 
 import torch

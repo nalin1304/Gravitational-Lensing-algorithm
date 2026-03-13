@@ -3,7 +3,7 @@ Scientific Validation Metrics
 
 Provides metrics for comparing predictions with ground truth or established codes
 
-Author: Phase 13 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

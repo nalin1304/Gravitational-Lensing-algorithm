@@ -3,7 +3,7 @@ Visualization Tools for Benchmarks
 
 Creates publication-ready plots for benchmark results
 
-Author: Phase 13 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

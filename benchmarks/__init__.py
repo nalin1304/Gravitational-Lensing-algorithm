@@ -8,7 +8,7 @@ Provides tools for:
 - Publication-ready visualizations
 - CLI benchmark runner
 
-Author: Phase 13 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

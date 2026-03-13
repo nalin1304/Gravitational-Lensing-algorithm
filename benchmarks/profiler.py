@@ -3,7 +3,7 @@ Performance Profiling Tools
 
 Provides decorators and context managers for profiling code performance
 
-Author: Phase 13 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

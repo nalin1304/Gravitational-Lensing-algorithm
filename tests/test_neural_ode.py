@@ -1,5 +1,5 @@
 """
-Unit tests for the Neural Ordinary Differential Equations (Phase 31).
+Unit tests for the Neural Ordinary Differential Equations ().
 Verifies the integration of JAX/Diffrax with Equinox structural parameters.
 """
 
