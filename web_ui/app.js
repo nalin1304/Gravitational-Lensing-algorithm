@@ -117,7 +117,7 @@ async function checkHealth() {
 
 const routes = {};
 let currentPage = null;
-const ASSET_VERSION = "2026-03-13-polish";
+const ASSET_VERSION = "2026-03-13-ui-polish";
 
 function registerPage(name, mod) { routes[name] = mod; }
 
@@ -134,10 +134,25 @@ async function navigate() {
   const titles = {
     dashboard: "Dashboard", workbench: "Workbench", validation: "Validation",
     analyses: "Analyses", account: "Account", api: "API Explorer",
-    survey: "Stage IV Survey", rigor: "Next-Gen Rigor", "pi-sbi": "PI-SBI",
-    inference: "Inference"
+    survey: "Stage IV Survey", rigor: "Statistical Rigor", "pi-sbi": "PI-SBI",
+    inference: "NUTS-HMC Inference", lensing: "Lensing Analysis"
+  };
+  const subtitles = {
+    dashboard: "System overview & health",
+    workbench: "NFW convergence maps & PINN inference",
+    validation: "SLACS, calibration & ablation benchmarks",
+    analyses: "Manage saved analyses & results",
+    account: "Authentication & API keys",
+    api: "Interactive OpenAPI request builder",
+    survey: "Stage IV survey tools & ePSF",
+    rigor: "Publication-grade statistical checks",
+    "pi-sbi": "Physics-informed simulation-based inference",
+    inference: "Differentiable NUTS-HMC sampler",
+    lensing: "Critical curves, caustics & image solver"
   };
   document.getElementById("pageTitle").textContent = titles[pageName] || "Dashboard";
+  const subEl = document.getElementById("pageSubtitle");
+  if (subEl) subEl.textContent = subtitles[pageName] || "";
 
   const app = document.getElementById("app");
   const mod = routes[pageName];

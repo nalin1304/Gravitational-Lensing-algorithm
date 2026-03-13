@@ -4,64 +4,85 @@ const L = () => window.LensPINN;
 
 export function render() {
   return `
-    <div class="grid-4 mb-20">
-      <div class="stat-card">
+    <div class="hero-banner mb-20">
+      <div class="hero-title">Gravitational Lensing Research Platform</div>
+      <div class="hero-desc">
+        Physics-Informed Neural Networks for mass reconstruction, multi-plane ray tracing,
+        and Bayesian inference — built for IEEE TCI / MNRAS publication.
+      </div>
+    </div>
+
+    <div class="metric-grid mb-20">
+      <div class="stat-card stat-card--success">
         <div class="stat-label">System Status</div>
-        <div class="stat-value" id="dHealthStatus">—</div>
+        <div class="stat-value" id="dHealthStatus">
+          <div class="skeleton skeleton-stat"></div>
+        </div>
         <div class="stat-meta" id="dHealthMeta">Checking...</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card stat-card--success">
         <div class="stat-label">Test Suite</div>
-        <div class="stat-value" id="dTestCount" style="color:var(--success)">—</div>
+        <div class="stat-value" id="dTestCount">
+          <div class="skeleton skeleton-stat"></div>
+        </div>
         <div class="stat-meta" id="dTestMeta">Loading...</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card stat-card--accent">
         <div class="stat-label">GPU Available</div>
-        <div class="stat-value" id="dGPU">—</div>
+        <div class="stat-value" id="dGPU">
+          <div class="skeleton skeleton-stat"></div>
+        </div>
         <div class="stat-meta">Hardware backend</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card stat-card--purple">
         <div class="stat-label">API Version</div>
-        <div class="stat-value" id="dVersion">—</div>
+        <div class="stat-value" id="dVersion">
+          <div class="skeleton skeleton-stat"></div>
+        </div>
         <div class="stat-meta">JAX/Equinox</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Database</div>
-        <div class="stat-value" id="dbStatus">—</div>
+        <div class="stat-value" id="dbStatus">
+          <div class="skeleton skeleton-stat"></div>
+        </div>
         <div class="stat-meta">Connectivity</div>
       </div>
     </div>
 
-    <div class="grid-2 gap-20">
+    <div class="grid-2 gap-20 mb-20">
       <div class="card">
         <div class="card-header">
           <span class="card-title">Available Models</span>
+          <span class="tag tag-accent">Live</span>
         </div>
-        <div id="dModels"><p class="section-desc">Loading...</p></div>
+        <div id="dModels"><div class="skeleton skeleton-block" style="height:120px"></div></div>
       </div>
 
       <div class="card">
         <div class="card-header">
           <span class="card-title">API Statistics</span>
+          <span class="tag tag-accent">Live</span>
         </div>
-        <div id="dStats"><p class="section-desc">Loading...</p></div>
+        <div id="dStats"><div class="skeleton skeleton-block" style="height:120px"></div></div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:20px">
+    <div class="card">
       <div class="card-header">
-        <span class="card-title">Benchmark Scripts</span>
-        <span class="card-subtitle" style="margin:0">Publication-ready outputs</span>
+        <span class="card-title">Publication Pipeline</span>
+        <span class="card-subtitle" style="margin:0">Benchmark scripts producing publication-ready outputs</span>
       </div>
       <table class="data-table">
         <thead><tr><th>Script</th><th>Purpose</th><th>Output</th></tr></thead>
         <tbody>
+          <tr><td><code>reproduce.sh</code></td><td>One-command full reproducibility (6 steps)</td><td>All results/</td></tr>
           <tr><td><code>ablation_study.py</code></td><td>Checkpoint-backed component study (5 configs)</td><td>results/ablation_table.tex</td></tr>
-          <tr><td><code>validate_real_data.py</code></td><td>SLACS image-space diagnostic (--use-real)</td><td>results/real_data/</td></tr>
+          <tr><td><code>validate_real_data.py</code></td><td>SLACS image-space diagnostic (--use-real --strict-observational)</td><td>results/real_data/</td></tr>
           <tr><td><code>sota_comparison.py</code></td><td>Checkpoint-backed neural vs analytic benchmark (4 methods)</td><td>results/sota_comparison_table.tex</td></tr>
           <tr><td><code>uncertainty_calibration.py</code></td><td>Reliability diagram, ECE, coverage on held-out synthetic analogs</td><td>results/uncertainty_calibration.png</td></tr>
           <tr><td><code>scalability_benchmark.py</code></td><td>Grid scaling (16→512)</td><td>results/scalability_analysis.png</td></tr>
-          <tr><td><code>reproduce.sh</code></td><td>One-command full reproducibility</td><td>All results/</td></tr>
+          <tr><td><code>pareto_benchmark.py</code></td><td>Time-to-solution vs κ-RMSE Pareto front</td><td>results/pareto_front.png</td></tr>
         </tbody>
       </table>
     </div>
