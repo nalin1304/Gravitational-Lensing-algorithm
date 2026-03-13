@@ -297,3 +297,63 @@ class TestEndToEnd:
         loss, info = model.training_loss(theta, kappa, gw)
         # loss should be approx nll (l_poisson is computed but weighted 0)
         assert abs(info['loss'] - info['nll']) < 1e-4
+
+
+# ─── Conformal recalibration tests ────────────────────────────────────────────
+
+class TestConformalRecalibration:
+    """Tests for conformal posterior recalibration (CP4SBI framework)."""
+
+    def test_conformal_recalibrate_returns_expected_keys(self):
+        model = JointNPE(grid_size=16, n_omega=4, em_emb_dim=8, gw_emb_dim=4, flow_layers=2)
+        theta = torch.randn(10, 6)
+        kappa = torch.rand(10, 1, 16, 16)
+        gw = torch.rand(10, 4)
+        result = model.conformal_recalibrate(theta, kappa, gw, alpha=0.1)
+        assert 'q_hat' in result
+        assert 'empirical_coverage' in result
+        assert result['n_cal'] == 10
+        assert result['alpha'] == 0.1
+        assert result['target_coverage'] == 0.9
+
+    def test_conformal_q_hat_positive(self):
+        model = JointNPE(grid_size=16, n_omega=4, em_emb_dim=8, gw_emb_dim=4, flow_layers=2)
+        theta = torch.randn(8, 6)
+        kappa = torch.rand(8, 1, 16, 16)
+        gw = torch.rand(8, 4)
+        result = model.conformal_recalibrate(theta, kappa, gw)
+        assert result['q_hat'] > 0
+
+    def test_posterior_conformal_uncalibrated_fallback(self):
+        """Without calibration, should fall back to Gaussian z-score."""
+        model = JointNPE(grid_size=16, n_omega=4, em_emb_dim=8, gw_emb_dim=4, flow_layers=2)
+        kappa = torch.rand(1, 16, 16)
+        gw = torch.rand(4)
+        result = model.posterior_conformal(kappa, gw, n_samples=50)
+        assert not result['calibrated']
+        assert result['mean'] is not None
+        assert result['ci_lower'] is not None
+
+    def test_posterior_conformal_after_calibration(self):
+        """After calibration, should use the conformal quantile."""
+        model = JointNPE(grid_size=16, n_omega=4, em_emb_dim=8, gw_emb_dim=4, flow_layers=2)
+        theta = torch.randn(8, 6)
+        kappa_cal = torch.rand(8, 1, 16, 16)
+        gw_cal = torch.rand(8, 4)
+        model.conformal_recalibrate(theta, kappa_cal, gw_cal)
+
+        kappa_test = torch.rand(1, 16, 16)
+        gw_test = torch.rand(4)
+        result = model.posterior_conformal(kappa_test, gw_test, n_samples=50)
+        assert result['calibrated']
+        assert abs(result['q_hat'] - model._conformal_q) < 1e-6
+
+    def test_conformal_coverage_monotone(self):
+        """Tighter alpha should give smaller q_hat."""
+        model = JointNPE(grid_size=16, n_omega=4, em_emb_dim=8, gw_emb_dim=4, flow_layers=2)
+        theta = torch.randn(20, 6)
+        kappa = torch.rand(20, 1, 16, 16)
+        gw = torch.rand(20, 4)
+        r50 = model.conformal_recalibrate(theta, kappa, gw, alpha=0.5)
+        r10 = model.conformal_recalibrate(theta, kappa, gw, alpha=0.1)
+        assert r10['q_hat'] >= r50['q_hat']

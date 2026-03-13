@@ -676,3 +676,109 @@ class JointNPE(nn.Module):
             'ece': float(ece),
             **coverage,
         }
+
+    def conformal_recalibrate(
+        self,
+        theta_cal: torch.Tensor,
+        kappa_cal: torch.Tensor,
+        gw_cal: torch.Tensor,
+        alpha: float = 0.1,
+    ) -> dict:
+        """Post-hoc conformal recalibration of posterior credible intervals.
+
+        Given a calibration set of (θ_true, d_EM, d_GW) triplets, compute
+        conformity scores that correct the posterior credible intervals to
+        achieve exact frequentist coverage. This addresses the well-known
+        SBI miscalibration problem identified by Talts et al. (2018) and
+        the CP4SBI framework (Cabezas et al. 2025).
+
+        The conformity score for each calibration point is:
+            s_i = max_j |θ_true_i,j - μ_j(d_i)| / σ_j(d_i)
+        i.e. the maximum standardized residual across parameters.
+
+        The recalibrated (1-α) credible interval at test time is:
+            μ(d) ± q̂ · σ(d)
+        where q̂ = Quantile(s_1,...,s_n, level=(1-α)(1+1/n)).
+
+        Args:
+            theta_cal: (n_cal, n_params) true parameters for calibration set
+            kappa_cal: (n_cal, 1, H, W) convergence maps
+            gw_cal:    (n_cal, n_omega) GW spectra
+            alpha:     target miscoverage rate (default 0.1 → 90% coverage)
+
+        Returns:
+            dict with 'q_hat' (conformal quantile), 'empirical_coverage',
+            'n_cal', and 'alpha'.
+        """
+        self.eval()
+        n_cal = theta_cal.shape[0]
+
+        with torch.no_grad():
+            # Compute posterior mean and std for each calibration point
+            scores = []
+            for i in range(n_cal):
+                mean_i, std_i = self.posterior_mean_std(
+                    kappa_cal[i:i+1], gw_cal[i:i+1], n_samples=200
+                )
+                # Standardized residual: how many σ away is the truth?
+                residual = torch.abs(theta_cal[i] - torch.as_tensor(mean_i)) / (torch.as_tensor(std_i) + 1e-8)
+                # Conformity score: worst-case across parameters
+                score = residual.max().item()
+                scores.append(score)
+
+        scores = sorted(scores)
+        # Conformal quantile with finite-sample correction
+        level = (1 - alpha) * (1 + 1 / n_cal)
+        idx = min(int(np.ceil(level * n_cal)) - 1, n_cal - 1)
+        q_hat = scores[idx]
+
+        # Empirical coverage check: how many calibration points are within q_hat?
+        empirical_coverage = sum(1 for s in scores if s <= q_hat) / n_cal
+
+        # Store for use in posterior_conformal()
+        self._conformal_q = q_hat
+
+        return {
+            'q_hat': round(q_hat, 4),
+            'empirical_coverage': round(empirical_coverage, 4),
+            'n_cal': n_cal,
+            'alpha': alpha,
+            'target_coverage': round(1 - alpha, 4),
+            'method': 'split_conformal_max_residual',
+            'reference': 'Cabezas et al. (2025); Talts et al. (2018)',
+        }
+
+    def posterior_conformal(
+        self,
+        kappa: torch.Tensor,
+        gw_spectrum: torch.Tensor,
+        n_samples: int = 500,
+        alpha: float = 0.1,
+    ) -> dict:
+        """Return conformally-calibrated credible intervals for a new observation.
+
+        Uses the conformal quantile from conformal_recalibrate() if available,
+        otherwise falls back to Gaussian z-score quantile.
+
+        Returns dict with 'mean', 'std', 'ci_lower', 'ci_upper', 'q_hat'.
+        """
+        mean, std = self.posterior_mean_std(kappa, gw_spectrum, n_samples=n_samples)
+
+        if hasattr(self, '_conformal_q') and self._conformal_q is not None:
+            q = self._conformal_q
+        else:
+            # Fallback: Gaussian z-score for (1-alpha) coverage
+            from scipy.stats import norm
+            q = norm.ppf(1 - alpha / 2)
+
+        ci_lower = mean - q * std
+        ci_upper = mean + q * std
+
+        return {
+            'mean': mean,
+            'std': std,
+            'ci_lower': ci_lower,
+            'ci_upper': ci_upper,
+            'q_hat': q,
+            'calibrated': hasattr(self, '_conformal_q') and self._conformal_q is not None,
+        }
