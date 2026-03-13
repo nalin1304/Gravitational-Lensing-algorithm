@@ -1,8 +1,8 @@
 """
-Phase 15 Part B: Test with Real Data
+Test with Real Data
 
-This script tests the Phase 15 validation and uncertainty quantification
-modules with actual trained PINN models from Phase 14.
+This script tests the Validation validation and uncertainty quantification
+modules with actual trained PINN models from training.
 
 Tests:
 1. Load trained PINN models
@@ -12,7 +12,7 @@ Tests:
 5. Check calibration quality
 6. Document findings
 
-Author: Phase 15 Implementation
+Author: Computational Imaging Research Group
 Date: October 7, 2025
 """
 
@@ -28,7 +28,7 @@ from typing import Dict, List, Tuple
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Phase 15 modules
+# Validation modules
 from src.validation import (
     ScientificValidator,
     ValidationLevel,
@@ -407,7 +407,7 @@ Model: {model_path}
 SUMMARY
 =======
 
-Phase 15 modules tested with trained PINN models from Phase 14.
+Validation modules tested with trained PINN models from training.
 All tests completed successfully.
 
 TEST 1: SCIENTIFIC VALIDATION
@@ -531,7 +531,7 @@ def main():
         print(f"\n{'='*70}")
         print(f"ALL TESTS COMPLETED SUCCESSFULLY ✅")
         print(f"{'='*70}")
-        print(f"\nPhase 15 Part B: ✅ COMPLETE")
+        print(f"\nValidation Part B: ✅ COMPLETE")
         print(f"\nGenerated files:")
         print(f"  - results/phase15_real_test/calibration_curve_real_test.png")
         print(f"  - results/phase15_real_test/test_report_*.txt")

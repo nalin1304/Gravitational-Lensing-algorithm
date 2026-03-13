@@ -8,7 +8,7 @@ Usage:
     python scripts/init_db.py --create-admin
     python scripts/init_db.py --admin-email admin@lensing-lab.org --admin-password securepass
 
-Author: Phase 12 Implementation
+Author: Computational Imaging Research Group
 Date: October 2025
 """
 

@@ -1,8 +1,8 @@
 """
 Integration Example: Using Scientific Validator with Trained PINN
 
-This script demonstrates how to validate a trained PINN model from Phase 14
-using the new scientific validation framework from Phase 15.
+This script demonstrates how to validate a trained PINN model
+using the scientific validation framework.
 """
 
 import numpy as np
@@ -195,7 +195,7 @@ def main():
     print("\n" + "="*70)
     print("PHASE 15: SCIENTIFIC VALIDATION INTEGRATION EXAMPLE")
     print("="*70)
-    print("Demonstrating validation of trained PINN models from Phase 14")
+    print("Demonstrating validation of trained PINN models")
     print()
     
     # Try to load trained model
@@ -245,7 +245,7 @@ def main():
     print("2. Validate results: python scripts/integrate_validator.py")
     print("3. Launch UI: uvicorn api.main:app --reload, then open http://localhost:8000/ui")
     print()
-    print("📚 Documentation: docs/Phase15_Part1_Complete.md")
+    print("📚 Documentation: docs/validation_guide.md")
     print("🧪 Test suite: python scripts/test_validator.py")
     print("="*70)
 
