@@ -134,7 +134,8 @@ async function navigate() {
   const titles = {
     dashboard: "Dashboard", workbench: "Workbench", validation: "Validation",
     analyses: "Analyses", account: "Account", api: "API Explorer",
-    survey: "Stage IV Survey", rigor: "Next-Gen Rigor", "pi-sbi": "PI-SBI"
+    survey: "Stage IV Survey", rigor: "Next-Gen Rigor", "pi-sbi": "PI-SBI",
+    inference: "Inference"
   };
   document.getElementById("pageTitle").textContent = titles[pageName] || "Dashboard";
 
@@ -175,6 +176,7 @@ async function boot() {
     ["survey", "survey.js"],
     ["rigor", "rigor.js"],
     ["pi-sbi", "pi_sbi.js"],
+    ["inference", "inference.js"],
   ];
 
   const results = await Promise.allSettled(

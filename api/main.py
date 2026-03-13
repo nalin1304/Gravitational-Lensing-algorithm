@@ -1510,6 +1510,169 @@ async def survey_joint(req: JointSurveyRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# NUTS-HMC Differentiable Inference Engine
+# ─────────────────────────────────────────────────────────────────────────────
+
+try:
+    from src.inference import (
+        DifferentiableNFW,
+        DifferentiableLensSimulator,
+        NUTSSampler,
+        FisherInformation,
+        LensingLogPosterior,
+    )
+    NUTS_AVAILABLE = True
+except ImportError:
+    NUTS_AVAILABLE = False
+
+
+class NUTSSimulateRequest(BaseModel):
+    log10_M_vir: float = Field(14.0, ge=10.0, le=16.0, description="log10(M_vir/M☉)")
+    concentration: float = Field(5.0, ge=1.0, le=30.0, description="NFW concentration")
+    z_lens: float = Field(0.3, ge=0.01, le=2.0, description="Lens redshift")
+    z_source: float = Field(1.5, ge=0.05, le=5.0, description="Source redshift")
+    grid_size: int = Field(64, ge=16, le=256, description="Grid resolution")
+    extent_arcsec: float = Field(3.0, ge=0.5, le=30.0, description="Field extent in arcsec")
+    source_type: str = Field("gaussian", description="Source type: gaussian or sersic")
+
+    @field_validator("source_type")
+    @classmethod
+    def validate_source_type(cls, v: str) -> str:
+        if v not in ("gaussian", "sersic"):
+            raise ValueError("source_type must be 'gaussian' or 'sersic'")
+        return v
+
+
+class NUTSPosteriorRequest(BaseModel):
+    log10_M_vir: float = Field(14.0, ge=10.0, le=16.0, description="log10(M_vir/M☉)")
+    concentration: float = Field(5.0, ge=1.0, le=30.0, description="NFW concentration")
+    z_lens: float = Field(0.3, ge=0.01, le=2.0, description="Lens redshift")
+    z_source: float = Field(1.5, ge=0.05, le=5.0, description="Source redshift")
+    grid_size: int = Field(32, ge=16, le=256, description="Grid resolution")
+    n_samples: int = Field(200, ge=10, le=5000, description="Number of posterior samples")
+    warmup: int = Field(100, ge=10, le=5000, description="Number of warmup steps")
+    noise_std: float = Field(0.01, ge=1e-6, le=1.0, description="Observation noise std")
+
+
+class NUTSFisherRequest(BaseModel):
+    log10_M_vir: float = Field(14.0, ge=10.0, le=16.0, description="log10(M_vir/M☉)")
+    concentration: float = Field(5.0, ge=1.0, le=30.0, description="NFW concentration")
+    z_lens: float = Field(0.3, ge=0.01, le=2.0, description="Lens redshift")
+    z_source: float = Field(1.5, ge=0.05, le=5.0, description="Source redshift")
+    grid_size: int = Field(64, ge=16, le=256, description="Grid resolution")
+    extent_arcsec: float = Field(3.0, ge=0.5, le=30.0, description="Field extent in arcsec")
+    source_type: str = Field("gaussian", description="Source type: gaussian or sersic")
+
+    @field_validator("source_type")
+    @classmethod
+    def validate_source_type(cls, v: str) -> str:
+        if v not in ("gaussian", "sersic"):
+            raise ValueError("source_type must be 'gaussian' or 'sersic'")
+        return v
+
+
+@app.post("/api/v1/nuts/simulate", tags=["NUTS-HMC"])
+async def nuts_simulate(req: NUTSSimulateRequest):
+    """Run differentiable forward model for NFW lensing simulation."""
+    if not NUTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="NUTS-HMC engine not available")
+    try:
+        nfw = DifferentiableNFW(
+            log10_M_vir=req.log10_M_vir,
+            concentration=req.concentration,
+            z_lens=req.z_lens,
+            z_source=req.z_source,
+        )
+        simulator = DifferentiableLensSimulator(
+            nfw,
+            grid_size=req.grid_size,
+            extent_arcsec=req.extent_arcsec,
+            source_type=req.source_type,
+        )
+        result = simulator.forward()
+        return {
+            "convergence": result["convergence"].detach().cpu().numpy().tolist(),
+            "lensed_image": result["lensed_image"].detach().cpu().numpy().tolist(),
+            "source_image": result["source_image"].detach().cpu().numpy().tolist(),
+            "status": "ok",
+        }
+    except Exception as e:
+        logger.exception("NUTS simulate error")
+        raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
+
+
+@app.post("/api/v1/nuts/posterior", tags=["NUTS-HMC"])
+async def nuts_posterior(req: NUTSPosteriorRequest):
+    """Run NUTS-HMC posterior sampling for NFW lens parameters."""
+    if not NUTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="NUTS-HMC engine not available")
+    try:
+        import time
+
+        nfw = DifferentiableNFW(
+            log10_M_vir=req.log10_M_vir,
+            concentration=req.concentration,
+            z_lens=req.z_lens,
+            z_source=req.z_source,
+        )
+        log_posterior = LensingLogPosterior(
+            nfw,
+            grid_size=req.grid_size,
+            noise_std=req.noise_std,
+        )
+        sampler = NUTSSampler(log_posterior)
+
+        t0 = time.perf_counter()
+        samples = sampler.run(n_samples=req.n_samples, warmup=req.warmup)
+        wall_time = time.perf_counter() - t0
+
+        return {
+            "samples": {
+                "log10_M_vir": samples["log10_M_vir"].detach().cpu().numpy().tolist(),
+                "concentration": samples["concentration"].detach().cpu().numpy().tolist(),
+            },
+            "accept_rate": float(samples.get("accept_rate", 0.0)),
+            "wall_time_s": round(wall_time, 3),
+            "method": "NUTS-HMC",
+        }
+    except Exception as e:
+        logger.exception("NUTS posterior error")
+        raise HTTPException(status_code=500, detail=f"Posterior sampling failed: {str(e)}")
+
+
+@app.post("/api/v1/nuts/fisher", tags=["NUTS-HMC"])
+async def nuts_fisher(req: NUTSFisherRequest):
+    """Compute Fisher information matrix at given NFW parameters."""
+    if not NUTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="NUTS-HMC engine not available")
+    try:
+        nfw = DifferentiableNFW(
+            log10_M_vir=req.log10_M_vir,
+            concentration=req.concentration,
+            z_lens=req.z_lens,
+            z_source=req.z_source,
+        )
+        simulator = DifferentiableLensSimulator(
+            nfw,
+            grid_size=req.grid_size,
+            extent_arcsec=req.extent_arcsec,
+            source_type=req.source_type,
+        )
+        fisher = FisherInformation(simulator)
+        result = fisher.compute()
+
+        return {
+            "fisher_matrix": result["fisher_matrix"].detach().cpu().numpy().tolist(),
+            "parameter_names": result["parameter_names"],
+            "marginal_errors": result["marginal_errors"].detach().cpu().numpy().tolist(),
+            "correlation": result["correlation"].detach().cpu().numpy().tolist(),
+        }
+    except Exception as e:
+        logger.exception("NUTS Fisher error")
+        raise HTTPException(status_code=500, detail=f"Fisher computation failed: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
