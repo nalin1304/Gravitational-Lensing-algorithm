@@ -1,0 +1,145 @@
+{
+  "generated_at_utc": "2026-03-14T12:57:26.311302+00:00",
+  "python_version": "3.14.3 (main, Feb  3 2026, 15:32:20) [Clang 17.0.0 (clang-1700.6.3.2)]",
+  "mode": "quick",
+  "missing_required_files": [],
+  "missing_required_artifacts": [],
+  "openapi": {
+    "ok": true,
+    "status_code": 200,
+    "endpoint_count": 53,
+    "missing_required_paths": []
+  },
+  "calibration_quality": {
+    "ok": true,
+    "max_raw_radius_error_percent": 2.2723771963649564,
+    "max_raw_mass_error_percent": 29.851340192391085,
+    "max_radius_calibration_factor": 1.0232521484834525,
+    "max_mass_calibration_factor": 1.4255439843649464,
+    "thresholds": {
+      "max_raw_radius_error_percent": 10.0,
+      "max_raw_mass_error_percent": 35.0,
+      "max_radius_calibration_factor": 1.5,
+      "max_mass_calibration_factor": 2.0
+    }
+  },
+  "uncertainty_quality": {
+    "ok": true,
+    "prediction_mode": "checkpoint_backed_mc_dropout",
+    "evaluation_mode": "synthetic_held_out_nfw_analogs",
+    "publication_valid": true,
+    "mean_ece": 0.062045276988636364,
+    "mean_coverage_90": 0.93642578125,
+    "thresholds": {
+      "max_mean_ece": 0.15,
+      "min_coverage_90": 0.8,
+      "max_coverage_90": 0.98
+    }
+  },
+  "checks": [
+    {
+      "name": "UI smoke",
+      "command": "python3 -m pytest tests/test_next_ui.py -q",
+      "passed": true,
+      "return_code": 0,
+      "stdout_tail": [
+        "....                                                                     [100%]",
+        "=============================== warnings summary ===============================",
+        "../../Library/Python/3.14/lib/python/site-packages/slowapi/extension.py:717",
+        "  /Users/nalinaggarwal/Library/Python/3.14/lib/python/site-packages/slowapi/extension.py:717: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead",
+        "    if asyncio.iscoroutinefunction(func):",
+        "",
+        "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+        "4 passed, 1 warning in 0.05s"
+      ],
+      "stderr_tail": []
+    },
+    {
+      "name": "API core",
+      "command": "python3 -m pytest tests/test_api.py -q",
+      "passed": true,
+      "return_code": 0,
+      "stdout_tail": [
+        "...........................                                              [100%]",
+        "=============================== warnings summary ===============================",
+        "../../Library/Python/3.14/lib/python/site-packages/slowapi/extension.py:717",
+        "  /Users/nalinaggarwal/Library/Python/3.14/lib/python/site-packages/slowapi/extension.py:717: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead",
+        "    if asyncio.iscoroutinefunction(func):",
+        "",
+        "-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html",
+        "27 passed, 1 warning in 0.16s"
+      ],
+      "stderr_tail": []
+    },
+    {
+      "name": "Static analysis (syntax sweep)",
+      "command": "python3 -c import pathlib, py_compile; [py_compile.compile(str(path), doraise=True) for path in pathlib.Path('src').rglob('*.py')]; print('mypy unavailable; executed py_compile syntax sweep over src/.')",
+      "passed": true,
+      "return_code": 0,
+      "stdout_tail": [
+        "mypy unavailable; executed py_compile syntax sweep over src/."
+      ],
+      "stderr_tail": []
+    },
+    {
+      "name": "Known systems",
+      "command": "python3 scripts/validate_known_systems.py",
+      "passed": true,
+      "return_code": 0,
+      "stdout_tail": [
+        "",
+        "## Calibration Factors",
+        "",
+        "| System | Radius Factor | Mass Factor | Reference |",
+        "|--------|---------------|-------------|-----------|",
+        "| Q2237+030 (Einstein Cross) | 1.0188 | 1.4255 | Schmidt et al. (1998), ApJ 507, 46 |",
+        "| Q0957+561 (Twin Quasar) | 1.0233 | 1.0350 | Kundic et al. (1997), ApJ 482, 75 |",
+        "",
+        "Validation Summary",
+        "========================================================================",
+        "System                         | Raw R err % | Raw M err % | Cal R err % | Cal M err %",
+        "------------------------------------------------------------------------------------------------",
+        "Q2237+030 (Einstein Cross)     |      1.8448 |     29.8513 |      0.0000 |      0.0000",
+        "Q0957+561 (Twin Quasar)        |      2.2724 |      3.3774 |      0.0000 |      0.0000",
+        "------------------------------------------------------------------------------------------------",
+        "Max raw errors: radius=2.2724% mass=29.8513%",
+        "Max calibrated errors (diagnostic): radius=0.0000% mass=0.0000%",
+        "Radius threshold: 5.00%",
+        "Mass threshold: 35.00%",
+        "Result: PASS"
+      ],
+      "stderr_tail": [
+        "INFO:src.validation.calibration:Starting full calibration suite...",
+        "INFO:src.validation.calibration:Calibrating against Q2237+030 (Einstein Cross)",
+        "INFO:src.validation.calibration:Calibration complete: einstein_cross",
+        "  Raw error: 1.84%",
+        "  Calibrated error: 0.00%",
+        "  Radius factor (self): 1.0188",
+        "  Mass factor (self): 1.4255",
+        "INFO:src.validation.calibration:\u2713 Q2237+030 (Einstein Cross): 0.00% error",
+        "INFO:src.validation.calibration:Calibrating against Q0957+561 (Twin Quasar)",
+        "INFO:src.validation.calibration:Calibration complete: twin_quasar",
+        "  Raw error: 2.27%",
+        "  Calibrated error: 0.00%",
+        "  Radius factor (self): 1.0233",
+        "  Mass factor (self): 1.0350",
+        "INFO:src.validation.calibration:\u2713 Q0957+561 (Twin Quasar): 0.00% error",
+        "INFO:src.validation.calibration:Saved calibration results to results/calibration_results.json"
+      ]
+    },
+    {
+      "name": "Statistical rigor report",
+      "command": "python3 scripts/statistical_rigor_report.py --output results/statistical_rigor_report.json --markdown-output results/statistical_rigor_report.md",
+      "passed": true,
+      "return_code": 0,
+      "stdout_tail": [
+        "Statistical rigor report generated.",
+        "JSON: results/statistical_rigor_report.json",
+        "Markdown: results/statistical_rigor_report.md"
+      ],
+      "stderr_tail": []
+    }
+  ],
+  "all_checks_passed": true,
+  "publication_gate_passed": true
+}

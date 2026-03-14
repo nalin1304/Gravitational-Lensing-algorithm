@@ -304,20 +304,36 @@ async function loadUQCalibration(P) {
     
     // Endpoint returns array of calibration results — use first entry
     const data = Array.isArray(raw) ? (raw[0] || {}) : (raw || {});
-    const ece = data.ece ?? 0.062;
-    const cov90 = data.coverage_90 ?? 0.936;
-    
+    const ece = data.ece;
+    const cov90 = data.coverage_90;
+
+    if (ece == null || cov90 == null) {
+      const uqEl = document.getElementById("uqMetrics");
+      if (uqEl) uqEl.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:24px 0">
+        <div style="font-size:1.2rem;margin-bottom:4px">⚠️ Calibration data unavailable</div>
+        <div style="font-size:0.8rem">Run <code>scripts/uncertainty_calibration.py</code> to generate metrics</div>
+      </div>`;
+      return;
+    }
+
+    const ecePass = ece <= 0.10;
+    const covPass = cov90 >= 0.85;
+    const eceBadge = ecePass ? "badge-success" : "badge-warning";
+    const covBadge = covPass ? "badge-success" : "badge-warning";
+    const eceColor = ecePass ? "var(--success)" : "var(--warning)";
+    const covColor = covPass ? "var(--success)" : "var(--warning)";
+
     const html = `
       <div style="display:flex;flex-direction:column;gap:16px;padding:8px 0">
         <div style="text-align:center">
           <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Expected Calibration Error</div>
-          <div style="font-size:2rem;font-family:var(--font-mono);font-weight:600;color:var(--success)">${P.fmtSci(ece, 3)}</div>
-          <span class="badge badge-success" style="margin-top:8px">PASS</span>
+          <div style="font-size:2rem;font-family:var(--font-mono);font-weight:600;color:${eceColor}">${P.fmtSci(ece, 3)}</div>
+          <span class="badge ${eceBadge}" style="margin-top:8px">${ecePass ? "PASS" : "CHECK"}</span>
         </div>
         <div style="text-align:center">
           <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Coverage @ 90%</div>
-          <div style="font-size:2rem;font-family:var(--font-mono);font-weight:600;color:var(--success)">${(cov90 * 100).toFixed(1)}%</div>
-          <span class="badge badge-success" style="margin-top:8px">PASS</span>
+          <div style="font-size:2rem;font-family:var(--font-mono);font-weight:600;color:${covColor}">${(cov90 * 100).toFixed(1)}%</div>
+          <span class="badge ${covBadge}" style="margin-top:8px">${covPass ? "PASS" : "CHECK"}</span>
         </div>
         <div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding-top:8px;border-top:1px solid var(--border-subtle)">
           seed=21, dropout=0.04, N=50 MC passes
@@ -329,26 +345,11 @@ async function loadUQCalibration(P) {
     if (uqEl) uqEl.innerHTML = html;
   } catch (err) {
     console.error("UQ calibration load failed:", err);
-    // Fallback to known values on error
-    const html = `
-      <div style="display:flex;flex-direction:column;gap:16px;padding:8px 0">
-        <div style="text-align:center">
-          <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Expected Calibration Error</div>
-          <div style="font-size:2rem;font-family:var(--font-mono);font-weight:600;color:var(--success)">0.062</div>
-          <span class="badge badge-success" style="margin-top:8px">PASS</span>
-        </div>
-        <div style="text-align:center">
-          <div style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Coverage @ 90%</div>
-          <div style="font-size:2rem;font-family:var(--font-mono);font-weight:600;color:var(--success)">93.6%</div>
-          <span class="badge badge-success" style="margin-top:8px">PASS</span>
-        </div>
-        <div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding-top:8px;border-top:1px solid var(--border-subtle)">
-          seed=21, dropout=0.04, N=50 MC passes
-        </div>
-      </div>
-    `;
     const uqEl = document.getElementById("uqMetrics");
-    if (uqEl) uqEl.innerHTML = html;
+    if (uqEl) uqEl.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:24px 0">
+      <div style="font-size:1.2rem;margin-bottom:4px">⚠️ Calibration unavailable</div>
+      <div style="font-size:0.8rem">API returned an error — run calibration script first</div>
+    </div>`;
   }
 }
 

@@ -66,7 +66,8 @@ def load_pretrained_model(model_path: Optional[str] = None):
         raise FileNotFoundError(f"Model checkpoint not found at {model_path}")
     
     try:
-        # Initialize a model structure with a deterministic key
+        # PRNGKey(0) is used only to initialize the model skeleton;
+        # all learned parameters are overwritten by tree_deserialise_leaves.
         key = jax.random.PRNGKey(0)
         model = PhysicsInformedNN(key=key)
         

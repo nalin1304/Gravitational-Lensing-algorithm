@@ -1,0 +1,84 @@
+{
+  "grid_scaling": [
+    {
+      "grid_size": 16,
+      "n_pixels": 256,
+      "time_mean_s": 0.00113123600021936,
+      "time_std_s": 0.00038361653666157486,
+      "memory_mean_mb": 0.03911333333333333,
+      "memory_std_mb": 0.0012237704940969197
+    },
+    {
+      "grid_size": 32,
+      "n_pixels": 1024,
+      "time_mean_s": 0.0008559446663033062,
+      "time_std_s": 6.0845888562082844e-05,
+      "memory_mean_mb": 0.142576,
+      "memory_std_mb": 8.510385811858125e-05
+    },
+    {
+      "grid_size": 64,
+      "n_pixels": 4096,
+      "time_mean_s": 0.000970874999135655,
+      "time_std_s": 3.2713880608396685e-05,
+      "memory_mean_mb": 0.5603193333333333,
+      "memory_std_mb": 6.681982407110577e-05
+    },
+    {
+      "grid_size": 128,
+      "n_pixels": 16384,
+      "time_mean_s": 0.0016305276670512587,
+      "time_std_s": 5.460369452278571e-05,
+      "memory_mean_mb": 2.2313023333333333,
+      "memory_std_mb": 3.597530016861086e-05
+    },
+    {
+      "grid_size": 256,
+      "n_pixels": 65536,
+      "time_mean_s": 0.005625208334095078,
+      "time_std_s": 0.00024159313615178336,
+      "memory_mean_mb": 8.456809,
+      "memory_std_mb": 3.8738439135992815e-05
+    },
+    {
+      "grid_size": 512,
+      "n_pixels": 262144,
+      "time_mean_s": 0.026686180665516684,
+      "time_std_s": 0.00037726788192365604,
+      "memory_mean_mb": 33.623338,
+      "memory_std_mb": 1.1775681155140714e-05
+    }
+  ],
+  "multiplane_scaling": [
+    {
+      "n_planes": 1,
+      "time_mean_s": 0.004549624666348488,
+      "time_std_s": 0.00010592609745449918
+    },
+    {
+      "n_planes": 2,
+      "time_mean_s": 0.009071695001087695,
+      "time_std_s": 0.00042089687491723353
+    },
+    {
+      "n_planes": 3,
+      "time_mean_s": 0.014234847001110515,
+      "time_std_s": 0.0014190580879902151
+    },
+    {
+      "n_planes": 5,
+      "time_mean_s": 0.031013666333213525,
+      "time_std_s": 0.011430407301835541
+    },
+    {
+      "n_planes": 8,
+      "time_mean_s": 0.034712542000003545,
+      "time_std_s": 4.831924023353924e-05
+    },
+    {
+      "n_planes": 10,
+      "time_mean_s": 0.04336559766549423,
+      "time_std_s": 0.00020203685415214902
+    }
+  ]
+}

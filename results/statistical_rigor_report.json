@@ -1,0 +1,215 @@
+{
+  "generated_at_utc": "2026-03-14T12:57:26.170930+00:00",
+  "inputs": {
+    "slacs_json": "results/real_data/slacs_validation_results.json",
+    "ablation_json": "results/ablation_results.json",
+    "sota_json": "results/sota_comparison_results.json",
+    "uq_json": "results/uncertainty_calibration_results.json"
+  },
+  "bootstrap_samples": 5000,
+  "slacs_validation": {
+    "n_systems": 5,
+    "metrics": {
+      "rmse": {
+        "n": 5.0,
+        "mean": 0.10068150983619033,
+        "std": 0.009486213130368877,
+        "ci95_low": 0.09340988827500286,
+        "ci95_high": 0.10792354851522161
+      },
+      "mae": {
+        "n": 5.0,
+        "mean": 0.08608175264354109,
+        "std": 0.007869738648248427,
+        "ci95_low": 0.07994459768478682,
+        "ci95_high": 0.09221890760229537
+      },
+      "ssim": {
+        "n": 5.0,
+        "mean": 0.9854214479469597,
+        "std": 0.003271854573600622,
+        "ci95_low": 0.9827759748277209,
+        "ci95_high": 0.9878869295684802
+      },
+      "psnr": {
+        "n": 5.0,
+        "mean": 27.65991732314462,
+        "std": 0.7256453445429002,
+        "ci95_low": 27.123571959714194,
+        "ci95_high": 28.252527019544885
+      },
+      "ring_correlation": {
+        "n": 5.0,
+        "mean": 0.9163680020996811,
+        "std": 0.02075169005580289,
+        "ci95_low": 0.8995205186325768,
+        "ci95_high": 0.9318986425225209
+      },
+      "annular_flux_ratio": {
+        "n": 5.0,
+        "mean": 0.9540925807665779,
+        "std": 0.011924470786078464,
+        "ci95_low": 0.944822602544502,
+        "ci95_high": 0.9633625589886539
+      }
+    },
+    "thresholds": {
+      "metric_schema": "image_space_forward_model",
+      "rmse_max": 0.12,
+      "ssim_min": 0.97,
+      "ring_correlation_min": 0.85,
+      "annular_flux_ratio_abs_tolerance": 0.1
+    },
+    "joint_pass_count": 5,
+    "joint_pass_rate": 1.0,
+    "prediction_modes": [
+      "real_hst_forward_model_fit"
+    ],
+    "data_sources": [
+      "MAST"
+    ],
+    "validation_scopes": [
+      "image_space_forward_model"
+    ],
+    "metric_names": [
+      "rmse",
+      "mae",
+      "ssim",
+      "psnr",
+      "ring_correlation",
+      "annular_flux_ratio"
+    ],
+    "systems": [
+      {
+        "name": "SDSS J0946+1006",
+        "rmse": 0.08953277553564852,
+        "ssim": 0.986823690412407,
+        "joint_pass": true,
+        "ring_correlation": 0.9310442681272362,
+        "annular_flux_ratio": 0.9524044539133277
+      },
+      {
+        "name": "SDSS J1250+0523",
+        "rmse": 0.10593606670468433,
+        "ssim": 0.9809015656955095,
+        "joint_pass": true,
+        "ring_correlation": 0.9275751677353117,
+        "annular_flux_ratio": 0.9674849444255862
+      },
+      {
+        "name": "SDSS J1402+6321",
+        "rmse": 0.10310170858772942,
+        "ssim": 0.9882068065748064,
+        "joint_pass": true,
+        "ring_correlation": 0.8991795679688476,
+        "annular_flux_ratio": 0.9647192260893845
+      },
+      {
+        "name": "SDSS J0252+0039",
+        "rmse": 0.11232195028950498,
+        "ssim": 0.9880986721401908,
+        "joint_pass": true,
+        "ring_correlation": 0.8891262523556002,
+        "annular_flux_ratio": 0.939440945622234
+      },
+      {
+        "name": "SDSS J0037-0942",
+        "rmse": 0.09251504806338437,
+        "ssim": 0.9830765049118851,
+        "joint_pass": true,
+        "ring_correlation": 0.93491475431141,
+        "annular_flux_ratio": 0.9464133337823571
+      }
+    ]
+  },
+  "ablation_study": {
+    "full_pipeline": {
+      "rmse_mean": 0.04304986791067298,
+      "ssim_mean": 0.6426285629164993,
+      "pass_rate": 0.3333333333333333
+    },
+    "evaluation_modes": [
+      "analytic_profile_refit",
+      "checkpoint_backed_affine_decoder",
+      "checkpoint_raw_decoder"
+    ],
+    "full_vs_no_calibration_delta_rmse": 0.17078855775001378,
+    "full_vs_vanilla_delta_rmse": 1.4035545437850183e-05,
+    "comparisons": [
+      {
+        "config": "No Calibration Layer",
+        "delta_rmse_vs_full": 0.17078855775001378,
+        "delta_ssim_vs_full": -0.6344536331880648,
+        "rmse_ratio_vs_full": 4.967226057566408
+      },
+      {
+        "config": "Vanilla PINN (No Physics/UQ)",
+        "delta_rmse_vs_full": 1.4035545437850183e-05,
+        "delta_ssim_vs_full": 0.0013586933509996957,
+        "rmse_ratio_vs_full": 1.0003260299303816
+      },
+      {
+        "config": "SIE Approximation",
+        "delta_rmse_vs_full": -0.01078630566618799,
+        "delta_ssim_vs_full": 0.2874576813646935,
+        "rmse_ratio_vs_full": 0.7494462540844676
+      },
+      {
+        "config": "Parametric NFW Refit",
+        "delta_rmse_vs_full": -0.04261016445550713,
+        "delta_ssim_vs_full": 0.3573113001027153,
+        "rmse_ratio_vs_full": 0.010213816592381224
+      }
+    ]
+  },
+  "sota_comparison": {
+    "n_methods": 4,
+    "n_learned_methods": 2,
+    "proxy_methods_count": 0,
+    "rank_by_rmse": [
+      {
+        "method": "Parametric NFW",
+        "rmse_mean": 0.000603073810427216,
+        "ssim_mean": 0.9999168313922437,
+        "time_ms_mean": 100.33474179872428,
+        "evaluation_mode": "analytic_profile_refit"
+      },
+      {
+        "method": "SIE Approximation",
+        "rmse_mean": 0.03055851422846222,
+        "ssim_mean": 0.9523896519521351,
+        "time_ms_mean": 4.008804100158159,
+        "evaluation_mode": "analytic_profile_refit"
+      },
+      {
+        "method": "Ours (Full PINN)",
+        "rmse_mean": 0.04970758260611647,
+        "ssim_mean": 0.6672514713648491,
+        "time_ms_mean": 3.9109415985876694,
+        "evaluation_mode": "checkpoint_backed_affine_decoder"
+      },
+      {
+        "method": "Vanilla PINN",
+        "rmse_mean": 0.04971329309950932,
+        "ssim_mean": 0.667300535119409,
+        "time_ms_mean": 4.14381660084473,
+        "evaluation_mode": "checkpoint_backed_affine_decoder"
+      }
+    ],
+    "our_method_rank_by_rmse": 3,
+    "our_method_rank_within_learned": 1
+  },
+  "uncertainty_calibration": {
+    "n_systems": 5,
+    "mean_rmse": 0.006056212168186903,
+    "mean_ece": 0.062045276988636364,
+    "mean_coverage_90": 0.93642578125,
+    "mean_uq_error_correlation": 0.0173885788753061,
+    "prediction_mode": "checkpoint_backed_mc_dropout",
+    "evaluation_mode": "synthetic_held_out_nfw_analogs",
+    "publication_valid": true,
+    "publication_scope": "synthetic NFW analog calibration only; not observational posterior calibration",
+    "checkpoint_path": "/Users/nalinaggarwal/Downloads/Gravitational-Lensing-algorithm-master/models/bayesian_uq_synthetic.pt"
+  },
+  "overall_warnings": []
+}

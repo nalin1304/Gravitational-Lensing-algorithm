@@ -16,8 +16,6 @@
 # See DOCKER_SETUP.md for detailed instructions
 # ============================================================================
 
-version: '3.8'
-
 services:
   # ============================================================================
   # PostgreSQL Database
@@ -41,8 +39,9 @@ services:
       # Mount SSL certificates (create these before deploying)
       - ./database/ssl/server.crt:/var/lib/postgresql/server.crt:ro
       - ./database/ssl/server.key:/var/lib/postgresql/server.key:ro
-    ports:
-      - "5432:5432"
+    # Do NOT expose DB port to host in production — only accessible within Docker network
+    # ports:
+    #   - "5432:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U lensing" ]
       interval: 10s
@@ -60,8 +59,9 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+    # Do NOT expose Redis port to host in production — only accessible within Docker network
+    # ports:
+    #   - "6379:6379"
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s

@@ -170,10 +170,9 @@ def ray_trace(source_position: Tuple[float, float],
         #       only and raise an error if the caller requests a wave magnification
         #       without using the dedicated engine — avoids a physically wrong
         #       heuristic factor from silently corrupting results.
-        G = 6.67430e-11          # m³ kg⁻¹ s⁻²  (CODATA 2018)
-        c = 299792458.0           # m s⁻¹          (SI 2019 exact)
-        M_kg = mass * 1.98841e30  # solar mass → kg (IAU 2015)
-        omega_w = 8.0 * jnp.pi * G * M_kg / (c**2 * (wavelength_m + 1e-30))
+        from src.utils.constants import G_CONST, C_LIGHT, M_SUN_KG
+        M_kg = mass * M_SUN_KG
+        omega_w = 8.0 * jnp.pi * G_CONST * M_kg / (C_LIGHT**2 * (wavelength_m + 1e-30))
         
         results['wave_frequency_parameter'] = float(omega_w)
         results['wave_optics_regime'] = 'geometric' if float(omega_w) > 1e3 else 'wave'

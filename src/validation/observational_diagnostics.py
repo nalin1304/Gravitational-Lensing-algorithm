@@ -22,6 +22,7 @@ from typing import Any
 import numpy as np
 from scipy.optimize import minimize
 from scipy.signal import fftconvolve
+from scipy.special import gammaincinv
 from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 
 from src.optics.epsf_model import ePSFModel
@@ -55,6 +56,7 @@ def build_hst_psf_kernel(
     kernel_size: int = 21,
     wavelength_micron: float = 0.80,
     detector_position: tuple[float, float] = (2048.0, 2048.0),
+    seed: int = 42,
 ) -> np.ndarray:
     """
     Build an HST-like PSF kernel.
@@ -78,7 +80,7 @@ def build_hst_psf_kernel(
         aperture_diameter_m=2.4,
         detector_shape=(4096, 4096),
         include_charge_diffusion=True,
-        seed=0,
+        seed=seed,
     )
     return epsf_model.evaluate(*detector_position)
 
@@ -145,7 +147,7 @@ def elliptical_sersic_source(
     safe_radius = max(float(effective_radius_arcsec), 1.0e-3)
     safe_index = max(float(sersic_index), 0.5)
     elliptical_radius = np.sqrt(major_axis**2 + (minor_axis / safe_axis_ratio) ** 2)
-    sersic_bn = 1.9992 * safe_index - 0.3271
+    sersic_bn = float(gammaincinv(2.0 * safe_index, 0.5))
     surface_brightness = float(amplitude) * np.exp(
         -sersic_bn * ((elliptical_radius / safe_radius) ** (1.0 / safe_index) - 1.0)
     )

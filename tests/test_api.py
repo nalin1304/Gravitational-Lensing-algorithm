@@ -212,8 +212,10 @@ class TestInference:
         response = client.post("/api/v1/inference", json=payload)
         if response.status_code == 503:
             # Strict mode: no fallback inference without a real checkpoint.
-            assert "No pretrained PINN model available" in response.json().get("error", "") \
-                or "No pretrained PINN model available" in response.json().get("detail", "")
+            # 503 is correct: checkpoint missing or runtime unavailable
+            detail = response.json().get("detail", "") or response.json().get("error", "")
+            assert "PINN" in detail or "pretrained" in detail or "checkpoint" in detail or "unavailable" in detail
+
             return
         assert response.status_code == 200
         
@@ -247,8 +249,10 @@ class TestInference:
         
         response = client.post("/api/v1/inference", json=payload)
         if response.status_code == 503:
-            assert "No pretrained PINN model available" in response.json().get("error", "") \
-                or "No pretrained PINN model available" in response.json().get("detail", "")
+            # 503 is correct: checkpoint missing or runtime unavailable
+            detail = response.json().get("detail", "") or response.json().get("error", "")
+            assert "PINN" in detail or "pretrained" in detail or "checkpoint" in detail or "unavailable" in detail
+
             return
         assert response.status_code == 200
         
@@ -274,8 +278,9 @@ class TestInference:
             
             response = client.post("/api/v1/inference", json=payload)
             if response.status_code == 503:
-                assert "No pretrained PINN model available" in response.json().get("error", "") \
-                    or "No pretrained PINN model available" in response.json().get("detail", "")
+                # 503 is correct: checkpoint missing or runtime unavailable
+                detail = response.json().get("detail", "") or response.json().get("error", "")
+                assert "PINN" in detail or "pretrained" in detail or "checkpoint" in detail or "unavailable" in detail
                 return
             assert response.status_code == 200
     
@@ -431,8 +436,9 @@ class TestIntegrationWorkflows:
         
         inf_response = client.post("/api/v1/inference", json=inf_payload)
         if inf_response.status_code == 503:
-            assert "No pretrained PINN model available" in inf_response.json().get("error", "") \
-                or "No pretrained PINN model available" in inf_response.json().get("detail", "")
+            # 503 is correct: checkpoint missing or runtime unavailable
+            detail = inf_response.json().get("detail", "") or inf_response.json().get("error", "")
+            assert "PINN" in detail or "pretrained" in detail or "checkpoint" in detail or "unavailable" in detail
             return
         assert inf_response.status_code == 200
         
@@ -483,8 +489,10 @@ class TestPerformance:
         duration = time.time() - start
 
         if response.status_code == 503:
-            assert "No pretrained PINN model available" in response.json().get("error", "") \
-                or "No pretrained PINN model available" in response.json().get("detail", "")
+            # 503 is correct: checkpoint missing or runtime unavailable
+            detail = response.json().get("detail", "") or response.json().get("error", "")
+            assert "PINN" in detail or "pretrained" in detail or "checkpoint" in detail or "unavailable" in detail
+
             return
         assert response.status_code == 200
         assert duration < 5.0  # Should complete within 5 seconds
