@@ -58,10 +58,10 @@ async function loadTab(tab) {
 
     document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
 
+    try {
     if (tab === "my") {
         if (!P.getToken()) {
             el.innerHTML = `<div class="empty-state"><p>Sign in to view your analyses</p><a href="#/account" class="btn btn-primary" style="margin-top:12px">Go to Account</a></div>`;
-            P.hideLoading();
             return;
         }
         try {
@@ -107,7 +107,7 @@ async function loadTab(tab) {
         `).join("")}</tbody></table>`;
         } catch (e) { el.innerHTML = `<div class="empty-state"><p>${P.esc(e.message)}</p></div>`; }
     } else if (tab === "jobs") {
-        if (!P.getToken()) { el.innerHTML = `<div class="empty-state"><p>Sign in to view jobs</p></div>`; P.hideLoading(); return; }
+        if (!P.getToken()) { el.innerHTML = `<div class="empty-state"><p>Sign in to view jobs</p></div>`; return; }
         try {
             const raw = await P.api("/api/v1/jobs");
             const jobs = Array.isArray(raw) ? raw : (raw.jobs || []);
@@ -118,12 +118,12 @@ async function loadTab(tab) {
           <tr><td style="font-family:var(--mono);font-size:12px">${P.esc(j.job_id)}</td>
           <td>${P.esc(j.job_type)}</td>
           <td><span class="badge ${j.status === 'completed' ? 'badge-success' : j.status === 'failed' ? 'badge-danger' : 'badge-warning'}">${P.esc(j.status)}</span></td>
-          <td>${(j.progress * 100).toFixed(0)}%</td>
+          <td>${((j.progress || 0) * 100).toFixed(0)}%</td>
           <td>${new Date(j.created_at).toLocaleDateString()}</td></tr>
         `).join("")}</tbody></table>`;
         } catch (e) { el.innerHTML = `<div class="empty-state"><p>${P.esc(e.message)}</p></div>`; }
     } else if (tab === "results") {
-        if (!P.getToken()) { el.innerHTML = `<div class="empty-state"><p>Sign in to view results</p></div>`; P.hideLoading(); return; }
+        if (!P.getToken()) { el.innerHTML = `<div class="empty-state"><p>Sign in to view results</p></div>`; return; }
         try {
             const raw = await P.api("/api/v1/results");
             const results = Array.isArray(raw) ? raw : (raw.results || []);
@@ -137,7 +137,9 @@ async function loadTab(tab) {
         `).join("")}</tbody></table>`;
         } catch (e) { el.innerHTML = `<div class="empty-state"><p>${P.esc(e.message)}</p></div>`; }
     }
-    P.hideLoading();
+    } finally {
+        P.hideLoading();
+    }
 }
 
 function showCreate() { document.getElementById("aCreateModal").style.display = "block"; }

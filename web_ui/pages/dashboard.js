@@ -236,9 +236,8 @@ async function loadSystemHealth(P) {
       : '<span class="badge badge-warning">Missing</span>';
     rows.push(metricRow("LensFinder Checkpoint", finderBadge));
 
-    // Python Version
-    const pyVer = health.python_version || "—";
-    rows.push(metricRow("Python Version", `<code style="font-family:var(--font-mono)">${P.esc(pyVer)}</code>`));
+    // Platform Version
+    rows.push(metricRow("Platform", `<code style="font-family:var(--font-mono)">v${P.esc(health.version || '2.0')}</code>`));
 
     const healthEl = document.getElementById("healthRows");
     if (healthEl) healthEl.innerHTML = rows.join("");
@@ -280,7 +279,7 @@ async function loadValidationOverview(P) {
           ${badge}
         </div>
         <div style="display:flex;gap:16px;font-size:0.85rem;color:var(--text-muted);padding-left:4px">
-          <span>NRMSE: <code>${nrmse}</code></span>
+          <span>RMSE: <code>${nrmse}</code></span>
           <span>SSIM: <code>${ssim}</code></span>
         </div>
       `;
@@ -320,7 +319,7 @@ async function loadUQCalibration(P) {
           <div style="font-size:2rem;font-family:var(--font-mono);font-weight:600;color:var(--success)">${(cov90 * 100).toFixed(1)}%</div>
           <span class="badge badge-success" style="margin-top:8px">PASS</span>
         </div>
-        <div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding-top:8px;border-top:1px solid var(--border-light)">
+        <div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding-top:8px;border-top:1px solid var(--border-subtle)">
           seed=21, dropout=0.04, N=50 MC passes
         </div>
       </div>
@@ -343,7 +342,7 @@ async function loadUQCalibration(P) {
           <div style="font-size:2rem;font-family:var(--font-mono);font-weight:600;color:var(--success)">93.6%</div>
           <span class="badge badge-success" style="margin-top:8px">PASS</span>
         </div>
-        <div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding-top:8px;border-top:1px solid var(--border-light)">
+        <div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding-top:8px;border-top:1px solid var(--border-subtle)">
           seed=21, dropout=0.04, N=50 MC passes
         </div>
       </div>

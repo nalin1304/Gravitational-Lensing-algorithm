@@ -268,7 +268,7 @@ export async function init() {
         });
     }
 
-    window.revokeKey = async function revokeKey(keyId) {
+    async function revokeKey(keyId) {
         if (!confirm('Revoke this API key? This cannot be undone.')) return;
         try {
             await P.api(`/api/v1/auth/api-keys/${keyId}`, { method: 'DELETE' });
