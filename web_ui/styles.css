@@ -56,6 +56,8 @@
   --transition:     200ms ease;
 
   /* Legacy aliases (backward compat with inline styles in page modules) */
+  --bg-primary:     var(--bg-void);
+  --bg-secondary:   var(--bg-elevated);
   --bg:             var(--bg-void);
   --bg-card:        var(--bg-surface);
   --bg-hover:       var(--bg-highlight);
@@ -355,6 +357,15 @@ body::before {
   50% {
     opacity: 0.6;
     box-shadow: 0 0 12px var(--accent-green);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
@@ -2202,12 +2213,6 @@ input[type="range"]::-moz-range-thumb:hover {
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   color: var(--text-primary);
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
-  font: 14px/1 var(--font-sans);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition);
 }
 .btn-secondary:hover { border-color: var(--border-active); background: var(--bg-highlight); }
 
@@ -2215,12 +2220,6 @@ input[type="range"]::-moz-range-thumb:hover {
   background: rgba(245,158,11,0.15);
   border: 1px solid rgba(245,158,11,0.3);
   color: var(--accent-amber);
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
-  font: 14px/1 var(--font-sans);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition);
 }
 .btn-warning:hover { background: rgba(245,158,11,0.25); }
 
