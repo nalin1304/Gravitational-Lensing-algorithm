@@ -33,7 +33,7 @@ Verified on 2026-03-13:
 
 ```bash
 python3 -m pytest tests/ -q
-# 646 passed, 1 skipped   (verified Mar 14 2026)
+# 647 passed, 1 skipped   (verified Mar 14 2026)
 
 python3 scripts/publication_gate.py --quick
 # Publication Gate: PASS
@@ -167,12 +167,11 @@ Expected non-fatal local warning:
 - `paper/TIER1_TOPIC_AND_RIGOR.md`: Topic and rigor framing artifact
 
 ### Quality + ops
-- Tests: `tests/` (646 passing tests, 1 skipped — verified Mar 14 2026)
+- Tests: `tests/` (647 passing tests, 1 skipped — verified Mar 14 2026)
 - Benchmarks: `benchmarks/`
 - Validation/readiness docs:
   - `IEEE_SUBMISSION_CHECKLIST.md`
   - `JOURNAL_PUBLICATION_READINESS.md`
-  - `CODEBASE_COMPLETE_SCIENTIFIC_AUDIT.md`
   - `PROJECT_DOCUMENTATION.md`
 
 ### UI ↔ API Endpoint Index
