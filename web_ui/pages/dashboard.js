@@ -240,11 +240,12 @@ async function loadSystemHealth(P) {
     const pyVer = health.python_version || "—";
     rows.push(metricRow("Python Version", `<code style="font-family:var(--font-mono)">${P.esc(pyVer)}</code>`));
 
-    document.getElementById("healthRows").innerHTML = rows.join("");
+    const healthEl = document.getElementById("healthRows");
+    if (healthEl) healthEl.innerHTML = rows.join("");
   } catch (err) {
     console.error("System health load failed:", err);
-    document.getElementById("healthRows").innerHTML = 
-      `<p style="color:var(--text-muted);padding:12px">Could not load system health</p>`;
+    const healthEl = document.getElementById("healthRows");
+    if (healthEl) healthEl.innerHTML = `<p style="color:var(--text-muted);padding:12px">Could not load system health</p>`;
   }
 }
 
@@ -258,8 +259,8 @@ async function loadValidationOverview(P) {
     const allSystems = Array.isArray(raw) ? raw : (raw.systems || []);
     
     if (!allSystems.length) {
-      document.getElementById("validationTable").innerHTML = 
-        `<p style="color:var(--text-muted);padding:12px">No SLACS validation data available</p>`;
+      const vEl = document.getElementById("validationTable");
+      if (vEl) vEl.innerHTML = `<p style="color:var(--text-muted);padding:12px">No SLACS validation data available</p>`;
       return;
     }
 
@@ -286,11 +287,12 @@ async function loadValidationOverview(P) {
     });
     
     html += `</div>`;
-    document.getElementById("validationTable").innerHTML = html;
+    const vEl = document.getElementById("validationTable");
+    if (vEl) vEl.innerHTML = html;
   } catch (err) {
     console.error("Validation overview load failed:", err);
-    document.getElementById("validationTable").innerHTML = 
-      `<p style="color:var(--text-muted);padding:12px">Could not load SLACS data</p>`;
+    const vEl = document.getElementById("validationTable");
+    if (vEl) vEl.innerHTML = `<p style="color:var(--text-muted);padding:12px">Could not load SLACS data</p>`;
   }
 }
 
@@ -324,7 +326,8 @@ async function loadUQCalibration(P) {
       </div>
     `;
     
-    document.getElementById("uqMetrics").innerHTML = html;
+    const uqEl = document.getElementById("uqMetrics");
+    if (uqEl) uqEl.innerHTML = html;
   } catch (err) {
     console.error("UQ calibration load failed:", err);
     // Fallback to known values on error
@@ -345,7 +348,8 @@ async function loadUQCalibration(P) {
         </div>
       </div>
     `;
-    document.getElementById("uqMetrics").innerHTML = html;
+    const uqEl = document.getElementById("uqMetrics");
+    if (uqEl) uqEl.innerHTML = html;
   }
 }
 
@@ -353,19 +357,24 @@ async function loadUQCalibration(P) {
 // Recent Activity (right column, bottom card)
 // ══════════════════════════════════════════════════════════════
 async function loadRecentActivity(P) {
+  // Skip jobs fetch entirely when not authenticated
+  if (!P.getToken()) {
+    const el = document.getElementById("recentActivity");
+    if (el) el.innerHTML = `<p style="color:var(--text-muted);padding:12px;text-align:center">Sign in to view activity</p>`;
+    return;
+  }
   try {
-    // Jobs requires auth — use try/catch to gracefully handle 401
     let data = [];
     try {
       const raw = await P.api("/api/v1/jobs", { auth: true });
       data = Array.isArray(raw) ? raw : (raw?.jobs || []);
     } catch {
-      // Not authenticated — show empty state
+      // Auth failed or endpoint error
     }
     
     if (!data.length) {
-      document.getElementById("recentActivity").innerHTML = 
-        `<p style="color:var(--text-muted);padding:12px;text-align:center">No recent activity</p>`;
+      const el = document.getElementById("recentActivity");
+      if (el) el.innerHTML = `<p style="color:var(--text-muted);padding:12px;text-align:center">No recent activity</p>`;
       return;
     }
 
@@ -389,11 +398,12 @@ async function loadRecentActivity(P) {
     });
     
     html += `</div>`;
-    document.getElementById("recentActivity").innerHTML = html;
+    const el = document.getElementById("recentActivity");
+    if (el) el.innerHTML = html;
   } catch (err) {
     console.error("Recent activity load failed:", err);
-    document.getElementById("recentActivity").innerHTML = 
-      `<p style="color:var(--text-muted);padding:12px;text-align:center">Could not load activity</p>`;
+    const el = document.getElementById("recentActivity");
+    if (el) el.innerHTML = `<p style="color:var(--text-muted);padding:12px;text-align:center">Could not load activity</p>`;
   }
 }
 

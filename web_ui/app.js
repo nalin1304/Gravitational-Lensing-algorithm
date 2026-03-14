@@ -99,13 +99,21 @@ async function checkHealth() {
   const dot = document.querySelector(".status-dot");
   const txt = document.querySelector(".status-text");
   try {
-    const h = await api("/health", { auth: false });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const resp = await fetch("/health", { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!resp.ok) throw new Error(resp.statusText);
+    const h = await resp.json();
     if (dot) { dot.classList.add("online"); dot.classList.remove("offline"); }
     if (txt) txt.textContent = `Online · v${h.version}`;
     return h;
   } catch {
-    if (dot) { dot.classList.add("offline"); dot.classList.remove("online"); }
-    if (txt) txt.textContent = "Offline";
+    // Only show offline if we're currently not marked online (prevent flicker)
+    if (dot && !dot.classList.contains("online")) {
+      dot.classList.add("offline");
+    }
+    if (txt && txt.textContent === "") txt.textContent = "Offline";
     return null;
   }
 }
