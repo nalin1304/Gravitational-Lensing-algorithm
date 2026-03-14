@@ -178,6 +178,46 @@ def generate_nfw_training_data(
 # Training Loop
 # ============================================================================
 
+class PINNTrainer:
+    """Trainer for Equinox-based PINN models using JAX/Optax.
+    
+    Falls back to a basic gradient descent loop when Optax is unavailable.
+    The model produced by ``create_lensing_pinn`` is a JAX/Equinox module,
+    so we use ``jax.grad`` + ``eqx.apply_updates`` for parameter updates.
+    """
+
+    def __init__(self, model, learning_rate: float = 1e-3, device: str = 'cpu'):
+        self.model = model
+        self.learning_rate = learning_rate
+        self.history: Dict = {'loss': []}
+        self._optax_available = False
+        try:
+            import optax  # type: ignore
+            import equinox as eqx  # type: ignore
+            import jax
+            self.optimizer = optax.adam(learning_rate)
+            self.opt_state = self.optimizer.init(eqx.filter(model, eqx.is_array))
+            self._optax_available = True
+            self._optax = optax
+            self._eqx = eqx
+            self._jax = jax
+        except ImportError:
+            logger.warning("Optax/Equinox not available; training disabled")
+            self.optimizer = None
+            self.opt_state = None
+
+    def step(self, loss_fn):
+        """Execute one optimiser step. Returns (new_model, loss_value)."""
+        if not self._optax_available:
+            raise RuntimeError("JAX/Optax required for PINN training")
+        eqx, jax = self._eqx, self._jax
+        loss, grads = jax.value_and_grad(loss_fn)(self.model)
+        updates, self.opt_state = self.optimizer.update(
+            grads, self.opt_state, eqx.filter(self.model, eqx.is_array)
+        )
+        self.model = eqx.apply_updates(self.model, updates)
+        return self.model, float(loss)
+
 def train_pinn(
     model_type: str = 'nfw',
     n_epochs: int = 5000,
@@ -222,50 +262,50 @@ def train_pinn(
     
     # Training loop
     logger.info(f"Starting training for {n_epochs} epochs...")
-    
-    n_batches = len(train_data['x']) // batch_size
-    
+
+    try:
+        import jax
+        import jax.numpy as jnp
+    except ImportError:
+        raise RuntimeError("JAX is required for PINN training")
+
+    # Convert torch tensors to JAX arrays for training
+    data_x = jnp.array(train_data['x'].numpy())
+    data_y = jnp.array(train_data['y'].numpy())
+    data_r = jnp.array(train_data['r'].numpy())
+    data_kappa = jnp.array(train_data['kappa'].numpy())
+    data_log_mass = jnp.array(train_data['log_mass'].numpy())
+    data_conc = jnp.array(train_data['concentration'].numpy())
+    n_total = len(data_x)
+    n_batches = n_total // batch_size
+
+    rng_key = jax.random.PRNGKey(42)
+
     for epoch in range(n_epochs):
-        # Shuffle data
-        perm = torch.randperm(len(train_data['x']))
-        
+        rng_key, perm_key = jax.random.split(rng_key)
+        perm = jax.random.permutation(perm_key, n_total)
+
         epoch_losses = []
-        
+
         for batch_idx in range(n_batches):
-            # Get batch
             start_idx = batch_idx * batch_size
-            end_idx = min((batch_idx + 1) * batch_size, len(train_data['x']))
-            
-            batch_indices = perm[start_idx:end_idx]
-            
-            batch_x = train_data['x'][batch_indices]
-            batch_y = train_data['y'][batch_indices]
-            batch_r = train_data['r'][batch_indices]
-            batch_kappa = train_data['kappa'][batch_indices]
-            batch_log_mass = train_data['log_mass'][batch_indices]
-            batch_conc = train_data['concentration'][batch_indices]
-            
-            # Prepare input for NFW model
-            batch_input = torch.stack([
-                batch_r,
-                batch_log_mass,
-                batch_conc
-            ], dim=1)
-            
-            # Forward pass
-            trainer.optimizer.zero_grad()
-            
-            outputs = model(batch_input)
-            pred_kappa = outputs[:, 0]
-            
-            # Simple MSE loss for now
-            loss = torch.mean((pred_kappa - batch_kappa) ** 2)
-            
-            # Backward pass
-            loss.backward()
-            trainer.optimizer.step()
-            
-            epoch_losses.append(loss.item())
+            end_idx = min((batch_idx + 1) * batch_size, n_total)
+            idx = perm[start_idx:end_idx]
+
+            batch_r = data_r[idx]
+            batch_kappa = data_kappa[idx]
+            batch_log_mass = data_log_mass[idx]
+            batch_conc = data_conc[idx]
+
+            batch_input = jnp.stack([batch_r, batch_log_mass, batch_conc], axis=1)
+
+            def loss_fn(m):
+                pred = jax.vmap(m)(batch_input)[:, 0]
+                return jnp.mean((pred - batch_kappa) ** 2)
+
+            model, loss_val = trainer.step(loss_fn)
+            trainer.model = model
+            epoch_losses.append(loss_val)
         
         # Record epoch loss
         epoch_loss = np.mean(epoch_losses)

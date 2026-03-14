@@ -100,7 +100,7 @@ class BlindingHandler:
         if not hmac.compare_digest(mac, self._phrase_mac):
             raise ValueError("Unblinding phrase does not match. Cannot unblind.")
 
-    def unblind_h0(self, h0_blind: float, verification_phrase: str = None) -> float:
+    def unblind_h0(self, h0_blind: float, verification_phrase: str | None = None) -> float:
         """Remove additive blinding from H₀.
 
         Parameters
@@ -124,7 +124,7 @@ class BlindingHandler:
             )
         return h0_blind - self._h0_offset
 
-    def unblind_dtd(self, dtd_blind: float, verification_phrase: str = None) -> float:
+    def unblind_dtd(self, dtd_blind: float, verification_phrase: str | None = None) -> float:
         """Remove multiplicative blinding from D_Δt.
 
         Parameters

@@ -268,8 +268,10 @@ def multi_plane_trace(
         return np.asarray(beta_pred, dtype=float) - beta
 
     theta_init = beta.copy()
+    # fsolve counts function evaluations, not iterations.
+    # For 2D, Jacobian via forward differences costs n+1=3 evals per step.
     theta_sol, _, ier, mesg = fsolve(
-        _residual, theta_init, full_output=True, xtol=tolerance, maxfev=max_iter
+        _residual, theta_init, full_output=True, xtol=tolerance, maxfev=5 * max_iter
     )
     if ier != 1:
         import warnings

@@ -168,7 +168,7 @@ class SubstructureDetector:
         # Flux ratio statistics
         features.append(np.mean(flux_ratios))
         features.append(np.std(flux_ratios))
-        features.append(np.max(flux_ratios) / np.min(flux_ratios))
+        features.append(np.max(flux_ratios) / max(np.min(flux_ratios), 1e-30))
         
         # Position statistics
         features.append(np.mean(np.linalg.norm(image_positions, axis=1)))

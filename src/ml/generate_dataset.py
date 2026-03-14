@@ -26,7 +26,6 @@ from src.lens_models import (
     EllipticalNFWProfile,
 )
 from src.lens_models.mass_profiles import WarmDarkMatterProfile, SIDMProfile
-from src.optics import WaveOpticsEngine
 
 
 def generate_convergence_map_vectorized(
@@ -201,7 +200,8 @@ def generate_synthetic_convergence(
 def add_noise(
     image: np.ndarray,
     gaussian_noise_std: float = 0.01,
-    poisson_noise: bool = True
+    poisson_noise: bool = True,
+    rng: np.random.Generator = None
 ) -> np.ndarray:
     """
     Add realistic observational noise to an image.
@@ -214,30 +214,35 @@ def add_noise(
         Standard deviation of Gaussian noise
     poisson_noise : bool
         Whether to add Poisson noise
+    rng : np.random.Generator, optional
+        NumPy Generator for reproducibility
     
     Returns
     -------
     noisy_image : np.ndarray
         Image with noise added
     """
+    if rng is None:
+        rng = np.random.default_rng()
     noisy = image.copy()
     
     # Add Gaussian noise
     if gaussian_noise_std > 0:
-        noise = np.random.normal(0, gaussian_noise_std, image.shape)
+        noise = rng.normal(0, gaussian_noise_std, image.shape)
         noisy += noise
     
     # Add Poisson noise (photon counting statistics)
     if poisson_noise:
+        orig_min, orig_max = noisy.min(), noisy.max()
+        orig_range = orig_max - orig_min + 1e-10
         # Scale to photon counts (assuming max ~ 1000 photons)
-        scaled = (noisy - noisy.min()) / (noisy.max() - noisy.min() + 1e-10) * 1000
-        scaled = np.maximum(scaled, 0)  # Ensure non-negative
+        scaled = (noisy - orig_min) / orig_range * 1000
+        scaled = np.maximum(scaled, 0)
         
-        # Apply Poisson noise
-        noisy_counts = np.random.poisson(scaled)
+        noisy_counts = rng.poisson(scaled)
         
-        # Scale back
-        noisy = noisy_counts / 1000.0
+        # Scale back to original range to preserve signal amplitude
+        noisy = noisy_counts / 1000.0 * orig_range + orig_min
     
     return noisy
 
@@ -245,7 +250,8 @@ def add_noise(
 def generate_single_sample(
     dm_type: str,
     grid_size: int = 64,
-    add_noise_flag: bool = True
+    add_noise_flag: bool = True,
+    rng: np.random.Generator = None
 ) -> Tuple[np.ndarray, np.ndarray, int]:
     """
     Generate a single training sample.
@@ -258,6 +264,8 @@ def generate_single_sample(
         Size of output image
     add_noise_flag : bool
         Whether to add noise to the image
+    rng : np.random.Generator, optional
+        NumPy Generator for reproducibility (Functional Randomness Control)
     
     Returns
     -------
@@ -268,51 +276,53 @@ def generate_single_sample(
     class_label : int
         Class label (0=CDM, 1=WDM, 2=SIDM)
     """
+    if rng is None:
+        rng = np.random.default_rng()
     # Random cosmological parameters
-    z_lens = np.random.uniform(0.3, 0.8)
-    z_source = np.random.uniform(1.0, 2.5)
-    H0 = np.random.uniform(60, 80)
-    Om0 = np.random.uniform(0.25, 0.35)
+    z_lens = rng.uniform(0.3, 0.8)
+    z_source = rng.uniform(1.0, 2.5)
+    H0 = rng.uniform(60, 80)
+    Om0 = rng.uniform(0.25, 0.35)
     
     # Create lens system
     lens_sys = LensSystem(z_lens, z_source, H0=H0, Om0=Om0)
     
     # Random lens parameters
-    M_vir = np.random.uniform(1e11, 5e12)  # Solar masses
-    c = np.random.uniform(5, 15)  # Concentration
+    M_vir = rng.uniform(1e11, 5e12)  # Solar masses
+    c = rng.uniform(5, 15)  # Concentration
     
     # Create lens model based on DM type
     if dm_type == 'CDM':
         lens_model = NFWProfile(M_vir, c, lens_sys)
         class_label = 0
     elif dm_type == 'WDM':
-        m_wdm = np.random.uniform(0.5, 5.0)  # keV
+        m_wdm = rng.uniform(0.5, 5.0)  # keV
         lens_model = WarmDarkMatterProfile(M_vir, c, lens_sys, m_wdm=m_wdm)
         class_label = 1
     elif dm_type == 'SIDM':
-        sigma_SIDM = np.random.uniform(0.1, 10.0)  # cm²/g
+        sigma_SIDM = rng.uniform(0.1, 10.0)  # cm²/g
         lens_model = SIDMProfile(M_vir, c, lens_sys, sigma_SIDM=sigma_SIDM)
         class_label = 2
     else:
         raise ValueError(f"Unknown DM type: {dm_type}")
     
     # Generate convergence map (vectorized)
-    extent = np.random.uniform(2.0, 4.0)  # Vary field of view
+    extent = rng.uniform(2.0, 4.0)  # Vary field of view
     image = generate_convergence_map_vectorized(lens_model, grid_size, extent)
     
     # Add noise
     if add_noise_flag:
-        noise_level = np.random.uniform(0.005, 0.02)
-        image = add_noise(image, gaussian_noise_std=noise_level, poisson_noise=True)
+        noise_level = rng.uniform(0.005, 0.02)
+        image = add_noise(image, gaussian_noise_std=noise_level, poisson_noise=True, rng=rng)
     
     # Normalize image to [0, 1]
-    image_min = float(image.min())  # Fix NumPy deprecation: extract scalar
-    image_max = float(image.max())  # Fix NumPy deprecation: extract scalar
+    image_min = float(image.min())
+    image_max = float(image.max())
     image = (image - image_min) / (image_max - image_min + 1e-10)
     
     # Random source position (within ±1 arcsec)
-    beta_x = np.random.uniform(-1.0, 1.0)
-    beta_y = np.random.uniform(-1.0, 1.0)
+    beta_x = rng.uniform(-1.0, 1.0)
+    beta_y = rng.uniform(-1.0, 1.0)
     
     # Scale radius derived from virial radius and concentration (physical formula)
     # r_vir = (M_vir / (4π/3 * 200 * ρ_crit))^(1/3), r_s = r_vir / c
@@ -367,7 +377,8 @@ def generate_training_data(
     >>> print(info)
     {'train': 7000, 'val': 1500, 'test': 1500}
     """
-    np.random.seed(seed)
+    np.random.seed(seed)  # Legacy compat for np.random.shuffle below
+    rng = np.random.default_rng(seed)
     
     # Create output directory if it doesn't exist
     output_path = Path(output_file)
@@ -383,7 +394,7 @@ def generate_training_data(
     dm_types = ['CDM'] * n_per_type + ['WDM'] * n_per_type + ['SIDM'] * (n_samples - 2*n_per_type)
     
     # Shuffle
-    np.random.shuffle(dm_types)
+    rng.shuffle(dm_types)
     
     print(f"Generating {n_samples} training samples...")
     print(f"Distribution: {n_per_type} CDM, {n_per_type} WDM, {n_samples - 2*n_per_type} SIDM")
@@ -414,7 +425,7 @@ def generate_training_data(
                 print(f"Generated {i}/{n_samples} samples ({i/n_samples*100:.1f}%)")
             
             try:
-                image, parameters, class_label = generate_single_sample(dm_type, grid_size, add_noise_flag=True)
+                image, parameters, class_label = generate_single_sample(dm_type, grid_size, add_noise_flag=True, rng=rng)
                 
                 # Assign to split
                 if train_idx < n_train:

@@ -609,10 +609,11 @@ class TestEdgeCases:
         beta = np.array([0.5, 0.0])
         
         # Use very few iterations to force non-convergence
+        # maxfev = 5 * max_iter; max_iter=1 gives maxfev=5, insufficient for 2D fsolve
         with pytest.warns(RuntimeWarning, match="did not converge"):
             theta = multi_plane_trace(
                 beta, planes, cosmology, z_source=2.0,
-                max_iter=5, tolerance=1e-12  # Very strict tolerance, few iterations
+                max_iter=1, tolerance=1e-12  # Very strict tolerance, minimal iterations
             )
 
 

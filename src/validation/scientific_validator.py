@@ -18,7 +18,7 @@ from scipy import stats, optimize
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 
-# Use built-in implementations to avoid circular imports
+# External benchmark library hook; built-in implementations used below.
 BENCHMARKS_AVAILABLE = False
 
 
@@ -436,9 +436,10 @@ class ScientificValidator:
             return calculate_chi_squared(ground_truth, predicted, uncertainty)
         
         if uncertainty is None:
-            # Estimate uncertainty from residuals
+            # Estimate uncertainty from residuals — yields χ²/dof ≈ 1 by construction.
+            # Only meaningful for detecting outliers, not for model adequacy.
             residuals = predicted - ground_truth
-            uncertainty = np.ones_like(predicted) * np.std(residuals)
+            uncertainty = np.ones_like(predicted) * max(np.std(residuals), 1e-10)
         
         # Avoid division by zero
         uncertainty = np.maximum(uncertainty, 1e-10)

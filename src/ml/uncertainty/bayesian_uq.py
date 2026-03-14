@@ -529,24 +529,27 @@ class EnsembleBayesianPINN:
             - epistemic_std: Model uncertainty only
         """
         # Get predictions from each model with MC Dropout
-        all_predictions = []
+        all_means = []
+        all_vars = []
         
         for model in self.models:
-            mean, _ = model.predict_with_uncertainty(x, n_samples)
-            all_predictions.append(mean)
+            mean, std = model.predict_with_uncertainty(x, n_samples)
+            all_means.append(mean)
+            all_vars.append(std ** 2)
         
         # Stack [n_models, batch_size, output_dim]
-        all_predictions = torch.stack(all_predictions)
+        all_means = torch.stack(all_means)
+        all_vars = torch.stack(all_vars)
         
         # Overall mean
-        mean = all_predictions.mean(dim=0)
+        mean = all_means.mean(dim=0)
         
-        # Model uncertainty (epistemic)
-        epistemic_std = all_predictions.std(dim=0)
+        # Epistemic uncertainty (variance of means across ensemble)
+        epistemic_std = all_means.std(dim=0)
         
-        # For total uncertainty, need to combine with MC Dropout uncertainty
-        # (simplified: use ensemble std as lower bound)
-        total_std = epistemic_std
+        # Total uncertainty: Var[Y] = E[Var] + Var[E] (Kendall & Gal 2017)
+        total_var = all_vars.mean(dim=0) + all_means.var(dim=0)
+        total_std = torch.sqrt(total_var)
         
         return mean, total_std, epistemic_std
 

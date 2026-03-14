@@ -358,6 +358,7 @@ class SharedLink(Base):
     
     # Relationships
     analysis = relationship("Analysis", back_populates="shared_links")
+    user = relationship("User")
     
     def __repr__(self):
         return f"<SharedLink(id={self.id}, token={self.token[:8]}..., analysis_id={self.analysis_id})>"

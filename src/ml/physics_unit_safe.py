@@ -117,10 +117,9 @@ def compute_nfw_deflection_unit_safe(
     # STEP 4: Convert angular positions to physical coordinates
     # ========================================================================
     
-    # θ (arcsec) → r (kpc): r = θ * D_l
-    # astropy handles the unit conversion automatically
-    r_x_astro = (theta_x_astro * D_l_astro).to(u.kpc)
-    r_y_astro = (theta_y_astro * D_l_astro).to(u.kpc)
+    # θ (arcsec) → r (kpc): r = θ * D_l (need dimensionless_angles equivalency)
+    r_x_astro = (theta_x_astro * D_l_astro).to(u.kpc, equivalencies=u.dimensionless_angles())
+    r_y_astro = (theta_y_astro * D_l_astro).to(u.kpc, equivalencies=u.dimensionless_angles())
     
     # Radial distance
     r_astro = np.sqrt(r_x_astro**2 + r_y_astro**2)
