@@ -26,7 +26,7 @@ async function api(path, { method = "GET", body = null, auth = true } = {}) {
   if (body) opts.body = JSON.stringify(body);
   const resp = await fetch(path, opts);
   if (!resp.ok) {
-    if (resp.status === 401) {
+    if (resp.status === 401 && auth) {
       // Try refresh
       const refreshToken = getRefreshToken();
       if (refreshToken) {
@@ -50,9 +50,6 @@ async function api(path, { method = "GET", body = null, auth = true } = {}) {
           return retryResp.json();
         }
       }
-      // After failed refresh attempt, clear auth to prevent infinite loop
-      clearAuth();
-      location.hash = '#/account';
     }
     const err = await resp.json().catch(() => ({ detail: resp.statusText }));
     throw new Error(err.detail || err.error || resp.statusText);

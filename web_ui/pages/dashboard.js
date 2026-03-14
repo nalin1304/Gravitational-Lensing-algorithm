@@ -299,9 +299,10 @@ async function loadValidationOverview(P) {
 // ══════════════════════════════════════════════════════════════
 async function loadUQCalibration(P) {
   try {
-    const data = await P.api("/api/v1/validation/calibration", { auth: false });
+    const raw = await P.api("/api/v1/validation/calibration", { auth: false });
     
-    // Use API data if available, else fall back to known values
+    // Endpoint returns array of calibration results — use first entry
+    const data = Array.isArray(raw) ? (raw[0] || {}) : (raw || {});
     const ece = data.ece ?? 0.062;
     const cov90 = data.coverage_90 ?? 0.936;
     
@@ -353,16 +354,22 @@ async function loadUQCalibration(P) {
 // ══════════════════════════════════════════════════════════════
 async function loadRecentActivity(P) {
   try {
-    const data = await P.api("/api/v1/jobs", { auth: false });
+    // Jobs requires auth — use try/catch to gracefully handle 401
+    let data = [];
+    try {
+      const raw = await P.api("/api/v1/jobs", { auth: true });
+      data = Array.isArray(raw) ? raw : (raw?.jobs || []);
+    } catch {
+      // Not authenticated — show empty state
+    }
     
-    if (!data.jobs || data.jobs.length === 0) {
+    if (!data.length) {
       document.getElementById("recentActivity").innerHTML = 
         `<p style="color:var(--text-muted);padding:12px;text-align:center">No recent activity</p>`;
       return;
     }
 
-    // Show last 5 jobs as timeline
-    const jobs = data.jobs.slice(0, 5);
+    const jobs = data.slice(0, 5);
     let html = `<div style="display:flex;flex-direction:column;gap:12px">`;
     
     jobs.forEach(job => {
