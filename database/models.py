@@ -90,6 +90,8 @@ class User(Base):
     analyses = relationship("Analysis", back_populates="user", cascade="all, delete-orphan")
     jobs = relationship("Job", back_populates="user", cascade="all, delete-orphan")
     api_keys = relationship("ApiKey", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+    audit_logs = relationship("AuditLog", back_populates="user")
     
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
@@ -170,6 +172,7 @@ class Analysis(Base):
     user = relationship("User", back_populates="analyses")
     results = relationship("Result", back_populates="analysis", cascade="all, delete-orphan")
     jobs = relationship("Job", back_populates="analysis", cascade="all, delete-orphan")
+    shared_links = relationship("SharedLink", back_populates="analysis", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Analysis(id={self.id}, name={self.name}, type={self.type})>"
@@ -281,6 +284,9 @@ class Notification(Base):
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     
+    # Relationships
+    user = relationship("User", back_populates="notifications")
+    
     def __repr__(self):
         return f"<Notification(id={self.id}, title={self.title}, read={self.is_read})>"
 
@@ -310,6 +316,9 @@ class AuditLog(Base):
     
     # Timestamp
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="audit_logs")
     
     def __repr__(self):
         return f"<AuditLog(id={self.id}, action={self.action}, user_id={self.user_id})>"
@@ -346,6 +355,9 @@ class SharedLink(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     expires_at = Column(DateTime(timezone=True))
     last_accessed = Column(DateTime(timezone=True))
+    
+    # Relationships
+    analysis = relationship("Analysis", back_populates="shared_links")
     
     def __repr__(self):
         return f"<SharedLink(id={self.id}, token={self.token[:8]}..., analysis_id={self.analysis_id})>"

@@ -12,9 +12,9 @@ Author: Computational Imaging Research Group
 Date: 2025
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Depends, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
@@ -313,19 +313,6 @@ def generate_job_id() -> str:
     """Generate unique job ID"""
     return str(uuid.uuid4())
 
-
-def encode_array_to_base64(arr: np.ndarray) -> str:
-    """Encode numpy array to base64 string"""
-    buffer = io.BytesIO()
-    np.save(buffer, arr)
-    buffer.seek(0)
-    return base64.b64encode(buffer.read()).decode('utf-8')
-
-
-def decode_base64_to_array(b64_string: str) -> np.ndarray:
-    """Decode base64 string to numpy array"""
-    buffer = io.BytesIO(base64.b64decode(b64_string))
-    return np.load(buffer)
 
 
 def _prepare_jax_input(convergence_map: np.ndarray, target_size: int = 64) -> np.ndarray:
@@ -1086,13 +1073,14 @@ async def get_statistics():
     Returns:
     - Request counts, processing times, etc.
     """
+    model_status = _model_status()
     return {
         "total_jobs": len(JOBS),
         "active_jobs": sum(1 for j in JOBS.values() if j.get("status") == "running"),
         "completed_jobs": sum(1 for j in JOBS.values() if j.get("status") == "completed"),
-        "model_status": _model_status(),
+        "model_status": model_status,
         "feature_status": {
-            "pinn_inference": _model_status(),
+            "pinn_inference": model_status,
             "survey_finder": _lens_finder_status(),
         },
         "gpu_available": torch.cuda.is_available(),
