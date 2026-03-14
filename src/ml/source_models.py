@@ -115,3 +115,4 @@ class PixelizedSourceModel:
             "log_evidence": log_evidence,
             "chi_sq": chi_sq,
         }
+

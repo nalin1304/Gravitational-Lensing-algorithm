@@ -118,3 +118,4 @@ def test_pinn_output_range(pinn_model):
     
     # Logits should have some variation (not all zeros)
     assert jnp.std(logits) > 0.001, "Logits have no variation"
+

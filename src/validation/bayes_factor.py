@@ -52,3 +52,4 @@ class BayesFactorComparator:
         std_s = jnp.std(microlensing_signals)
         correlation = cov / (std_e * std_s + 1e-8)
         return float(correlation)
+

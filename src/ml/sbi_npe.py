@@ -165,3 +165,4 @@ class NeuralPosteriorEstimator:
             
         samples = sampler.apply(self.params, rng_samp, observation)
         return samples
+

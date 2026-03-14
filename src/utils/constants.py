@@ -150,7 +150,7 @@ EINSTEIN_COEFF = 4.0 * G_CONST / (C_LIGHT**2)  # m kg⁻¹
 
 #: Critical surface density coefficient [kg m⁻²]
 #: Used in: Σ_crit = c²/(4πG) × D_S/(D_L D_LS)
-SIGMA_CRIT_COEFF = (C_LIGHT**2) / (4.0 * np.pi * G_CONST)  # kg s² m⁻⁵
+SIGMA_CRIT_COEFF = (C_LIGHT**2) / (4.0 * np.pi * G_CONST)  # kg m⁻¹
 
 #: Schwarzschild radius coefficient [m kg⁻¹]
 #: Used in: r_s = 2GM/c²

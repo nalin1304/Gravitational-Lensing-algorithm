@@ -357,3 +357,4 @@ class TestConformalRecalibration:
         r50 = model.conformal_recalibrate(theta, kappa, gw, alpha=0.5)
         r10 = model.conformal_recalibrate(theta, kappa, gw, alpha=0.1)
         assert r10['q_hat'] >= r50['q_hat']
+

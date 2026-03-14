@@ -432,3 +432,4 @@ class TestIntegration:
         # Elliptical should be similar to circular at this point
         if kappa_nfw_circ > 0:
             assert abs(kappa_nfw_ell - kappa_nfw_circ) / abs(kappa_nfw_circ) < 1.0
+

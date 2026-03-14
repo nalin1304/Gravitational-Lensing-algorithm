@@ -20,88 +20,105 @@ export function render() {
   return `
 <div class="page-content">
 
-  <!-- Hero banner -->
-  <div class="alert alert-info" style="margin-bottom:1.5rem">
-    <strong>🌌 PI-SBI: Physics-Informed Multi-Messenger Inference</strong>
-    Joint optical (Einstein ring) + gravitational wave posterior estimation.
-    ~10,000× faster than MCMC · Physics-constrained summary network (∇²ψ = 2κ).
-    <em>First joint EM+GW amortized posterior for strong gravitational lensing.</em>
+  <!-- Page Header -->
+  <div class="mb-20">
+    <h2 style="font-size:1.5rem;font-weight:700;margin:0 0 8px 0">🌌 PI-SBI: Physics-Informed Multi-Messenger Inference</h2>
+    <p class="section-desc" style="margin:0">
+      Joint optical (Einstein ring) + gravitational wave posterior estimation.
+      ~10,000× faster than MCMC · Physics-constrained summary network (∇²ψ = 2κ).
+      <em>First joint EM+GW amortized posterior for strong gravitational lensing.</em>
+    </p>
   </div>
 
-  <div class="grid-2col">
+  <!-- Status Section -->
+  <div class="card mb-20" id="statusCard">
+    <div class="card-header">
+      <span class="card-title">Model Status</span>
+      <span class="badge badge-info">JointNPE + PhysicsEncoder</span>
+    </div>
+    <div id="statusContent"><p class="section-desc">Loading…</p></div>
+  </div>
 
-    <!-- LEFT: Parameter controls -->
+  <!-- Two-column layout: LEFT = controls, RIGHT = results -->
+  <div class="grid-2 gap-20">
+
+    <!-- LEFT: Simulation Controls -->
     <div class="card">
-      <h3 class="card-title">Lens Parameters</h3>
-      <p class="dim" style="margin-bottom:1rem">
-        Drawn from SLACS-calibrated prior (Bolton et al. 2006; Auger et al. 2009).
-      </p>
+      <div class="card-header">
+        <span class="card-title">Simulation Parameters</span>
+        <span class="card-subtitle">SLACS-calibrated prior</span>
+      </div>
       <div class="form-group">
-        <label>log₁₀(M<sub>vir</sub> / M☉) <span id="mvirVal" class="badge">12.0</span></label>
-        <input type="range" id="logMvir" min="10" max="14" step="0.1" value="12.0" class="slider"
+        <label class="form-label">log₁₀(M<sub>vir</sub> / M☉) <span id="mvirVal" class="badge">12.0</span></label>
+        <input type="range" id="logMvir" min="10" max="14" step="0.1" value="12.0" class="form-input"
                oninput="document.getElementById('mvirVal').textContent=this.value" />
       </div>
       <div class="form-group">
-        <label>log₁₀(r<sub>s</sub> / arcsec) <span id="rsVal" class="badge">0.3</span></label>
-        <input type="range" id="logRs" min="-0.5" max="1.5" step="0.05" value="0.3" class="slider"
+        <label class="form-label">log₁₀(r<sub>s</sub> / arcsec) <span id="rsVal" class="badge">0.3</span></label>
+        <input type="range" id="logRs" min="-0.5" max="1.5" step="0.05" value="0.3" class="form-input"
                oninput="document.getElementById('rsVal').textContent=parseFloat(this.value).toFixed(2)" />
       </div>
       <div class="form-group">
-        <label>Lens redshift z<sub>l</sub> <span id="zlVal" class="badge">0.30</span></label>
-        <input type="range" id="zl" min="0.06" max="0.50" step="0.01" value="0.30" class="slider"
+        <label class="form-label">Lens redshift z<sub>l</sub> <span id="zlVal" class="badge">0.30</span></label>
+        <input type="range" id="zl" min="0.06" max="0.50" step="0.01" value="0.30" class="form-input"
                oninput="document.getElementById('zlVal').textContent=parseFloat(this.value).toFixed(2)" />
       </div>
       <div class="form-group">
-        <label>Source redshift z<sub>s</sub> <span id="zsVal" class="badge">1.00</span></label>
-        <input type="range" id="zs" min="0.5" max="2.5" step="0.05" value="1.00" class="slider"
+        <label class="form-label">Source redshift z<sub>s</sub> <span id="zsVal" class="badge">1.00</span></label>
+        <input type="range" id="zs" min="0.5" max="2.5" step="0.05" value="1.00" class="form-input"
                oninput="document.getElementById('zsVal').textContent=parseFloat(this.value).toFixed(2)" />
       </div>
       <div class="form-group">
-        <label>Source offset β<sub>x</sub> <span id="bxVal" class="badge">0.00</span> arcsec</label>
-        <input type="range" id="betaX" min="-0.3" max="0.3" step="0.01" value="0.0" class="slider"
+        <label class="form-label">Source offset β<sub>x</sub> <span id="bxVal" class="badge">0.00</span> arcsec</label>
+        <input type="range" id="betaX" min="-0.3" max="0.3" step="0.01" value="0.0" class="form-input"
                oninput="document.getElementById('bxVal').textContent=parseFloat(this.value).toFixed(2)" />
       </div>
       <div class="form-group">
-        <label>Source offset β<sub>y</sub> <span id="byVal" class="badge">0.00</span> arcsec</label>
-        <input type="range" id="betaY" min="-0.3" max="0.3" step="0.01" value="0.0" class="slider"
+        <label class="form-label">Source offset β<sub>y</sub> <span id="byVal" class="badge">0.00</span> arcsec</label>
+        <input type="range" id="betaY" min="-0.3" max="0.3" step="0.01" value="0.0" class="form-input"
                oninput="document.getElementById('byVal').textContent=parseFloat(this.value).toFixed(2)" />
       </div>
-      <button class="btn btn-primary" id="simBtn">▶ Simulate Observation</button>
+      <button class="btn btn-primary btn-full" id="simBtn">▶ Simulate Observation</button>
     </div>
 
-    <!-- RIGHT: Model status -->
-    <div class="card" id="statusCard">
-      <h3 class="card-title">Model Status</h3>
-      <div id="statusContent"><p class="dim">Loading…</p></div>
+    <!-- RIGHT: Simulation Results -->
+    <div id="simOutputRow" style="display:none">
+      <div class="card mb-16">
+        <div class="card-header">
+          <span class="card-title">κ Map (Convergence)</span>
+        </div>
+        <div id="kappaPlot" style="height:300px"></div>
+        <div class="card-footer">
+          <p class="section-desc" style="margin:0">
+            NFW projected convergence — Wright &amp; Brainerd (2000), ApJ 534, 34
+          </p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">GW Spectrum |F(ω)|²</span>
+        </div>
+        <div id="gwPlot" style="height:300px"></div>
+        <div class="card-footer">
+          <p class="section-desc" style="margin:0">
+            Wave-optics amplification — Nakamura &amp; Deguchi (1999), PTPS 133
+          </p>
+        </div>
+      </div>
     </div>
 
   </div>
 
-  <!-- Simulation outputs -->
-  <div class="grid-2col" id="simOutputRow" style="display:none;margin-top:1.5rem">
-    <div class="card">
-      <h3 class="card-title">κ Map (Convergence)</h3>
-      <div id="kappaPlot" style="height:300px"></div>
-      <p class="dim small" style="margin-top:.5rem">
-        NFW projected convergence — Wright &amp; Brainerd (2000), ApJ 534, 34
-      </p>
+  <!-- Posterior Results Panel -->
+  <div class="card mb-20" id="posteriorCard" style="display:none">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <span class="card-title">Posterior p(θ | d<sub>EM</sub>, d<sub>GW</sub>)</span>
+        <span class="card-subtitle">Amortized inference via normalizing flow</span>
+      </div>
+      <button class="btn btn-primary" id="inferBtn">🧠 Run PI-SBI Posterior</button>
     </div>
-    <div class="card">
-      <h3 class="card-title">GW Spectrum |F(ω)|²</h3>
-      <div id="gwPlot" style="height:300px"></div>
-      <p class="dim small" style="margin-top:.5rem">
-        Wave-optics amplification — Nakamura &amp; Deguchi (1999), PTPS 133
-      </p>
-    </div>
-  </div>
-
-  <!-- Posterior panel -->
-  <div class="card" id="posteriorCard" style="display:none;margin-top:1.5rem">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <h3 class="card-title" style="margin:0">Posterior p(θ | d<sub>EM</sub>, d<sub>GW</sub>)</h3>
-      <button class="btn btn-secondary" id="inferBtn">🧠 Run PI-SBI Posterior</button>
-    </div>
-    <div id="posteriorContent"><p class="dim">Click "Run PI-SBI Posterior" after simulating.</p></div>
+    <div id="posteriorContent"><p class="section-desc">Click "Run PI-SBI Posterior" after simulating.</p></div>
     <div id="posteriorPlot" style="height:350px;display:none"></div>
   </div>
 
@@ -170,6 +187,7 @@ async function runSimulation() {
   const btn = document.getElementById('simBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Simulating…';
+  P().showLoading('Running PI-SBI simulation…');
 
   const body = {
     log10_M_vir: parseFloat(document.getElementById('logMvir').value),
@@ -238,6 +256,7 @@ async function runSimulation() {
   } finally {
     btn.disabled = false;
     btn.textContent = '▶ Simulate Observation';
+    P().hideLoading();
   }
 }
 
@@ -247,6 +266,7 @@ async function runPosterior() {
   const btn = document.getElementById('inferBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Estimating…';
+  P().showLoading('Estimating posterior…');
 
   const body = {
     kappa_map: lastSim.kappa_map,
@@ -319,6 +339,7 @@ async function runPosterior() {
   } finally {
     btn.disabled = false;
     btn.textContent = '🧠 Run PI-SBI Posterior';
+    P().hideLoading();
   }
 }
 

@@ -52,3 +52,4 @@ except ImportError:
     FisherInformation = None  # type: ignore[assignment,misc]
     AmortizedRefinement = None  # type: ignore[assignment,misc]
     LensingLogPosterior = None  # type: ignore[assignment,misc]
+

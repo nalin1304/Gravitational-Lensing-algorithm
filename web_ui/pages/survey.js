@@ -6,8 +6,8 @@ const L = () => window.LensPINN;
 export function render() {
     return `
     <!-- Page Header -->
-    <div style="margin-bottom:24px">
-      <h2 style="font-size:1.5rem;font-weight:700;color:var(--text-primary);margin:0 0 6px 0">
+    <div class="mb-24">
+      <h2 style="font-size:1.5rem;font-weight:700;margin:0 0 8px 0">
         Stage IV Survey Tools
       </h2>
       <p class="section-desc" style="margin:0">
@@ -29,11 +29,11 @@ export function render() {
     <div id="stab-finder" class="survey-panel">
       <div class="grid-2 gap-20">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
             <span class="card-title">Automated Lens Discovery</span>
             <span class="badge badge-info" id="sfModelBadge">LenNet-style CNN</span>
           </div>
-          <p id="sfStatusNote" class="section-desc" style="margin-bottom:12px">
+          <p id="sfStatusNote" class="section-desc mb-16">
             Learned survey detection requires a trained checkpoint-backed detector.
           </p>
           <div class="form-group">
@@ -67,15 +67,15 @@ export function render() {
               <input id="sfSeed" class="form-input" type="number" value="42" />
             </div>
           </div>
-          <button id="sfRunBtn" class="btn btn-primary" style="margin-top:8px;width:100%" disabled>
+          <button id="sfRunBtn" class="btn btn-primary btn-full" disabled>
             🔭 Scan for Lens Candidates
           </button>
         </div>
 
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
             <span class="card-title">Candidates</span>
-            <span class="card-subtitle" id="sfCandCount" style="margin:0">—</span>
+            <span class="badge" id="sfCandCount" style="background:var(--bg-secondary)">—</span>
           </div>
           <div id="sfResults"><p class="section-desc">Run a scan to see candidates.</p></div>
         </div>
@@ -86,7 +86,7 @@ export function render() {
     <div id="stab-epsf" class="survey-panel" style="display:none">
       <div class="grid-2 gap-20">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
             <span class="card-title">Effective PSF Configuration</span>
             <span class="badge badge-info">Z4–Z22 Zernike</span>
           </div>
@@ -102,7 +102,7 @@ export function render() {
           </div>
           <div class="grid-2 gap-12">
             <div class="form-group">
-              <label class="form-label">λ_eff (μm)</label>
+              <label class="form-label">λ<sub>eff</sub> (μm)</label>
               <input id="epWave" class="form-input" type="number" step="0.05" value="1.55" />
             </div>
             <div class="form-group">
@@ -118,12 +118,11 @@ export function render() {
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Charge Diffusion</label>
-            <label style="display:flex;gap:8px;align-items:center;cursor:pointer;padding-top:6px">
-              <input id="epChargeDiff" type="checkbox" checked /> Enable (H4RG, σ=0.5 px)
+            <label class="form-label" style="display:flex;gap:8px;align-items:center;cursor:pointer">
+              <input id="epChargeDiff" type="checkbox" checked /> Enable Charge Diffusion (H4RG, σ=0.5 px)
             </label>
           </div>
-          <button id="epEvalBtn" class="btn btn-primary" style="width:100%;margin-top:8px">
+          <button id="epEvalBtn" class="btn btn-primary btn-full">
             🌌 Evaluate ePSF Kernel
           </button>
         </div>
@@ -142,12 +141,12 @@ export function render() {
       <div class="card" style="margin-top:20px">
         <div class="card-header">
           <span class="card-title">Zernike FOV Map</span>
-          <span class="card-subtitle" style="margin:0">Spatial variation of selected mode across detector</span>
+          <span class="card-subtitle">Spatial variation across detector</span>
         </div>
         <div class="form-group" style="display:flex;gap:12px;align-items:center">
-          <label class="form-label" style="white-space:nowrap">Zernike Index Z</label>
+          <label class="form-label" style="white-space:nowrap;margin:0">Zernike Index Z</label>
           <input id="epZernikeIdx" class="form-input" type="number" value="4" min="4" max="22" style="width:80px" />
-          <button id="epFovBtn" class="btn btn-secondary" style="white-space:nowrap">
+          <button id="epFovBtn" class="btn btn-primary" style="white-space:nowrap">
             Generate FOV Map
           </button>
         </div>
@@ -159,11 +158,11 @@ export function render() {
     <div id="stab-blinding" class="survey-panel" style="display:none">
       <div class="grid-2 gap-20">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
             <span class="card-title">Apply Cosmological Blinding</span>
             <span class="badge badge-warning">TDCOSMO Protocol</span>
           </div>
-          <p class="section-desc">
+          <p class="section-desc mb-16">
             Enter your analysis values. The blinding handler adds a secret, seed-derived
             offset so you cannot infer the true cosmological parameters during analysis.
           </p>
@@ -178,15 +177,15 @@ export function render() {
               <input id="blH0" class="form-input" type="number" step="0.1" value="72.1" />
             </div>
             <div class="form-group">
-              <label class="form-label">D_Δt (Mpc)</label>
+              <label class="form-label">D<sub>Δt</sub> (Mpc)</label>
               <input id="blDtd" class="form-input" type="number" step="1" value="5000" />
             </div>
           </div>
-          <button id="blBlindBtn" class="btn btn-warning" style="width:100%;margin-top:8px">
+          <button id="blBlindBtn" class="btn btn-warning btn-full">
             🔒 Apply Blinding
           </button>
           <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-            <p class="section-desc" style="font-size:0.75rem;color:var(--text-muted)">
+            <p class="section-desc" style="font-size:0.75rem">
               ⚠ The phrase is sent to the server to compute the HMAC offset and is not stored server-side.
               Write it down before closing this tab.
             </p>
@@ -194,11 +193,11 @@ export function render() {
         </div>
 
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
             <span class="card-title">Unblinding Gate</span>
             <span class="badge badge-danger">Irreversible</span>
           </div>
-          <p class="section-desc">
+          <p class="section-desc mb-16">
             Unblind only after all scientific validation checks pass. Enter your blinded
             values and the original phrase.
           </p>
@@ -208,7 +207,7 @@ export function render() {
               <input id="blH0Blind" class="form-input" type="number" step="0.1" placeholder="blinded value" />
             </div>
             <div class="form-group">
-              <label class="form-label">D_Δt Blinded</label>
+              <label class="form-label">D<sub>Δt</sub> Blinded</label>
               <input id="blDtdBlind" class="form-input" type="number" step="1" placeholder="blinded value" />
             </div>
           </div>
@@ -217,7 +216,7 @@ export function render() {
             <input id="blVerifyPhrase" class="form-input" type="password"
               placeholder="Original phrase to verify" autocomplete="off" />
           </div>
-          <button id="blUnblindBtn" class="btn btn-danger" style="width:100%;margin-top:8px">
+          <button id="blUnblindBtn" class="btn btn-danger btn-full">
             🔓 Request Unblinding via Validation Gate
           </button>
           <div id="blResults" style="margin-top:12px"></div>
@@ -225,7 +224,7 @@ export function render() {
       </div>
 
       <!-- Blinding state display -->
-      <div class="card" style="margin-top:20px" id="blStateCard" style="display:none">
+      <div class="card" id="blStateCard" style="margin-top:20px;display:none">
         <div class="card-header">
           <span class="card-title">Blinding State</span>
         </div>
@@ -237,7 +236,7 @@ export function render() {
     <div id="stab-covariance" class="survey-panel" style="display:none">
       <div class="grid-2 gap-20">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
             <span class="card-title">Drizzle Covariance Parameters</span>
             <span class="badge badge-info">Fruchter & Hook 2002</span>
           </div>
@@ -270,7 +269,7 @@ export function render() {
               <option value="lanczos3">lanczos3</option>
             </select>
           </div>
-          <button id="cvComputeBtn" class="btn btn-primary" style="width:100%;margin-top:8px">
+          <button id="cvComputeBtn" class="btn btn-primary btn-full">
             📊 Compute Covariance + Whiten
           </button>
         </div>
@@ -288,17 +287,17 @@ export function render() {
     <div id="stab-deblend" class="survey-panel" style="display:none">
       <div class="grid-2 gap-20">
         <div class="card">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
             <span class="card-title">Joint Survey Configuration</span>
             <span class="badge badge-info">Rubin + Roman</span>
           </div>
-          <p class="section-desc">
+          <p class="section-desc mb-16">
             Simultaneously model the same lens system at ground-based and space-based
             resolution using the joint log-likelihood framework.
           </p>
-          <div class="grid-2 gap-12" style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
+          <div class="grid-2 gap-12 mb-16" style="border:1px solid var(--border);border-radius:8px;padding:12px">
             <div>
-              <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:8px">GROUND (Rubin-like)</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:8px;text-transform:uppercase">GROUND (Rubin-like)</div>
               <div class="form-group">
                 <label class="form-label">Grid size (px)</label>
                 <input id="jdGroundSize" class="form-input" type="number" value="32" min="16" max="128" />
@@ -313,7 +312,7 @@ export function render() {
               </div>
             </div>
             <div>
-              <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:8px">SPACE (Roman-like)</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;margin-bottom:8px;text-transform:uppercase">SPACE (Roman-like)</div>
               <div class="form-group">
                 <label class="form-label">Grid size (px)</label>
                 <input id="jdSpaceSize" class="form-input" type="number" value="64" min="16" max="256" />
@@ -339,7 +338,7 @@ export function render() {
             <label class="form-label">RNG seed</label>
             <input id="jdSeed" class="form-input" type="number" value="42" />
           </div>
-          <button id="jdRunBtn" class="btn btn-primary" style="width:100%;margin-top:8px">
+          <button id="jdRunBtn" class="btn btn-primary btn-full">
             🛰 Run Joint Deblending
           </button>
         </div>

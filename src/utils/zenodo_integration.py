@@ -85,3 +85,4 @@ class ZenodoDOIClient:
         response.raise_for_status()
         
         return response.json().get('doi', 'DOI_MINTING_FAILED')
+

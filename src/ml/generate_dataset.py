@@ -504,3 +504,4 @@ class LensDataset:
             image = self.transform(image)
         
         return image, parameters, label
+

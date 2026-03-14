@@ -40,3 +40,4 @@ locust>=2.15.0
 # Optional: Benchmarking against established codes
 # lenstronomy>=1.11.0
 # astroquery>=0.4.6  # For HST data download
+

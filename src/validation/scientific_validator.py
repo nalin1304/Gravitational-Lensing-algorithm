@@ -1041,3 +1041,4 @@ def rigorous_validate(
     return validator.validate_convergence_map(
         predicted, ground_truth, profile_type, uncertainty, verbose=True
     )
+

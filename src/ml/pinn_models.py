@@ -348,3 +348,4 @@ if __name__ == '__main__':
     logger.info(f"Output shape: {outputs.shape}")
     logger.info(f"Convergence range: [{outputs[:, 0].min():.6f}, {outputs[:, 0].max():.6f}]")
     logger.info("✅ Equinox PINN test successful!")
+

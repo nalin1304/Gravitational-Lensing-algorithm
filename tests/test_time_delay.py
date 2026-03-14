@@ -458,3 +458,4 @@ class TestPhysicalConsistency:
         delay_heavy = np.abs(result_heavy['time_delay_matrix'][0, 1])
         
         assert delay_heavy > delay_light
+

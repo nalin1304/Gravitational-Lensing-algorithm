@@ -402,3 +402,4 @@ def whiten_image_block_diagonal(
             total_chisq += float(np.dot(chi_flat, chi_flat))
 
     return whitened, total_chisq
+

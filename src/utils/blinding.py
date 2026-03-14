@@ -20,11 +20,16 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 import struct
 import time
 import warnings
 from pathlib import Path
 from typing import Tuple
+
+_BLINDING_HMAC_KEY = os.environ.get(
+    "LENSING_BLINDING_HMAC_KEY", "validation-gate-key"
+).encode()
 
 
 def _derive_offset(seed_phrase: str, domain: str, lo: float, hi: float) -> float:
@@ -63,7 +68,7 @@ class BlindingHandler:
         self._dtd_factor = 1.0 + _derive_offset(seed_phrase, "dtd", *dtd_frac_range)
         self._created_ts = time.time()
         self._phrase_mac = hmac.new(
-            b"validation-gate-key",
+            _BLINDING_HMAC_KEY,
             seed_phrase.encode(),
             hashlib.sha256,
         ).hexdigest()[:16]
@@ -86,20 +91,55 @@ class BlindingHandler:
     # ── Unblinding ────────────────────────────────────────────────────────
 
     def _verify_phrase(self, phrase: str) -> None:
-        mac = hmac.new(b"validation-gate-key", phrase.encode(), hashlib.sha256).hexdigest()[:16]
+        mac = hmac.new(_BLINDING_HMAC_KEY, phrase.encode(), hashlib.sha256).hexdigest()[:16]
         if not hmac.compare_digest(mac, self._phrase_mac):
             raise ValueError("Unblinding phrase does not match. Cannot unblind.")
 
     def unblind_h0(self, h0_blind: float, verification_phrase: str = None) -> float:
-        """Remove additive blinding from H₀."""
+        """Remove additive blinding from H₀.
+
+        Parameters
+        ----------
+        h0_blind : float
+            Blinded H₀ value.
+        verification_phrase : str, optional
+            The original seed phrase.  When supplied, it is verified
+            against the stored MAC before unblinding proceeds.
+            **If omitted, a warning is issued** so the caller is aware
+            unblinding is happening without phrase verification.
+        """
         if verification_phrase is not None:
             self._verify_phrase(verification_phrase)
+        else:
+            warnings.warn(
+                "Unblinding without verification phrase — result is not "
+                "cryptographically authenticated. Pass the original seed "
+                "phrase to suppress this warning.",
+                stacklevel=2,
+            )
         return h0_blind - self._h0_offset
 
     def unblind_dtd(self, dtd_blind: float, verification_phrase: str = None) -> float:
-        """Remove multiplicative blinding from D_Δt."""
+        """Remove multiplicative blinding from D_Δt.
+
+        Parameters
+        ----------
+        dtd_blind : float
+            Blinded D_Δt value.
+        verification_phrase : str, optional
+            The original seed phrase.  When supplied, it is verified
+            against the stored MAC before unblinding proceeds.
+            **If omitted, a warning is issued.**
+        """
         if verification_phrase is not None:
             self._verify_phrase(verification_phrase)
+        else:
+            warnings.warn(
+                "Unblinding without verification phrase — result is not "
+                "cryptographically authenticated. Pass the original seed "
+                "phrase to suppress this warning.",
+                stacklevel=2,
+            )
         return dtd_blind / self._dtd_factor
 
     # ── Receipt and summary ───────────────────────────────────────────────

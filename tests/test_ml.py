@@ -146,3 +146,4 @@ class TestLensingPINN_JAX:
         assert out.shape == (batch_size, 4)
         # Convergence constraint check
         assert jnp.all(out[:, 0] >= 0.0) 
+

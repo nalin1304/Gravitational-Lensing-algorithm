@@ -441,3 +441,4 @@ class TestEdgeCases:
             # May raise error or handle gracefully
         except (ValueError, ZeroDivisionError, RuntimeWarning):
             pass
+

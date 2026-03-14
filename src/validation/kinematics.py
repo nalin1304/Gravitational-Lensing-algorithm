@@ -39,12 +39,15 @@ import warnings
 # NumPy 2.0+ renamed trapz → trapezoid; support both versions
 _np_trapezoid = getattr(np, 'trapezoid', np.trapz)
 
-# Physical constants (Ref: IAU 2015 nominal values, CODATA 2018)
-G_SI = 6.67430e-11         # m³ kg⁻¹ s⁻²
-c_SI = 2.99792458e8        # m/s
-M_sun = 1.98841e30         # kg  (IAU 2015: GM_sun/G_CODATA)
-kpc_to_m = 3.085677581e19  # m (IAU 2012 / CODATA 2018)
-arcsec_to_rad = 4.8481e-6  # radians
+# Physical constants — imported from authoritative source
+from src.utils.constants import (
+    G_CONST as G_SI,
+    C_LIGHT as c_SI,
+    M_SUN_KG as M_sun,
+    KPC as _KPC_M,
+    ARCSEC_TO_RAD as arcsec_to_rad,
+)
+kpc_to_m = _KPC_M  # m (IAU 2012 / CODATA 2018)
 
 
 def predict_velocity_dispersion(

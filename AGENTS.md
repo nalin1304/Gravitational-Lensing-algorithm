@@ -4,7 +4,7 @@ Operational context for humans and coding agents working in this repository.
 Use this as the working source-of-truth for architecture, validation workflow,
 and current branch/release state.
 
-Last updated: 2026-03-13
+Last updated: 2026-03-14
 
 ---
 
@@ -33,7 +33,7 @@ Verified on 2026-03-13:
 
 ```bash
 python3 -m pytest tests/ -q
-# 646 passed, 1 skipped   (verified Mar 13 2026)
+# 646 passed, 1 skipped   (verified Mar 14 2026)
 
 python3 scripts/publication_gate.py --quick
 # Publication Gate: PASS
@@ -142,7 +142,7 @@ Expected non-fatal local warning:
   - `web_ui/pages/lensing.js` — Critical curves, magnification, image solver viz
 
 ### API + persistence
-- API entry: `api/main.py` (45 endpoints total)
+- API entry: `api/main.py` (47 endpoints total)
 - Routers: `api/auth_routes.py` (note: `TokenRefreshRequest` uses Pydantic body; raw JSON body fix applied), `api/analysis_routes.py`
 - Database layer: `database/`
 - Alembic setup: `migrations/`, `alembic.ini`
@@ -167,7 +167,7 @@ Expected non-fatal local warning:
 - `paper/TIER1_TOPIC_AND_RIGOR.md`: Topic and rigor framing artifact
 
 ### Quality + ops
-- Tests: `tests/` (554 passing tests, 31 skipped — verified Mar 13 2026)
+- Tests: `tests/` (646 passing tests, 1 skipped — verified Mar 14 2026)
 - Benchmarks: `benchmarks/`
 - Validation/readiness docs:
   - `IEEE_SUBMISSION_CHECKLIST.md`

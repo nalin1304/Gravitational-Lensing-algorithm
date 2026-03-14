@@ -690,3 +690,4 @@ class MultiPlaneLensSystem:
             lines.append(f"  {label}: z = {plane['z']:.3f}")
         
         return "\n".join(lines)
+

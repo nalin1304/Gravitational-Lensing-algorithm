@@ -407,3 +407,4 @@ def create_publication_figure(
     plt.savefig(save_path, bbox_inches='tight', dpi=300)
     print(f"\nPublication figure saved to {save_path}")
     plt.show()
+

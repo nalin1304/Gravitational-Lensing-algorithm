@@ -612,3 +612,4 @@ class AmortizedRefinement:
         result["fisher"] = fisher.compute()
 
         return result
+

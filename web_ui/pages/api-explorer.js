@@ -6,10 +6,15 @@ let openApiSpec = null;
 
 export function render() {
     return `
-    <div class="grid-12 gap-20">
-      <div class="col-span-4">
+    <div class="mb-20">
+      <h2 style="font-size:1.5rem;font-weight:700;margin:0 0 8px 0">API Explorer</h2>
+      <p class="section-desc" style="margin:0">OpenAPI-driven request builder — test endpoints interactively.</p>
+    </div>
+
+    <div class="grid-2 gap-20">
+      <div>
         <div class="card" style="position:sticky;top:0">
-          <div class="card-header">
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
             <span class="card-title">Endpoints</span>
             <span class="badge badge-info" id="apiCount">—</span>
           </div>
@@ -19,33 +24,33 @@ export function render() {
         </div>
       </div>
 
-      <div class="col-span-8">
+      <div>
         <div class="card mb-16">
           <div class="card-header"><span class="card-title">Request Builder</span></div>
           <div class="form-group">
             <label class="form-label">Selected Endpoint</label>
             <input id="apiEndpoint" class="form-input" readonly placeholder="Select an endpoint from the list" />
           </div>
-          <div class="grid-2" style="gap:12px">
+          <div class="grid-2 gap-12">
             <div class="form-group">
               <label class="form-label">Path Parameters (JSON)</label>
-              <textarea id="apiPath" class="form-textarea" rows="3">{}</textarea>
+              <textarea id="apiPath" class="form-input" rows="3">{}</textarea>
             </div>
             <div class="form-group">
               <label class="form-label">Query Parameters (JSON)</label>
-              <textarea id="apiQuery" class="form-textarea" rows="3">{}</textarea>
+              <textarea id="apiQuery" class="form-input" rows="3">{}</textarea>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Request Body (JSON)</label>
-            <textarea id="apiBody" class="form-textarea" rows="5">{}</textarea>
+            <textarea id="apiBody" class="form-input" rows="5">{}</textarea>
           </div>
-          <button id="apiRun" class="btn btn-primary">Send Request</button>
+          <button id="apiRun" class="btn btn-primary btn-full">Send Request</button>
         </div>
 
         <div class="card">
           <div class="card-header"><span class="card-title">Response</span></div>
-          <pre id="apiResponse" style="max-height:400px">No request sent yet.</pre>
+          <pre id="apiResponse" style="background:var(--bg-secondary);padding:12px;border-radius:6px;max-height:400px;overflow:auto;font-family:var(--mono);font-size:0.85rem;line-height:1.4">No request sent yet.</pre>
         </div>
       </div>
     </div>

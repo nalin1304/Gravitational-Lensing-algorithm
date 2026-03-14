@@ -24,6 +24,16 @@ except ImportError:  # pragma: no cover - optional dependency fallback
 
 HAS_NODE_DEPS = bool(jax is not None and eqx is not None and diffrax is not None and jnp is not None)
 
+if not HAS_NODE_DEPS:
+    import warnings as _w
+    _missing = [n for n, m in [("jax", jax), ("equinox", eqx), ("diffrax", diffrax)] if m is None]
+    _w.warn(
+        f"Neural ODE dependencies unavailable ({', '.join(_missing)}). "
+        "AnalyticFusingNODE and related models will not be usable.",
+        ImportWarning,
+        stacklevel=2,
+    )
+
 
 if HAS_NODE_DEPS:
     class NeuralVectorField(eqx.Module):

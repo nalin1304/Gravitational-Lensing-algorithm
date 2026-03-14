@@ -1,0 +1,11 @@
+{
+  "generated_at_utc": "2026-03-14T07:05:00.000000+00:00",
+  "status": "full_pytest",
+  "passed": 646,
+  "skipped": 1,
+  "xfailed": 0,
+  "xpassed": 0,
+  "warnings": 19,
+  "duration_s": 100.23,
+  "failed": 0
+}

@@ -360,3 +360,4 @@ def clear_cache():
     """Clear convergence map cache."""
     global _convergence_cache
     _convergence_cache.clear()
+

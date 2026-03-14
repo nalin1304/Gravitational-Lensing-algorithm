@@ -47,3 +47,4 @@ analysis:
   run_pinn_inference: true
   uncertainty_quantification: true
   model_comparison: false  # Fast demo mode
+

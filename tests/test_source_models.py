@@ -71,3 +71,4 @@ class TestSourceModels_JAX:
         
         assert jnp.isfinite(res['log_evidence'])
         assert jnp.isfinite(res['chi_sq'])
+

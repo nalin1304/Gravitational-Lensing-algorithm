@@ -38,3 +38,4 @@ def test_statistical_rigor_report_generation(tmp_path: Path) -> None:
     assert "sota_comparison" in report
     assert "overall_warnings" in report
     assert output_md.exists()
+

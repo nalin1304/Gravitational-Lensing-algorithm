@@ -77,3 +77,4 @@ def test_optimize_sed_amplitudes_linear():
     )
     
     np.testing.assert_allclose(recovered_amplitudes, true_amplitudes, rtol=1e-5)
+

@@ -782,3 +782,4 @@ class JointNPE(nn.Module):
             'q_hat': q,
             'calibrated': hasattr(self, '_conformal_q') and self._conformal_q is not None,
         }
+

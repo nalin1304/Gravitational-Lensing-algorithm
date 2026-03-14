@@ -24,7 +24,7 @@ This gate verifies:
 4. Static analysis for `src/` passes (`mypy` when installed; otherwise syntax sweep recorded by the publication gate).
 5. Known-system validation script passes.
 6. Statistical rigor report is generated.
-7. Full regression suite passes (current verified baseline: 513 passed, 38 skipped).
+7. Full regression suite passes (current verified baseline: 646 passed, 1 skipped).
 8. Calibration quality bounds are satisfied:
    - max raw Einstein-radius error <= 10%
    - max radius calibration factor <= 1.5
@@ -82,7 +82,7 @@ python3 -m mypy src/ --ignore-missing-imports  # when installed
 ```
 
 Required result:
-- `pytest`: 513 passed, 38 skipped
+- `pytest`: 646 passed, 1 skipped
 - `mypy`: success when the tool is installed; otherwise the publication gate must record a clean `py_compile` syntax sweep
 - `check_backend()`: reports detected backend
 

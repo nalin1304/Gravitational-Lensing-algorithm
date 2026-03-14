@@ -298,3 +298,4 @@ def check_component_health(component: str, check_func: Callable) -> bool:
     except Exception as e:
         _health_status.add_issue(component, str(e))
         return False
+

@@ -574,3 +574,4 @@ def _verify_github_token(token: str) -> Optional[Dict]:
     except Exception as e:
         print(f"GitHub token verification failed: {e}")
         return None
+

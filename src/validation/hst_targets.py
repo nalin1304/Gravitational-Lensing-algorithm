@@ -448,3 +448,4 @@ if __name__ == "__main__":
     
     print("\nHST validation pipeline initialized successfully.")
     print("Use validator.compare_with_hst(sim_image, target_name) to validate.")
+

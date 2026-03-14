@@ -98,3 +98,4 @@ class EnvironmentalLinker:
                 kappa_ext_total += kappa_i
                 
         return kappa_ext_total
+

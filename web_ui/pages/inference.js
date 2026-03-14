@@ -29,18 +29,18 @@ export function render() {
 <div class="page-content">
 
   <!-- Header -->
-  <div class="alert alert-info" style="margin-bottom:1.5rem">
-    <strong>⚛️ Differentiable Inference Engine</strong>
-    NUTS-HMC posterior sampling with automatic differentiation.
-    Gradient-based No U-Turn Sampler for efficient exploration of lens model parameter space.
+  <div style="margin-bottom:24px">
+    <h2 style="font-size:1.5rem;font-weight:700;color:var(--text-primary);margin:0 0 6px 0">⚛️ Differentiable Inference Engine</h2>
+    <p class="section-desc">NUTS-HMC posterior sampling with automatic differentiation. Gradient-based No U-Turn Sampler for efficient exploration of lens model parameter space.</p>
   </div>
 
-  <div class="grid-2col mb-16">
+  <!-- Two-column layout: LEFT = controls, RIGHT = sampling -->
+  <div class="grid-2 gap-20 mb-24">
 
-    <!-- LEFT: Forward Model Panel -->
+    <!-- LEFT: Forward Model Controls -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Forward Model</span>
+        <span class="card-title">Forward Model Parameters</span>
         <span class="badge badge-info">NFW</span>
       </div>
 
@@ -86,20 +86,20 @@ export function render() {
 
       <div class="form-group">
         <label class="form-label">Grid Size</label>
-        <select id="infGrid" class="form-select">
+        <select id="infGrid" class="form-input">
           <option value="32">32×32</option>
           <option value="64" selected>64×64</option>
           <option value="128">128×128</option>
         </select>
       </div>
 
-      <button id="infSimBtn" class="btn btn-primary" style="width:100%">▶ Simulate</button>
+      <button id="infSimBtn" class="btn btn-primary btn-full">▶ Simulate</button>
     </div>
 
-    <!-- RIGHT: Posterior Sampling Panel -->
+    <!-- RIGHT: NUTS-HMC Sampling Controls -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">NUTS-HMC Posterior Sampling</span>
+        <span class="card-title">NUTS-HMC Sampling</span>
         <span class="badge badge-purple">HMC</span>
       </div>
 
@@ -118,9 +118,10 @@ export function render() {
         <input type="number" id="infNoiseSigma" class="form-input" min="0.001" max="0.1" step="0.001" value="0.01" />
       </div>
 
-      <button id="infRunNuts" class="btn btn-primary" style="width:100%;margin-bottom:12px" disabled>🔬 Run NUTS-HMC</button>
+      <button id="infRunNuts" class="btn btn-primary btn-full mb-16" disabled>🔬 Run NUTS-HMC</button>
+      <button id="infFisherBtn" class="btn btn-ghost btn-full mb-16" disabled>Compute Fisher Matrix</button>
 
-      <div id="infSamplerStats" style="display:none">
+      <div id="infSamplerStats" class="metric-grid" style="display:none">
         <div class="metric-row">
           <span class="metric-key">Acceptance Rate</span>
           <span class="metric-val" id="infAcceptRate">—</span>
@@ -138,8 +139,8 @@ export function render() {
 
   </div>
 
-  <!-- Simulation output plots -->
-  <div class="grid-2 mb-16" id="infSimPlots" style="display:none">
+  <!-- Simulation Output Plots -->
+  <div class="grid-2 gap-20 mb-24" id="infSimPlots" style="display:none">
     <div class="card">
       <div class="card-header"><span class="card-title">Convergence Map κ(θ)</span></div>
       <div id="infKappaPlot" style="height:320px"></div>
@@ -150,9 +151,9 @@ export function render() {
     </div>
   </div>
 
-  <!-- Posterior plots -->
+  <!-- Posterior Plots -->
   <div id="infPosteriorSection" style="display:none">
-    <div class="grid-2 mb-16">
+    <div class="grid-2 gap-20 mb-24">
       <div class="card">
         <div class="card-header"><span class="card-title">Corner Plot: M<sub>vir</sub> vs Concentration</span></div>
         <div id="infCornerPlot" style="height:350px"></div>
@@ -165,15 +166,14 @@ export function render() {
   </div>
 
   <!-- Fisher Information Panel -->
-  <div class="card mb-16">
+  <div class="card mb-24">
     <div class="card-header">
       <span class="card-title">Fisher Information Matrix</span>
-      <button id="infFisherBtn" class="btn btn-secondary btn-sm" disabled>Compute Fisher Matrix</button>
     </div>
     <div id="infFisherContent">
-      <p class="dim small">Run a simulation first, then compute the Fisher information matrix.</p>
+      <p class="section-desc">Run a simulation first, then compute the Fisher information matrix.</p>
     </div>
-    <div class="grid-2" id="infFisherPlots" style="display:none">
+    <div class="grid-2 gap-20" id="infFisherPlots" style="display:none">
       <div>
         <table class="data-table" id="infFisherTable"></table>
       </div>
@@ -181,27 +181,29 @@ export function render() {
     </div>
   </div>
 
-  <!-- Method Comparison Card -->
+  <!-- Method Overview Card -->
   <div class="card">
     <div class="card-header">
       <span class="card-title">Method Overview</span>
       <span class="badge badge-info">Differentiable</span>
     </div>
-    <div class="metric-row">
-      <span class="metric-key">Algorithm</span>
-      <span class="metric-val" style="font-family:var(--font);font-weight:500">NUTS-HMC: Gradient-based sampling with No U-Turn Stopping</span>
-    </div>
-    <div class="metric-row">
-      <span class="metric-key">Key Advantage</span>
-      <span class="metric-val" style="font-family:var(--font);font-weight:400;color:var(--text-secondary)">
-        Automatic differentiation through the forward model enables efficient high-dimensional posterior exploration
-      </span>
-    </div>
-    <div class="metric-row">
-      <span class="metric-key">References</span>
-      <span class="metric-val small" style="font-family:var(--font);font-weight:400;color:var(--text-muted)">
-        Hoffman &amp; Gelman (2014) JMLR 15, 1593–1623 · Galan et al. (2022) A&amp;A 668, A155
-      </span>
+    <div class="metric-grid">
+      <div class="metric-row">
+        <span class="metric-key">Algorithm</span>
+        <span class="metric-val">NUTS-HMC: Gradient-based sampling with No U-Turn Stopping</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">Key Advantage</span>
+        <span class="metric-val text-muted">
+          Automatic differentiation through the forward model enables efficient high-dimensional posterior exploration
+        </span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">References</span>
+        <span class="metric-val text-muted" style="font-size:0.875rem">
+          Hoffman &amp; Gelman (2014) JMLR 15, 1593–1623 · Galan et al. (2022) A&amp;A 668, A155
+        </span>
+      </div>
     </div>
   </div>
 

@@ -386,15 +386,15 @@ class LensFinder:
         seed : int
             RNG seed for reproducibility.
         """
-        rng = np.random.RandomState(seed)
+        rng = np.random.default_rng(seed)
         # Background: Gaussian noise
         field = rng.normal(0, 0.01, (grid_size, grid_size)).astype(np.float32)
 
         # Inject ring-like signals
         positions = []
         for _ in range(n_lenses):
-            cy = rng.randint(40, grid_size - 40)
-            cx = rng.randint(40, grid_size - 40)
+            cy = rng.integers(40, grid_size - 40)
+            cx = rng.integers(40, grid_size - 40)
             r_e = rng.uniform(8, 18)
             Y, X = np.ogrid[:grid_size, :grid_size]
             dist = np.sqrt((X - cx) ** 2 + (Y - cy) ** 2)

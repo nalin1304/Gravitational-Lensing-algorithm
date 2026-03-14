@@ -476,3 +476,4 @@ def plot_source_plane_mapping(beta_x, beta_y, grid_x, grid_y,
         plt.show()
     
     return fig, ax
+

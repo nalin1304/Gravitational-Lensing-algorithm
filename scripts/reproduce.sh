@@ -41,14 +41,7 @@ echo ""
 echo "▶ Step 1/6: Running test suite..."
 cd "$PROJECT_DIR"
 
-if command -v uv &> /dev/null; then
-    uv run python -m pytest tests/ -q 2>&1 | tee "$RESULTS_DIR/test_output.txt"
-elif command -v python &> /dev/null; then
-    python -m pytest tests/ -q 2>&1 | tee "$RESULTS_DIR/test_output.txt"
-else
-    echo "❌ No Python environment found. Install uv or Python."
-    exit 1
-fi
+$PY -m pytest tests/ -q 2>&1 | tee "$RESULTS_DIR/test_output.txt"
 
 # ---- Step 2: Run ablation study ----
 echo ""

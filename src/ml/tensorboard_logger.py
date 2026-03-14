@@ -408,3 +408,4 @@ if __name__ == '__main__':
     
     logger.close()
     print("✓ Logger test passed!")
+

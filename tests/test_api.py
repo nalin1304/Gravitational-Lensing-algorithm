@@ -34,8 +34,15 @@ class TestHealthEndpoints:
     """Test health check and info endpoints"""
     
     def test_root_endpoint(self):
-        """Test root endpoint returns API information"""
+        """Test root endpoint returns landing page HTML"""
         response = client.get("/")
+        assert response.status_code == 200
+        # Root now serves the landing page HTML
+        assert "text/html" in response.headers.get("content-type", "")
+
+    def test_api_endpoint(self):
+        """Test /api endpoint returns API information JSON"""
+        response = client.get("/api")
         assert response.status_code == 200
         data = response.json()
         assert "message" in data

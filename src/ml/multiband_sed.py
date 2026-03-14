@@ -99,3 +99,4 @@ class SEDMorphologyJointLikelihood:
                 optimal_amplitudes[i] = 0.0
                 
         return optimal_amplitudes
+

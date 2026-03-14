@@ -6,82 +6,133 @@ export function render() {
 
     if (!loggedIn) {
         return `
-      <div class="auth-container">
-        <div class="tabs mb-16">
+      <div style="max-width:900px;margin:2rem auto">
+        <div class="tabs mb-20">
           <button class="tab active" data-atab="login">Sign In</button>
           <button class="tab" data-atab="register">Register</button>
         </div>
 
-        <div id="acLoginForm" class="auth-card">
-          <h2 class="auth-title">Welcome Back</h2>
-          <p class="auth-sub">Sign in to access your analyses and API keys</p>
-          <div class="form-group">
-            <label class="form-label">Username or Email</label>
-            <input id="acUser" class="form-input" placeholder="username" autocomplete="username" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Password</label>
-            <input id="acPass" class="form-input" type="password" placeholder="password" autocomplete="current-password" />
-          </div>
-          <button id="acLoginBtn" class="btn btn-primary" style="width:100%;margin-top:6px">Sign In</button>
-        </div>
+        <div class="grid-2 gap-20">
+          <!-- LEFT: Login/Register Form -->
+          <div>
+            <div id="acLoginForm" class="card">
+              <div class="card-header">
+                <span class="card-title">Welcome Back</span>
+              </div>
+              <p class="section-desc mb-16">Sign in to access your analyses and API keys</p>
+              <div class="form-group">
+                <label class="form-label">Username or Email</label>
+                <input id="acUser" class="form-input" placeholder="username" autocomplete="username" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Password</label>
+                <input id="acPass" class="form-input" type="password" placeholder="password" autocomplete="current-password" />
+              </div>
+              <button id="acLoginBtn" class="btn btn-primary btn-full">Sign In</button>
+            </div>
 
-        <div id="acRegForm" class="auth-card" style="display:none">
-          <h2 class="auth-title">Create Account</h2>
-          <p class="auth-sub">Register to save analyses and manage API keys</p>
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input id="acRegEmail" class="form-input" type="email" placeholder="you@example.com" />
+            <div id="acRegForm" class="card" style="display:none">
+              <div class="card-header">
+                <span class="card-title">Create Account</span>
+              </div>
+              <p class="section-desc mb-16">Register to save analyses and manage API keys</p>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input id="acRegEmail" class="form-input" type="email" placeholder="you@example.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Username</label>
+                <input id="acRegUser" class="form-input" placeholder="username (min 3 chars)" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input id="acRegName" class="form-input" placeholder="Optional" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Password</label>
+                <input id="acRegPass" class="form-input" type="password" placeholder="min 8 characters" />
+              </div>
+              <button id="acRegBtn" class="btn btn-primary btn-full">Register</button>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Username</label>
-            <input id="acRegUser" class="form-input" placeholder="username (min 3 chars)" />
+
+          <!-- RIGHT: Feature Info -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Platform Features</span>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-row">
+                <span class="metric-key">🔬 Analyses</span>
+                <span class="metric-val text-muted">Save and share your lens simulations</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-key">🔑 API Keys</span>
+                <span class="metric-val text-muted">Programmatic access to all endpoints</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-key">📊 Results</span>
+                <span class="metric-val text-muted">Persistent storage for your work</span>
+              </div>
+              <div class="metric-row">
+                <span class="metric-key">🌐 Public Gallery</span>
+                <span class="metric-val text-muted">Share analyses with the community</span>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Full Name</label>
-            <input id="acRegName" class="form-input" placeholder="Optional" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Password</label>
-            <input id="acRegPass" class="form-input" type="password" placeholder="min 8 characters" />
-          </div>
-          <button id="acRegBtn" class="btn btn-primary" style="width:100%;margin-top:6px">Register</button>
         </div>
       </div>
     `;
     }
 
     return `
-    <div class="grid-2 gap-20">
-      <div class="card">
+    <div class="page-content">
+      <!-- Profile Header with Avatar -->
+      <div class="card mb-20">
         <div class="card-header">
-          <span class="card-title">Profile</span>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div id="acAvatar" style="width:48px;height:48px;border-radius:50%;background:var(--accent-primary);display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;color:var(--bg-primary)"></div>
+            <div>
+              <span class="card-title" id="acDisplayName">Account</span>
+              <div class="section-desc" style="margin:0" id="acEmail"></div>
+            </div>
+          </div>
           <button id="acLogout" class="btn btn-sm btn-danger">Sign Out</button>
         </div>
-        <div id="acProfile"><p class="section-desc">Loading...</p></div>
       </div>
 
+      <!-- Two-column layout: Profile + Stats -->
+      <div class="grid-2 gap-20 mb-20">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Profile Details</span>
+          </div>
+          <div id="acProfile" class="metric-grid"><p class="section-desc">Loading...</p></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Usage Statistics</span>
+          </div>
+          <div id="acStats" class="metric-grid"><p class="section-desc">Loading...</p></div>
+        </div>
+      </div>
+
+      <!-- API Keys Card -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Usage Statistics</span>
+          <span class="card-title">API Keys</span>
+          <button id="acNewKey" class="btn btn-sm btn-primary">+ Create Key</button>
         </div>
-        <div id="acStats"><p class="section-desc">Loading...</p></div>
-      </div>
-    </div>
+        <div id="acKeys"><p class="section-desc">Loading...</p></div>
 
-    <div class="card" style="margin-top:20px">
-      <div class="card-header">
-        <span class="card-title">API Keys</span>
-        <button id="acNewKey" class="btn btn-sm btn-primary">+ Create Key</button>
-      </div>
-      <div id="acKeys"><p class="section-desc">Loading...</p></div>
-
-      <div id="acKeyForm" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <div class="form-group">
-          <label class="form-label">Key Name</label>
-          <input id="acKeyName" class="form-input" placeholder="my-api-key" />
+        <div id="acKeyForm" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="form-group">
+            <label class="form-label">Key Name</label>
+            <input id="acKeyName" class="form-input" placeholder="my-api-key" />
+          </div>
+          <button id="acKeySubmit" class="btn btn-primary btn-sm">Generate Key</button>
         </div>
-        <button id="acKeySubmit" class="btn btn-primary btn-sm">Generate Key</button>
       </div>
     </div>
   `;
@@ -146,11 +197,17 @@ export async function init() {
 
     try {
         const user = await P.api("/api/v1/auth/me");
+        // Set avatar initials
+        const initials = (user.full_name || user.username || 'U').slice(0, 2).toUpperCase();
+        document.getElementById("acAvatar").textContent = initials;
+        document.getElementById("acDisplayName").textContent = user.full_name || user.username;
+        document.getElementById("acEmail").textContent = user.email;
+        
         document.getElementById("acProfile").innerHTML = `
       <div class="metric-row"><span class="metric-key">Username</span><span class="metric-val">${P.esc(user.username)}</span></div>
       <div class="metric-row"><span class="metric-key">Email</span><span class="metric-val">${P.esc(user.email)}</span></div>
       <div class="metric-row"><span class="metric-key">Role</span><span class="metric-val"><span class="badge badge-purple">${P.esc(user.role)}</span></span></div>
-      <div class="metric-row"><span class="metric-key">Verified</span><span class="metric-val">${user.is_verified ? '✓' : '✗'}</span></div>
+      <div class="metric-row"><span class="metric-key">Verified</span><span class="metric-val">${user.is_verified ? '<span class="badge badge-success">✓</span>' : '<span class="badge badge-warning">✗</span>'}</span></div>
       <div class="metric-row"><span class="metric-key">Member Since</span><span class="metric-val">${new Date(user.created_at).toLocaleDateString()}</span></div>
     `;
     } catch (e) { document.getElementById("acProfile").innerHTML = `<p class="section-desc">Error: ${P.esc(e.message)}</p>`; }
@@ -170,30 +227,54 @@ export async function init() {
     });
 
     async function loadApiKeys() {
-        const keys = await P.api('/api/v1/auth/api-keys');
+        let keys;
+        try {
+            keys = await P.api('/api/v1/auth/api-keys');
+        } catch (e) {
+            const container = document.getElementById('acKeys');
+            if (container) container.innerHTML = `<p class="dim">Could not load API keys: ${P.esc(e.message)}</p>`;
+            return;
+        }
         const container = document.getElementById('acKeys');
         if (!container) return;
         if (!keys || keys.length === 0) {
-            container.innerHTML = '<p class="dim">No API keys yet. Create one below.</p>';
+            container.innerHTML = '<p class="section-desc">No API keys yet. Create one below.</p>';
             return;
         }
-        container.innerHTML = keys.map(k => `
-            <div class="key-row" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
-                <div>
-                    <strong>${P.esc(k.name || 'Unnamed')}</strong>
-                    <span class="dim" style="margin-left:8px">${k.key_prefix}…</span>
-                    <span class="dim" style="margin-left:8px">Created: ${k.created_at ? k.created_at.slice(0,10) : '—'}</span>
-                </div>
-                <button class="btn btn-sm btn-danger" onclick="revokeKey(${k.id})">Revoke</button>
-            </div>
-        `).join('');
+        container.innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Key Prefix</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${keys.map(k => `
+                <tr>
+                  <td><strong>${P.esc(k.name || 'Unnamed')}</strong></td>
+                  <td><code>${k.key_prefix}…</code></td>
+                  <td>${k.created_at ? k.created_at.slice(0,10) : '—'}</td>
+                  <td><button class="btn btn-sm btn-danger revoke-key-btn" data-keyid="${k.id}">Revoke</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        container.querySelectorAll('.revoke-key-btn').forEach(btn => {
+            btn.addEventListener('click', () => revokeKey(parseInt(btn.dataset.keyid)));
+        });
     }
 
     window.revokeKey = async function revokeKey(keyId) {
         if (!confirm('Revoke this API key? This cannot be undone.')) return;
-        await P.api(`/api/v1/auth/api-keys/${keyId}`, { method: 'DELETE' });
-        P.toast('API key revoked', 'success');
-        loadApiKeys();
+        try {
+            await P.api(`/api/v1/auth/api-keys/${keyId}`, { method: 'DELETE' });
+            P.toast('API key revoked', 'success');
+            loadApiKeys();
+        } catch (e) { P.toast(`Revoke failed: ${e.message}`, 'error'); }
     };
 
     loadApiKeys();

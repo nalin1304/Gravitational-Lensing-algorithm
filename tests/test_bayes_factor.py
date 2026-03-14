@@ -49,3 +49,4 @@ class TestBayesFactorComparator_JAX:
         s_zero = jnp.array([1.0, 1.0, -1.0, -1.0])
         corr_zero = comparator.track_eccentricity_correlation(e_zero, s_zero)
         assert jnp.allclose(corr_zero, 0.0, atol=1e-4)
+

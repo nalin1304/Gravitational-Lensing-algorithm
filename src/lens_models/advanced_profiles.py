@@ -817,3 +817,4 @@ class CompositeGalaxyProfile(MassProfile):
                 fractions[name] = mass / total_mass
         
         return fractions
+

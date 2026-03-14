@@ -306,3 +306,4 @@ class TestFullAnalysis:
         )
         assert 'critical_curves' in result
         assert result['magnification_map'].shape == (100, 100)
+

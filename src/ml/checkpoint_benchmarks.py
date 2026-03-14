@@ -550,3 +550,4 @@ def fit_sie_like_profile(
 
     assert best_result is not None
     return best_result
+

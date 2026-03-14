@@ -220,13 +220,16 @@ class MultiPlaneLens:
         deflections = []
         
         for i, plane in enumerate(self.planes):
-            # Position at plane i: θ_i = θ₁ − Σ_{j<i} (D_{j,i}/D_i) α_j
+            # Position at plane i: convert reduced → physical, apply weight.
+            # Physical deflection: α̂_j = α_reduced_j × (D_s / D_{js})
+            # Correct recurrence: θ_i = θ₁ − Σ_{j<i} (D_{ji}/D_i) × α̂_j
+            #                          = θ₁ − Σ_{j<i} (D_{ji} D_s)/(D_i D_{js}) × α_reduced_j
             theta_i = theta_1.copy()
             for j in range(i):
                 D_ji = self.cosmology.angular_diameter_distance_z1z2(
                     self.planes[j].redshift, plane.redshift
                 ).value  # Mpc
-                theta_i = theta_i - (D_ji / plane.Dd) * deflections[j]
+                theta_i = theta_i - (D_ji * self.Ds / (plane.Dd * self.planes[j].Dds)) * deflections[j]
             
             # Deflection at this plane
             rel_pos = theta_i - np.array(plane.center)
@@ -238,10 +241,14 @@ class MultiPlaneLens:
             if return_intermediate:
                 positions.append(theta_i.copy())
         
-        # Source position: β = θ₁ − Σ_i (D_{i,s}/D_s) α_i(θ_i)
+        # Source position: β = θ₁ − Σ_i α_reduced_i(θ_i)
+        # deflections[i] already contains the reduced deflection angle
+        # (profile.deflection_angle() embeds Σ_crit ∝ D_s/(D_l D_ls)),
+        # so no additional (D_{is}/D_s) factor is needed.
+        # Ref: Schneider (1992) Eq. 9.3 with α̂ → α via (D_{is}/D_s).
         beta = theta_1.copy()
         for i, plane in enumerate(self.planes):
-            beta = beta - (plane.Dds / self.Ds) * deflections[i]
+            beta = beta - deflections[i]
         
         if return_intermediate:
             # Append source position
@@ -307,8 +314,10 @@ class MultiPlaneLens:
         Notes
         -----
         This routine uses a weak-coupling approximation for the multi-plane
-        convergence by summing per-plane terms:
-            κ_eff = Σᵢ (Dᵢₛ / Dₛ) κᵢ
+        convergence by summing per-plane reduced convergences:
+            κ_eff = Σᵢ κᵢ
+        where κᵢ = Σᵢ / Σ_crit(z_i, z_s) already embeds the distance
+        scaling via Σ_crit.  No extra (Dᵢₛ/Dₛ) factor is applied.
         It does not solve the fully coupled Jacobian recursion.
 
         Ref: Schneider, Ehlers & Falco (1992), Eq. 9.15
@@ -323,9 +332,11 @@ class MultiPlaneLens:
         kappa_total = np.zeros((image_size, image_size))
         
         # Sum contribution from each plane
+        # profile.convergence() returns κ = Σ/Σ_crit where Σ_crit already
+        # encodes D_s/(D_l × D_ls), so no extra (D_{is}/D_s) factor needed.
         for plane in self.planes:
             # Compute weight factor
-            weight = plane.Dds / self.Ds
+            # No extra weight — κ_i is already the reduced convergence.
             
             # Get convergence from this plane
             rel_x = xx - plane.center[0]
@@ -346,8 +357,8 @@ class MultiPlaneLens:
                 alpha = np.stack([alpha_x, alpha_y], axis=-1)
                 kappa_i = self._convergence_from_deflection(alpha, dx)
             
-            # Add weighted contribution
-            kappa_total += weight * kappa_i
+            # Add contribution (no extra weight)
+            kappa_total += kappa_i
         
         return kappa_total
     
@@ -530,11 +541,11 @@ class MultiPlaneLens:
             )
         
         # Potential term: sum over planes
-        # ψ = Σᵢ (D_is/D_s) ψᵢ
+        # ψ_i from profile is already the reduced potential.
         potential = np.zeros((image_size, image_size))
         
         for plane in self.planes:
-            weight = plane.Dds / self.Ds
+            # No extra weight — ψ_i is already the reduced potential.
             
             # Position relative to plane
             rel_pos = theta - np.array(plane.center)
@@ -542,10 +553,10 @@ class MultiPlaneLens:
             # Prefer canonical lensing_potential(x, y) interface.
             if hasattr(plane.profile, 'lensing_potential'):
                 psi_i = plane.profile.lensing_potential(rel_pos[..., 0], rel_pos[..., 1])
-                potential += weight * psi_i
+                potential += psi_i
             elif hasattr(plane.profile, 'potential'):
                 psi_i = plane.profile.potential(rel_pos)
-                potential += weight * psi_i
+                potential += psi_i
             else:
                 warnings.warn(
                     f"Plane at z={plane.redshift} has no potential interface "

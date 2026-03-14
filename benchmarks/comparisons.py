@@ -503,3 +503,4 @@ def print_benchmark_report(results: Dict[str, any]):
     print("\n" + "=" * 80)
     print("END OF REPORT")
     print("=" * 80 + "\n")
+

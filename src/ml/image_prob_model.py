@@ -82,3 +82,4 @@ class ImageProbModel:
         """
         vmapped_ll = jax.vmap(self.log_likelihood_single)
         return vmapped_ll(batch_lens, batch_source)
+

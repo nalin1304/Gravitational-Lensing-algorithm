@@ -12,7 +12,7 @@ Time delay between images i and j:
     Δt_ij = (1 + z_l) × D_Δt / c × [Φ(θ_i) - Φ(θ_j)]
 
 where D_Δt is the time delay distance that depends on H0:
-    D_Δt = D_l × D_s / D_ls
+    D_Δt = (1 + z_l) × D_l × D_s / D_ls
 """
 
 import numpy as np

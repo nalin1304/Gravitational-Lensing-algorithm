@@ -761,3 +761,4 @@ def compare_methods_weak_field(
         'impact_parameter_arcsec': impact_parameter_arcsec,
         'impact_parameter_r_s': impact_parameter_m / schwarzschild_radius(mass_kg)
     }
+

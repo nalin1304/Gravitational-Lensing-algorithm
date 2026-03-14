@@ -296,3 +296,4 @@ def print_comparison_report(comparison: Dict[str, Any]):
     print(f"  More efficient: {comparison['more_efficient']}")
     
     print("=" * 60)
+

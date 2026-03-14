@@ -228,3 +228,4 @@ def get_secure_logger(name: str) -> SecureLogger:
         logger.info("User data: email@lensing-lab.org")
     """
     return SecureLogger(name)
+

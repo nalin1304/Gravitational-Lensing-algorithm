@@ -383,3 +383,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n{Color.RED}Error running configuration check: {e}{Color.RESET}")
         sys.exit(1)
+

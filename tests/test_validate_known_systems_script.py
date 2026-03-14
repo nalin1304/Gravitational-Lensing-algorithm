@@ -30,3 +30,4 @@ def test_validate_known_systems_script_reports_reasonable_raw_radius_error() -> 
     ]
     assert raw_radius_errors, combined_output
     assert max(raw_radius_errors) < 10.0, combined_output
+

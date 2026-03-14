@@ -398,3 +398,4 @@ def fit_lensed_host_observation(
         annular_mask=annular_mask.astype(np.float64),
         psf_kernel=psf_kernel,
     )
+

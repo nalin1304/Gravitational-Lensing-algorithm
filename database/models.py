@@ -363,3 +363,4 @@ def create_tables(engine):
 def drop_tables(engine):
     """Drop all database tables (use with caution!)"""
     Base.metadata.drop_all(bind=engine)
+

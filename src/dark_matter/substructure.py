@@ -351,3 +351,4 @@ if __name__ == "__main__":
     print(f"Mass range: {stats['mass_range'][0]:.2e} - {stats['mass_range'][1]:.2e} Msun")
     
     print("\n[SUCCESS] Substructure module loaded successfully")
+

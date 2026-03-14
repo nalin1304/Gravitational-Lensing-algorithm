@@ -5,7 +5,12 @@ let currentTab = "my";
 
 export function render() {
     return `
-    <div class="tabs">
+    <div class="mb-20">
+      <h2 style="font-size:1.5rem;font-weight:700;margin:0 0 8px 0">Analyses</h2>
+      <p class="section-desc" style="margin:0">Manage your lensing analyses, view jobs, and explore public results.</p>
+    </div>
+
+    <div class="tabs mb-20">
       <button class="tab active" data-tab="my">My Analyses</button>
       <button class="tab" data-tab="public">Public Gallery</button>
       <button class="tab" data-tab="jobs">Jobs</button>
@@ -15,9 +20,9 @@ export function render() {
     <div id="aContent"></div>
 
     <div id="aCreateModal" class="card" style="display:none;margin-top:20px">
-      <div class="card-header">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
         <span class="card-title">Create New Analysis</span>
-        <button id="aCloseModal" class="btn btn-sm btn-secondary">×</button>
+        <button id="aCloseModal" class="btn btn-sm btn-ghost">✕</button>
       </div>
       <div class="form-group">
         <label class="form-label">Name</label>
@@ -25,7 +30,7 @@ export function render() {
       </div>
       <div class="form-group">
         <label class="form-label">Type</label>
-        <select id="aType" class="form-select">
+        <select id="aType" class="form-input">
           <option value="synthetic">Synthetic</option>
           <option value="real_data">Real Data</option>
           <option value="inference">Inference</option>
@@ -34,13 +39,13 @@ export function render() {
       </div>
       <div class="form-group">
         <label class="form-label">Description</label>
-        <textarea id="aDesc" class="form-textarea" placeholder="Optional description"></textarea>
+        <textarea id="aDesc" class="form-input" rows="3" placeholder="Optional description"></textarea>
       </div>
       <div class="form-group">
         <label class="form-label">Config (JSON)</label>
-        <textarea id="aConfig" class="form-textarea">{"grid_size": 64, "profile_type": "NFW"}</textarea>
+        <textarea id="aConfig" class="form-input" rows="4">{"grid_size": 64, "profile_type": "NFW"}</textarea>
       </div>
-      <button id="aSubmit" class="btn btn-primary">Create Analysis</button>
+      <button id="aSubmit" class="btn btn-primary btn-full">Create Analysis</button>
     </div>
   `;
 }
@@ -49,6 +54,7 @@ async function loadTab(tab) {
     const P = L();
     const el = document.getElementById("aContent");
     currentTab = tab;
+    P.showLoading("Loading…");
 
     document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
 
@@ -130,6 +136,7 @@ async function loadTab(tab) {
         `).join("")}</tbody></table>`;
         } catch (e) { el.innerHTML = `<div class="empty-state"><p>${P.esc(e.message)}</p></div>`; }
     }
+    P.hideLoading();
 }
 
 function showCreate() { document.getElementById("aCreateModal").style.display = "block"; }

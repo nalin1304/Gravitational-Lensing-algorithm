@@ -318,3 +318,4 @@ jobs:
         output-file-path: benchmark.json
         github-token: ${{ secrets.GITHUB_TOKEN }}
         auto-push: true
+

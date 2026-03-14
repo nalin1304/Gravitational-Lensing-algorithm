@@ -110,7 +110,7 @@ SLACS_HST_CATALOG: List[LensCatalogEntry] = [
         "name": "SDSS J0737+3216",
         "ra": 114.36854,  "dec": 32.27181,
         "z_lens": 0.3223,  "z_source": 0.5812,
-        "sigma_v": 338.0,  "einstein_radius": 1.03,
+        "sigma_v": 322.0,  "einstein_radius": 1.00,
         "proposal_ids": [10174, 10494],
         "filter": "F814W",
         "ref": "Bolton+2008",
@@ -346,7 +346,7 @@ class MASTDownloader:
         # Add realistic HST-like noise
         seed_digest = hashlib.sha256(entry["name"].encode("utf-8")).digest()
         seed = int.from_bytes(seed_digest[:8], byteorder="big", signed=False) & 0xFFFFFFFF
-        rng = np.random.RandomState(seed)
+        rng = np.random.default_rng(seed)
         read_noise = rng.normal(0, 0.001, kappa.shape)   # Read noise
         sky_bg = rng.poisson(0.5, kappa.shape) * 0.001    # Sky background
         poisson_noise = rng.poisson(np.maximum(kappa * 100, 0)) / 100 - kappa  # Photon noise

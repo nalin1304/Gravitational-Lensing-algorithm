@@ -595,3 +595,4 @@ class TestEdgeCases:
         
         assert result['grid_extent'] == 10.0
         assert np.max(np.abs(result['grid_x'])) >= 9.0
+

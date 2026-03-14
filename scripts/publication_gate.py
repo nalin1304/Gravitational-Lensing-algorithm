@@ -235,7 +235,19 @@ def main() -> int:
         Path("scripts/statistical_rigor_report.py"),
         Path("scripts/validate_known_systems.py"),
     ]
+
+    # Publication artifacts produced by scripts/reproduce.sh
+    required_artifacts = [
+        Path("results/ablation_table.tex"),
+        Path("results/sota_comparison_table.tex"),
+        Path("results/uncertainty_calibration.png"),
+        Path("results/scalability_analysis.png"),
+        Path("results/pareto_front.png"),
+        Path("results/pareto_table.tex"),
+        Path("results/multi_messenger_consistency.png"),
+    ]
     missing_files = _check_files_exist(required_files)
+    missing_artifacts = _check_files_exist(required_artifacts)
 
     checks: list[CheckResult] = []
     checks.append(_run_command("UI smoke", ["python3", "-m", "pytest", "tests/test_next_ui.py", "-q"]))
@@ -272,6 +284,7 @@ def main() -> int:
         "python_version": sys.version,
         "mode": "quick" if args.quick else "full",
         "missing_required_files": missing_files,
+        "missing_required_artifacts": missing_artifacts,
         "openapi": openapi_info,
         "calibration_quality": calibration_quality,
         "uncertainty_quality": uncertainty_quality,
@@ -280,6 +293,7 @@ def main() -> int:
     }
     report["publication_gate_passed"] = (
         not missing_files
+        and not missing_artifacts
         and report["all_checks_passed"]
         and bool(openapi_passed)
         and bool(calibration_quality.get("ok"))
@@ -295,6 +309,8 @@ def main() -> int:
     print(f"OpenAPI endpoints: {openapi_info.get('endpoint_count', 0)}")
     if missing_files:
         print(f"Missing files: {', '.join(missing_files)}")
+    if missing_artifacts:
+        print(f"Missing artifacts (run scripts/reproduce.sh): {', '.join(missing_artifacts)}")
     if openapi_info.get("missing_required_paths"):
         missing = ", ".join(openapi_info["missing_required_paths"])
         print(f"Missing required OpenAPI paths: {missing}")

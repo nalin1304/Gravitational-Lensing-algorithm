@@ -201,3 +201,4 @@ async def run_consistency_gate(req: ConsistencyRequest):
     except Exception as e:
         logger.exception("ConsistencyGate Error")
         raise HTTPException(status_code=500, detail=str(e))
+

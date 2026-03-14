@@ -333,7 +333,7 @@ class JointSurveyLikelihood:
         Returns a JointSurveyLikelihood with two SurveyObservations
         containing injected Einstein-ring signals at different resolutions.
         """
-        rng = np.random.RandomState(seed)
+        rng = np.random.default_rng(seed)
 
         def _ring_image(size, r_e, noise_level=0.02):
             Y, X = np.ogrid[:size, :size]

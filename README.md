@@ -10,7 +10,7 @@
 
 ## Current Verified Scope
 
-This repository currently provides four verified capability classes:
+This repository currently provides five verified capability classes:
 
 1. Physics-based synthetic lens generation from analytic mass profiles under Planck-2018 cosmology defaults.
 2. Known-system validation for canonical lenses such as Q2237+030 and Q0957+561.

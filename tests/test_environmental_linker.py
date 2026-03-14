@@ -35,3 +35,4 @@ def test_environmental_linker_csv(tmp_path):
     # Galaxy 3 (z=2.5) is behind the source (z=2.0), so its Einstein radius should be 0
     theta_e_3 = linker._estimate_einstein_radius(mass_msun=1e14, lens_z=2.5)
     assert theta_e_3 == 0.0
+

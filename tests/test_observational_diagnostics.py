@@ -94,3 +94,4 @@ def test_fit_lensed_host_observation_recovers_synthetic_ring() -> None:
     assert fit_result.metrics["ring_ssim"] > 0.97
     assert fit_result.metrics["ring_correlation"] > 0.90
     assert abs(fit_result.metrics["annular_flux_ratio"] - 1.0) < 0.08
+

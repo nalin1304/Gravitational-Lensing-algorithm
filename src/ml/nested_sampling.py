@@ -59,7 +59,7 @@ class NestedSampler:
     def __init__(self, n_dims: int, n_live: int = 200, seed: int = 42):
         self.n_dims = n_dims
         self.n_live = n_live
-        self.rng = np.random.RandomState(seed)
+        self.rng = np.random.default_rng(seed)
 
     def run(
         self,
@@ -166,7 +166,7 @@ class NestedSampler:
             if not replaced:
                 # Try harder: use MCMC within prior (random walk from existing point)
                 for _ in range(n_replace_attempts):
-                    donor_idx = self.rng.randint(self.n_live)
+                    donor_idx = self.rng.integers(self.n_live)
                     u_new = live_u[donor_idx] + self.rng.normal(0, 0.1, self.n_dims)
                     u_new = np.clip(u_new, 0, 1)
                     theta_new = prior_transform(u_new)
@@ -292,7 +292,7 @@ def model_selection_demo() -> Dict:
     result : dict
         Contains evidence values and Bayes factor.
     """
-    rng = np.random.RandomState(42)
+    rng = np.random.default_rng(42)
 
     # Generate synthetic data from NFW
     n_data = 50

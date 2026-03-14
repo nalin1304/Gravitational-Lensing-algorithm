@@ -591,3 +591,4 @@ def get_system_stats(db: Session) -> dict:
         "running_jobs": running_jobs,
         "completed_jobs": completed_jobs
     }
+

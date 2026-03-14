@@ -557,3 +557,4 @@ if __name__ == "__main__":
     print(f"Checks: finite={checks['finite_errors']}, strong>weak={checks['strong_greater_than_weak']}, "
           f"monotonic={checks['nonincreasing_with_impact_parameter']}")
     print(f"Validation: {'PASSED' if validation['validation_passed'] else 'FAILED'}")
+

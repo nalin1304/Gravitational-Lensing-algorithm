@@ -57,3 +57,4 @@ class TestNeuralODE_JAX:
         
         # Ensuring positions evolved due to velocities
         assert not jnp.allclose(ys[0], ys[-1])
+

@@ -249,16 +249,25 @@ let _ccData = null;
 
 export function render() {
   return `
-    <div class="card" style="border-left:3px solid #00ccff">
-      <h2 style="margin-top:0">NFW Lens Parameters</h2>
-      <p style="color:var(--text-muted);font-size:0.9em;margin-top:-4px">
-        Configure the NFW dark-matter halo lens profile for analysis.
+    <div class="mb-20">
+      <h2 style="font-size:1.5rem;font-weight:700;margin:0 0 8px 0">Lensing Analysis</h2>
+      <p class="section-desc" style="margin:0">
+        Interactive computation of critical curves, caustics, and multiple image positions.
+        <em>Schneider, Ehlers &amp; Falco (1992) §3.13–3.17, §5.3–5.4</em>
       </p>
-      <div class="params-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px">
-        ${inp("lns-Mvir",  "M_vir (M☉)",     DEFAULTS.M_vir,        'step="1e13" min="1e10"')}
+    </div>
+
+    <!-- NFW Lens Parameters -->
+    <div class="card mb-20" style="border-left:3px solid #4cc9f0">
+      <div class="card-header">
+        <span class="card-title">NFW Lens Parameters</span>
+        <span class="card-subtitle">Configure dark-matter halo profile</span>
+      </div>
+      <div class="grid-3 gap-12">
+        ${inp("lns-Mvir",  "M<sub>vir</sub> (M☉)",     DEFAULTS.M_vir,        'step="1e13" min="1e10"')}
         ${inp("lns-conc",  "Concentration c", DEFAULTS.concentration,'step="0.5" min="1"')}
-        ${inp("lns-zlens", "z_lens",          DEFAULTS.z_lens,       'step="0.05" min="0.01"')}
-        ${inp("lns-zsrc",  "z_source",        DEFAULTS.z_source,     'step="0.1" min="0.02"')}
+        ${inp("lns-zlens", "z<sub>lens</sub>",          DEFAULTS.z_lens,       'step="0.05" min="0.01"')}
+        ${inp("lns-zsrc",  "z<sub>source</sub>",        DEFAULTS.z_source,     'step="0.1" min="0.02"')}
         ${inp("lns-grid",  "Grid size",       DEFAULTS.grid_size,    'step="50" min="50" max="500"')}
         ${inp("lns-range", 'Grid range (″)',  DEFAULTS.grid_range,   'step="5" min="1"')}
       </div>
@@ -271,20 +280,34 @@ export function render() {
       <div id="lns-cc-summary"></div>
     </div>
 
-    <div class="grid-2 gap-16" style="margin-top:16px">
-      <div class="card" style="padding:12px"><div id="lns-mag-plot" style="height:440px"></div></div>
-      <div class="card" style="padding:12px"><div id="lns-caustic-plot" style="height:440px"></div></div>
+    <!-- Two-column Visualization -->
+    <div class="grid-2 gap-20 mb-20">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Magnification Map & Critical Curves</span>
+        </div>
+        <div id="lns-mag-plot" style="height:440px"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Caustic Structure (Source Plane)</span>
+        </div>
+        <div id="lns-caustic-plot" style="height:440px"></div>
+      </div>
     </div>
 
-    <div class="card" style="margin-top:16px;border-left:3px solid #ffcc00">
-      <h2 style="margin-top:0">Image Position Solver</h2>
-      <p style="color:var(--text-muted);font-size:0.9em;margin-top:-4px">
+    <!-- Image Position Solver -->
+    <div class="card mb-20" style="border-left:3px solid #f72585">
+      <div class="card-header">
+        <span class="card-title">Image Position Solver</span>
+        <span class="card-subtitle">Grid search + Newton-Raphson refinement</span>
+      </div>
+      <p class="section-desc mb-12">
         Find all multiple images of a background source lensed by the NFW halo above.
-        Uses a two-phase algorithm: coarse grid search followed by Newton-Raphson refinement.
       </p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        ${inp("lns-srcx", 'Source x (″)', DEFAULTS.source_x, 'step="0.5"')}
-        ${inp("lns-srcy", 'Source y (″)', DEFAULTS.source_y, 'step="0.5"')}
+      <div class="grid-2 gap-12">
+        ${inp("lns-srcx", 'Source β<sub>x</sub> (″)', DEFAULTS.source_x, 'step="0.5"')}
+        ${inp("lns-srcy", 'Source β<sub>y</sub> (″)', DEFAULTS.source_y, 'step="0.5"')}
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
         <button id="lns-run-img" class="btn btn-primary">
@@ -294,13 +317,22 @@ export function render() {
       </div>
     </div>
 
-    <div class="card" style="margin-top:16px;padding:12px">
+    <!-- Image Visualization -->
+    <div class="card mb-20">
+      <div class="card-header">
+        <span class="card-title">Image Positions Visualization</span>
+      </div>
       <div id="lns-images-plot" style="height:440px"></div>
     </div>
-    <div class="card" style="margin-top:16px">
-      <h3 style="margin-top:0">Image Catalog</h3>
+
+    <!-- Image Catalog Table -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Image Catalog</span>
+        <span class="card-subtitle">Classification per Schneider (1992) §5.3</span>
+      </div>
       <div id="lns-images-table">
-        <p style="color:var(--text-muted);text-align:center;padding:20px">
+        <p class="section-desc" style="text-align:center;padding:20px">
           Run the solver above to find image positions.
         </p>
       </div>

@@ -73,3 +73,4 @@ def test_solve_sparse_source_fista():
     residual_noise_std = np.std(rec_source[0:5, 0:5])
     assert residual_noise_std < 1.0 # Should suppress noise cleanly below raw 1.0 std
     assert np.max(rec_source) > 50.0 # Point source should survive
+

@@ -37,7 +37,10 @@ with mathematical formulas, algorithmic descriptions, and literature citations f
 24. [Reproducibility Infrastructure](#24-reproducibility-infrastructure)
 25. [API and Web Interface](#25-api-and-web-interface)
 26. [Differentiable Inference Engine](#26-differentiable-inference-engine)
-27. [Complete Reference List](#27-complete-reference-list)
+27. [NUTS-HMC Posterior Sampling](#27-nuts-hmc-posterior-sampling)
+28. [Observational Diagnostics](#28-observational-diagnostics)
+29. [Security and Rate Limiting](#29-security-and-rate-limiting)
+30. [Complete Reference List](#30-complete-reference-list)
 
 ---
 
@@ -1289,7 +1292,102 @@ Computed via `torch.autograd.functional.hessian` for exact second derivatives th
 
 ---
 
-## 27. Complete Reference List
+## 27. NUTS-HMC Posterior Sampling
+
+**Module:** `src/inference/nuts_hmc.py`
+
+### Features
+- No-U-Turn Sampler (NUTS) with dual averaging step-size adaptation
+- Symplectic leapfrog integrator: half-momentum, full-position, half-momentum
+- U-turn criterion checking both forward and backward dot products
+- Fisher information matrix via double autograd Hessian
+- AmortizedRefinement: hybrid PI-SBI → NUTS pipeline
+- Configurable warmup, target acceptance rate, and max tree depth
+
+### Key Formulas
+
+**Leapfrog integrator (symplectic):**
+```
+p_{i+½} = p_i − (ε/2) ∇U(q_i)
+q_{i+1} = q_i + ε M⁻¹ p_{i+½}
+p_{i+1} = p_{i+½} − (ε/2) ∇U(q_{i+1})
+```
+
+**No-U-Turn criterion (Hoffman & Gelman 2014, Algorithm 6):**
+```
+Continue iff (θ⁺ − θ⁻)·r⁺ ≥ 0  AND  (θ⁺ − θ⁻)·r⁻ ≥ 0
+```
+
+**Dual averaging step-size adaptation (Algorithm 5):**
+```
+log ε_m = μ − (√m / γ) × H̄_m
+H̄_m = (1 − 1/(m + t₀)) H̄_{m−1} + (1/(m + t₀))(δ − α_m)
+```
+
+**Fisher information matrix:**
+```
+F_ij = −∂²log p(d|θ)/∂θ_i ∂θ_j |_{θ=θ_MAP}
+```
+Computed via `torch.autograd.functional.hessian` — exact second derivatives.
+
+### References
+- Hoffman & Gelman (2014), JMLR 15, 1593–1623
+- Neal (2011), in *Handbook of Markov Chain Monte Carlo*
+
+---
+
+## 28. Observational Diagnostics
+
+**Module:** `src/validation/observational_diagnostics.py`
+
+### Features
+- Annular HST forward-model fitting with PSF-convolved lensed Sérsic sources
+- Image-space metrics: NRMSE, SSIM, ring correlation, annular flux ratio
+- Quantitative pass/fail thresholds: NRMSE ≤ 0.15, SSIM ≥ 0.70, ring_corr ≥ 0.6
+- Integration with SLACS catalog from `mast_downloader.py`
+- 5/5 validated SLACS systems pass image-space thresholds
+
+### Validation Pipeline
+1. Fix lens model from published SLACS parameters (Bolton et al. 2006)
+2. Fit PSF-convolved lensed Sérsic source model in Einstein-ring annulus
+3. Report image-space metrics with quantitative thresholds
+4. Tag all outputs as `image_space_diagnostic` for provenance
+
+### References
+- Bolton et al. (2006), ApJ 638, 703–724
+- Auger et al. (2009), ApJ 705, 1099
+
+---
+
+## 29. Security and Rate Limiting
+
+**Module:** `api/main.py`, `api/auth_routes.py`, `src/utils/blinding.py`
+
+### Features
+- JWT access/refresh token authentication with configurable expiry
+- Per-endpoint rate limiting via `slowapi` (default: 60 req/min per IP)
+- Brute-force protection: `/auth/login` limited to 5 attempts/minute
+- Email pattern validation via regex before database lookup
+- API key management: create, list, revoke with scoped permissions
+- TDCOSMO-style cryptographic blinding with HMAC-SHA256 verification
+- Blinding HMAC key configurable via `LENSING_BLINDING_HMAC_KEY` environment variable
+- CORS configured with `CORS_ORIGINS` environment variable support
+
+### Blinding Protocol
+```
+offset = HMAC-SHA256(seed_phrase, domain) → [lo, hi]
+H₀_blind = H₀_true + offset        (additive)
+D_Δt_blind = D_Δt_true × (1 + δ)   (multiplicative)
+```
+Unblinding requires the original seed phrase with MAC verification.
+
+### References
+- Suyu et al. (2017), MNRAS 468, 2590 (TDCOSMO blinding)
+- Birrer et al. (2020), A&A 643, A165
+
+---
+
+## 30. Complete Reference List
 
 1. **Bartelmann (1996)** — NFW deflection angles in gravitational lensing. *A&A* 313, 697–702.
 2. **Birrer et al. (2015)** — Gravitational lens modeling with basis sets. *ApJ* 813, 102.
@@ -1335,4 +1433,4 @@ Computed via `torch.autograd.functional.hessian` for exact second derivatives th
 ---
 
 *Document generated for manuscript preparation. All formulas cross-referenced with implementation code.*
-*Last updated: 2026-03-13*
+*Last updated: 2026-03-14*

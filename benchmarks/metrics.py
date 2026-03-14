@@ -377,3 +377,4 @@ def print_metrics_report(metrics: Dict[str, float], title: str = "Metrics Report
         print(f"  {label:30s}: {metrics[key]:12.6e}")
     
     print("=" * 60)
+

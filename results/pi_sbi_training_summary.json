@@ -1,0 +1,41 @@
+{
+  "n_sims": 2000,
+  "epochs": 50,
+  "batch_size": 128,
+  "grid_size": 64,
+  "n_omega": 32,
+  "lr": 0.0003,
+  "physics_weight": 0.1,
+  "seed": 42,
+  "device": "cpu",
+  "wall_time_s": 253.79213687500004,
+  "final_nll": -15.510239481925964,
+  "final_l_poisson": 6.672264554197227e-07,
+  "final_loss": -15.510239481925964,
+  "theta_mean": [
+    12.4555950947428,
+    0.48791832170623367,
+    0.27510838097002904,
+    1.3199126408238862,
+    -0.0024563881343642293,
+    0.0010667704856713986
+  ],
+  "theta_std": [
+    0.3199280196707904,
+    0.5782623137480288,
+    0.12588058477145692,
+    0.4959585538321745,
+    0.12259315911508836,
+    0.12286727162057727
+  ],
+  "evaluation_mode": "slacs_calibrated_prior_synthetic_training",
+  "real_data": "slacs_9_hst_fits_validation",
+  "param_names": [
+    "log10_M_vir",
+    "log10_r_s",
+    "z_l",
+    "z_s",
+    "beta_x",
+    "beta_y"
+  ]
+}

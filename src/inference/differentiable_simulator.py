@@ -425,3 +425,4 @@ class DifferentiableLensSimulator(nn.Module):
         chi2 = torch.sum(residual**2) / (noise_std**2)
         log_norm = -0.5 * n_pix * math.log(2.0 * math.pi * noise_std**2)
         return log_norm - 0.5 * chi2
+

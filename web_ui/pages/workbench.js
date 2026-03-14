@@ -13,19 +13,24 @@ let _modelStatus = null;
 
 export function render() {
   const chipHtml = Object.entries(presets).map(([k, p]) =>
-    `<button class="chip preset-chip" data-preset="${k}">${p.label}</button>`
+    `<button class="preset-chip" data-preset="${k}">${p.label}</button>`
   ).join("");
 
   return `
-    <div class="workbench-layout">
+    <div class="workbench-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <!-- LEFT PANEL: CONTROLS -->
       <div class="workbench-controls">
+        <!-- Presets -->
         <div class="card mb-16">
-          <div class="card-header"><span class="card-title">Presets</span></div>
-          <div class="chip-group">${chipHtml}</div>
+          <div class="card-header"><span class="card-title">Quick Presets</span></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 16px">${chipHtml}</div>
         </div>
 
+        <!-- Mass Profile Parameters -->
         <div class="card mb-16">
-          <div class="card-header"><span class="card-title">Parameters</span></div>
+          <div class="card-header">
+            <span style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#22d3ee;font-weight:600">Mass Profile</span>
+          </div>
           <div class="form-group">
             <label class="form-label">Profile Type</label>
             <select id="wProfile" class="form-select">
@@ -34,43 +39,75 @@ export function render() {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Virial Mass (M☉)</label>
-            <input id="wMass" class="form-input" type="number" value="1600000000000" step="1e11" />
+            <label class="form-label">Virial Mass M<sub>vir</sub> (M☉)</label>
+            <input id="wMass" class="form-input" type="number" value="1600000000000" step="1e11" min="1e11" max="1e14" />
           </div>
           <div class="form-group">
-            <label class="form-label">Scale Radius (kpc)</label>
+            <label class="form-label">Scale Radius r<sub>s</sub> (kpc)</label>
             <input id="wRadius" class="form-input" type="number" value="160" step="10" />
           </div>
           <div class="form-group">
-            <label class="form-label">Ellipticity</label>
+            <label class="form-label">Ellipticity ε</label>
             <input id="wEllip" class="form-input" type="number" value="0.22" min="0" max="0.5" step="0.05" />
           </div>
+        </div>
+
+        <!-- Cosmology -->
+        <div class="card mb-16">
+          <div class="card-header">
+            <span style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#22d3ee;font-weight:600">Cosmology</span>
+          </div>
           <div class="form-group">
-            <label class="form-label">Grid Size</label>
+            <label class="form-label">Lens Redshift z<sub>l</sub></label>
+            <input id="wZl" class="form-input" type="number" value="0.5" step="0.1" min="0.01" max="2" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Source Redshift z<sub>s</sub></label>
+            <input id="wZs" class="form-input" type="number" value="2.0" step="0.1" min="0.1" max="5" />
+          </div>
+          <div style="padding:8px 16px;font-size:11px;color:#94a3b8;border-top:1px solid #1e293b">
+            H₀ = 67.4 km/s/Mpc, Ω<sub>m</sub> = 0.315 — Planck 2018 (arXiv:1807.06209)
+          </div>
+        </div>
+
+        <!-- Grid Settings -->
+        <div class="card mb-16">
+          <div class="card-header">
+            <span style="font-size:12px;text-transform:uppercase;letter-spacing:0.05em;color:#22d3ee;font-weight:600">Grid</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Resolution</label>
             <select id="wGrid" class="form-select">
               <option value="32">32×32</option>
               <option value="64" selected>64×64</option>
               <option value="128">128×128</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label">Field of View (arcsec)</label>
+            <input id="wFov" class="form-input" type="number" value="4.0" step="0.5" min="1" max="10" />
+          </div>
         </div>
 
+        <!-- Action Buttons -->
         <div class="card">
-          <button id="wGenerate" class="btn btn-primary" style="width:100%;margin-bottom:8px">Generate Map</button>
-          <button id="wInfer" class="btn btn-secondary" style="width:100%;margin-bottom:8px" disabled>Run PINN Inference</button>
-          <button id="wExport" class="btn btn-secondary" style="width:100%">Export JSON</button>
+          <button id="wGenerate" class="btn btn-primary btn-full" style="margin-bottom:8px">Generate Map</button>
+          <button id="wInfer" class="btn btn-ghost btn-full" disabled>Run PINN Inference</button>
         </div>
       </div>
 
-      <div>
-        <div class="grid-4 mb-16">
+      <!-- RIGHT PANEL: VISUALIZATION -->
+      <div class="workbench-viz">
+        <!-- Stats Row -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
           <div class="stat-card"><div class="stat-label">Min κ</div><div class="stat-value" id="wMin">—</div></div>
           <div class="stat-card"><div class="stat-label">Mean κ</div><div class="stat-value" id="wMean">—</div></div>
           <div class="stat-card"><div class="stat-label">Max κ</div><div class="stat-value" id="wMax">—</div></div>
           <div class="stat-card"><div class="stat-label">Std κ</div><div class="stat-value" id="wStd">—</div></div>
         </div>
 
-        <div class="grid-2 mb-16">
+        <!-- Plots: 2×2 grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
           <div class="card">
             <div class="card-header"><span class="card-title">Convergence Map</span></div>
             <div id="wMapPlot" class="plot-container"></div>
@@ -86,32 +123,40 @@ export function render() {
           <div id="wDeflPlot" class="plot-container"></div>
         </div>
 
-        <div class="grid-2">
+        <!-- Inference + Pipeline Trace -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="card">
             <div class="card-header"><span class="card-title">Inference Results</span></div>
-            <pre id="wInfOutput">Generate a map and run inference to see results.</pre>
+            <pre id="wInfOutput" style="max-height:200px;overflow-y:auto">Generate a map and run inference to see results.</pre>
           </div>
           <div class="card">
             <div class="card-header"><span class="card-title">Pipeline Trace</span></div>
-            <pre id="wMethodsOutput">Select a preset and generate a convergence map.</pre>
+            <pre id="wMethodsOutput" style="max-height:200px;overflow-y:auto">Select a preset and generate a convergence map.</pre>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="card" style="margin-top:20px">
-          <div class="card-header">
-            <span class="card-title">Batch Job Submission</span>
-            <span class="card-subtitle" style="margin:0">Submit multiple job IDs for batch aggregation · <code>POST /api/v1/batch</code></span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Job IDs (comma-separated)</label>
-            <input id="wBatchIds" class="form-input" placeholder="job-uuid-1, job-uuid-2, ..." />
-          </div>
-          <div style="display:flex;gap:8px">
-            <button id="wBatchSubmit" class="btn btn-primary">Submit Batch</button>
-            <button id="wBatchStatus" class="btn btn-secondary">Poll Status</button>
-          </div>
-          <pre id="wBatchOutput" style="margin-top:12px">No batch job submitted yet.</pre>
+    <!-- BOTTOM: Full-width sections -->
+    <div style="margin-top:24px">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Batch Job Submission</span>
+          <span class="card-subtitle" style="margin:0">Submit multiple job IDs for batch aggregation · <code>POST /api/v1/batch</code></span>
         </div>
+        <div class="form-group">
+          <label class="form-label">Job IDs (comma-separated)</label>
+          <input id="wBatchIds" class="form-input" placeholder="job-uuid-1, job-uuid-2, ..." />
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button id="wBatchSubmit" class="btn btn-primary">Submit Batch</button>
+          <button id="wBatchStatus" class="btn btn-secondary">Poll Status</button>
+        </div>
+        <pre id="wBatchOutput" style="max-height:150px;overflow-y:auto">No batch job submitted yet.</pre>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <button id="wExport" class="btn btn-secondary btn-full">Export Run Package (JSON)</button>
       </div>
     </div>
   `;
@@ -124,6 +169,10 @@ function applyPreset(key) {
   document.getElementById("wRadius").value = p.scale_radius;
   document.getElementById("wEllip").value = p.ellipticity;
   document.getElementById("wGrid").value = p.grid_size;
+  // Optional fields with defaults
+  if (document.getElementById("wZl")) document.getElementById("wZl").value = p.z_lens || 0.5;
+  if (document.getElementById("wZs")) document.getElementById("wZs").value = p.z_source || 2.0;
+  if (document.getElementById("wFov")) document.getElementById("wFov").value = p.fov_arcsec || 4.0;
   document.querySelectorAll(".preset-chip").forEach(c => c.classList.toggle("active", c.dataset.preset === key));
 }
 
@@ -134,6 +183,9 @@ function readPayload() {
     scale_radius: Number(document.getElementById("wRadius").value),
     ellipticity: Number(document.getElementById("wEllip").value),
     grid_size: Number(document.getElementById("wGrid").value),
+    z_lens: Number(document.getElementById("wZl")?.value || 0.5),
+    z_source: Number(document.getElementById("wZs")?.value || 2.0),
+    fov_arcsec: Number(document.getElementById("wFov")?.value || 4.0),
   };
 }
 
@@ -157,19 +209,33 @@ function radialProfile(mat) {
   return { r: radii, kappa: radii.map(r => bins[r].reduce((a, b) => a + b) / bins[r].length) };
 }
 
-function renderPlots(mat) {
+function renderPlots(mat, coords) {
   const P = L();
-  const plotBg = "#111827", plotFont = { color: "#94a3b8", family: "Inter" };
-  const layout = (t) => ({ title: { text: t, font: { size: 13, color: "#f1f5f9" } }, paper_bgcolor: plotBg, plot_bgcolor: plotBg, font: plotFont, margin: { l: 50, r: 20, t: 36, b: 40 } });
+  const plotBg = "#0c0d14", plotFont = { color: "#8b8fa8", family: "JetBrains Mono, monospace" };
+  const layout = (t) => ({ title: { text: t, font: { size: 13, color: "#f0f1ff" } }, paper_bgcolor: plotBg, plot_bgcolor: "#050508", font: plotFont, margin: { l: 50, r: 20, t: 36, b: 40 } });
+
+  // Arcsec axis arrays from coordinates (if available)
+  const xArr = coords?.X?.[0] ?? null;
+  const yArr = coords?.Y ? coords.Y.map(row => row[0]) : null;
+  const hasArcsec = Boolean(xArr && yArr);
 
   // Heatmap
   if (typeof Plotly !== "undefined") {
-    Plotly.newPlot("wMapPlot", [{ z: mat, type: "heatmap", colorscale: "Viridis", showscale: true }], layout("κ(x, y)"), { responsive: true });
+    const heatData = { z: mat, type: "heatmap", colorscale: "Viridis", showscale: true,
+      colorbar: { title: { text: "κ", side: "right" } } };
+    if (hasArcsec) { heatData.x = xArr; heatData.y = yArr; }
+    const heatLayout = { ...layout("Convergence κ(θ)"),
+      xaxis: { title: hasArcsec ? "θ₁ (arcsec)" : "x (pixels)" },
+      yaxis: { title: hasArcsec ? "θ₂ (arcsec)" : "y (pixels)", scaleanchor: "x" } };
+    Plotly.newPlot("wMapPlot", [heatData], heatLayout, { responsive: true });
 
     // Radial
     const rp = radialProfile(mat);
-    Plotly.newPlot("wRadialPlot", [{ x: rp.r, y: rp.kappa, type: "scatter", mode: "lines", line: { color: "#38bdf8", width: 2 } }],
-      { ...layout("κ(r)"), xaxis: { title: "r (pixels)" }, yaxis: { title: "κ" } }, { responsive: true });
+    const pixScale = hasArcsec ? (xArr[xArr.length - 1] - xArr[0]) / mat.length : 1;
+    const rLabel = hasArcsec ? "r (arcsec)" : "r (pixels)";
+    const rValues = hasArcsec ? rp.r.map(r => r * pixScale) : rp.r;
+    Plotly.newPlot("wRadialPlot", [{ x: rValues, y: rp.kappa, type: "scatter", mode: "lines", line: { color: "#38bdf8", width: 2 } }],
+      { ...layout("Radial Profile κ(r)"), xaxis: { title: rLabel }, yaxis: { title: "κ" } }, { responsive: true });
 
     // Deflection
     const n = mat.length;
@@ -177,15 +243,22 @@ function renderPlots(mat) {
     for (let i = 2; i < n - 2; i += 4) for (let j = 2; j < n - 2; j += 4) {
       const gx = (mat[i]?.[j + 1] ?? 0) - (mat[i]?.[j - 1] ?? 0);
       const gy = (mat[i + 1]?.[j] ?? 0) - (mat[i - 1]?.[j] ?? 0);
-      xp.push(j); yp.push(i); dx.push(gx); dy.push(gy);
+      const px = hasArcsec ? xArr[j] : j;
+      const py = hasArcsec ? yArr[i] : i;
+      xp.push(px); yp.push(py); dx.push(gx); dy.push(gy);
     }
     const maxd = Math.max(...dx.map(Math.abs), ...dy.map(Math.abs), 1e-10);
-    const scale = 3 / maxd;
+    const deflScale = 3 / maxd * (hasArcsec ? pixScale : 1);
+    const xRange = hasArcsec ? [xArr[0], xArr[xArr.length - 1]] : [0, n];
+    const yRange = hasArcsec ? [yArr[0], yArr[yArr.length - 1]] : [0, n];
     Plotly.newPlot("wDeflPlot", [{
-      type: "scatter", mode: "lines", x: xp.flatMap((x, i) => [x, x + dx[i] * scale, null]),
-      y: yp.flatMap((y, i) => [y, y + dy[i] * scale, null]),
+      type: "scatter", mode: "lines", x: xp.flatMap((x, i) => [x, x + dx[i] * deflScale, null]),
+      y: yp.flatMap((y, i) => [y, y + dy[i] * deflScale, null]),
       line: { color: "#a78bfa", width: 1 }
-    }], { ...layout("Deflection α(θ)"), xaxis: { range: [0, n] }, yaxis: { range: [0, n], scaleanchor: "x" } }, { responsive: true });
+    }], { ...layout("Deflection α(θ)"),
+      xaxis: { range: xRange, title: hasArcsec ? "θ₁ (arcsec)" : "x (pixels)" },
+      yaxis: { range: yRange, scaleanchor: "x", title: hasArcsec ? "θ₂ (arcsec)" : "y (pixels)" }
+    }, { responsive: true });
   }
 }
 
@@ -239,7 +312,7 @@ export function init() {
       document.getElementById("wMean").textContent = P.fmtSci(s.mean);
       document.getElementById("wMax").textContent = P.fmtSci(s.max);
       document.getElementById("wStd").textContent = P.fmtSci(s.std);
-      renderPlots(_synResp.convergence_map);
+      renderPlots(_synResp.convergence_map, _synResp.coordinates);
       document.getElementById("wMethodsOutput").textContent = JSON.stringify({ request: _synReq, metadata: _synResp.metadata }, null, 2);
       // Store for rigor SBI consumption
       if (_synResp.convergence_map) {

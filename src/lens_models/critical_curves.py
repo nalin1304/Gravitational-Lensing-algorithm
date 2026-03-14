@@ -606,3 +606,4 @@ def _classify_image(
         'det_A': det_A,
         'tr_A': tr_A,
     }
+

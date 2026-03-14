@@ -69,3 +69,4 @@ module = [
   "src.validation.scientific_validator",
 ]
 ignore_errors = true
+

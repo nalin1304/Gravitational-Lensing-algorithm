@@ -77,3 +77,4 @@ class MuGlanceValidator:
         residual_field = jnp.sum(weights * anomalies[None, :], axis=1) / weight_sum
 
         return residual_field.reshape((grid_size, grid_size))
+

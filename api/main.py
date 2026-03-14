@@ -12,7 +12,7 @@ Author: Computational Imaging Research Group
 Date: 2025
 """
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Depends
+from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -107,8 +107,11 @@ NEXT_UI_DIR = PROJECT_ROOT / "web_ui"
 if NEXT_UI_DIR.exists():
     app.mount("/ui-static", StaticFiles(directory=str(NEXT_UI_DIR)), name="ui-static")
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Initialize rate limiter with default 60/minute for all endpoints
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["60/minute"],
+)
 app.state.limiter = limiter
 
 
@@ -243,6 +246,7 @@ class InferenceRequest(BaseModel):
     convergence_map: List[List[float]] = Field(..., description="2D convergence map")
     target_size: int = Field(64, description="Target size for model input")
     mc_samples: int = Field(1, ge=1, le=1000, description="Number of MC Dropout samples")
+    seed: int = Field(42, ge=0, description="RNG seed for reproducible MC-Dropout")
 
     @field_validator("convergence_map")
     @classmethod
@@ -530,9 +534,24 @@ def load_model_cached():
 # API Endpoints
 # ============================================================================
 
-@app.get("/", response_model=Dict[str, str])
+@app.get("/", include_in_schema=False)
 async def root():
-    """Root endpoint with API information"""
+    """Serve landing page at root."""
+    landing_path = NEXT_UI_DIR / "landing.html"
+    if landing_path.exists():
+        return FileResponse(landing_path, media_type="text/html")
+    return {
+        "message": "Gravitational Lensing API",
+        "version": "2.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "web_ui": "/ui",
+    }
+
+
+@app.get("/api", response_model=Dict[str, str])
+async def api_info():
+    """API information endpoint (JSON)."""
     return {
         "message": "Gravitational Lensing API",
         "version": "2.0.0",
@@ -584,7 +603,7 @@ async def health_check():
 
 
 @app.post("/api/v1/synthetic", response_model=SyntheticResponse)
-async def generate_synthetic(
+def generate_synthetic(
     request: SyntheticRequest,
     current_user: Optional[Any] = None
 ):
@@ -671,7 +690,7 @@ async def generate_synthetic(
 
 
 @app.post("/api/v1/inference", response_model=InferenceResponse)
-async def run_inference(
+def run_inference(
     request: InferenceRequest,
     current_user: Optional[Any] = None
 ):
@@ -736,6 +755,10 @@ async def run_inference(
             predictions = np.array(params_jax[0])          # (5,) — M_vir,r_s,beta_x,beta_y,H0
             class_probs = np.array(jax.nn.softmax(class_logits_jax[0], axis=-1))
 
+            # Physical parameter bounds clipping (post-inference)
+            predictions[0] = np.clip(predictions[0], 1e9, 1e14)   # M_vir [M☉]
+            predictions[1] = np.clip(predictions[1], 0.1, 500.0)  # r_s [arcsec]
+
             response = InferenceResponse(
                 job_id=job_id,
                 predictions={
@@ -760,7 +783,7 @@ async def run_inference(
             # and report zero uncertainty with a warning in the response.
             all_predictions = []
             all_class_probs = []
-            rng = jax.random.PRNGKey(0)
+            rng = jax.random.PRNGKey(request.seed if hasattr(request, 'seed') else 42)
             for i in range(request.mc_samples):
                 rng, subkey = jax.random.split(rng)
                 p_jax, c_jax = jax.vmap(model)(input_jax[None])
@@ -771,6 +794,10 @@ async def run_inference(
             mean_predictions = predictions_array.mean(axis=0)
             std_predictions = predictions_array.std(axis=0)
             mean_classification = np.array(all_class_probs).mean(axis=0)
+
+            # Physical parameter bounds clipping (post-inference)
+            mean_predictions[0] = np.clip(mean_predictions[0], 1e9, 1e14)   # M_vir [M☉]
+            mean_predictions[1] = np.clip(mean_predictions[1], 0.1, 500.0)  # r_s [arcsec]
 
             response = InferenceResponse(
                 job_id=job_id,
@@ -836,7 +863,7 @@ class PISBISimulateRequest(BaseModel):
 
 
 @app.post("/api/v1/pi-sbi/simulate", tags=["PI-SBI"])
-async def pi_sbi_simulate(req: PISBISimulateRequest):
+def pi_sbi_simulate(req: PISBISimulateRequest):
     """
     Simulate one multi-messenger observation (κ map + GW spectrum) for given lens parameters.
     Uses real NFW convergence formula (Wright & Brainerd 2000) and
@@ -874,7 +901,7 @@ class PISBIPosteriorRequest(BaseModel):
 
 
 @app.post("/api/v1/pi-sbi/posterior", tags=["PI-SBI"])
-async def pi_sbi_posterior(req: PISBIPosteriorRequest):
+def pi_sbi_posterior(req: PISBIPosteriorRequest):
     """
     Run PI-SBI amortized posterior estimation on an EM+GW observation.
     Requires trained checkpoint models/pi_sbi_joint.pt.
@@ -1223,7 +1250,7 @@ async def survey_finder_status():
 
 
 @app.post("/api/v1/survey/finder")
-async def survey_finder(req: FinderRequest):
+def survey_finder(req: FinderRequest):
     """LenNet-style automated lens discovery on synthetic or uploaded field."""
     if req.mode != "synthetic":
         raise HTTPException(
@@ -1272,7 +1299,7 @@ class EPSFRequest(BaseModel):
 
 
 @app.post("/api/v1/survey/epsf")
-async def survey_epsf(req: EPSFRequest):
+def survey_epsf(req: EPSFRequest):
     """Evaluate the spatially-varying ePSF kernel at a given detector position."""
     import base64
     import io
@@ -1341,7 +1368,7 @@ def _estimate_fwhm(kernel: np.ndarray) -> float:
 
 
 @app.get("/api/v1/survey/epsf/fov")
-async def survey_epsf_fov(zernike_index: int = 4):
+def survey_epsf_fov(zernike_index: int = 4):
     """Compute the Zernike FOV variation map across the detector."""
     if not (4 <= zernike_index <= 22):
         raise HTTPException(status_code=422, detail="zernike_index must be 4–22")
@@ -1453,7 +1480,7 @@ class CovarianceRequest(BaseModel):
 
 
 @app.post("/api/v1/survey/covariance")
-async def survey_covariance(req: CovarianceRequest):
+def survey_covariance(req: CovarianceRequest):
     """Compute drizzle pixel covariance matrix and run Cholesky whitening diagnostic."""
     try:
         from src.data.pixel_covariance import (
@@ -1497,7 +1524,7 @@ class JointSurveyRequest(BaseModel):
 
 
 @app.post("/api/v1/survey/joint")
-async def survey_joint(req: JointSurveyRequest):
+def survey_joint(req: JointSurveyRequest):
     """Run joint multi-survey deblending on synthetic Rubin+Roman-like data."""
     try:
         from src.ml.joint_survey import JointSurveyLikelihood
@@ -1599,7 +1626,7 @@ class NUTSFisherRequest(BaseModel):
 
 
 @app.post("/api/v1/nuts/simulate", tags=["NUTS-HMC"])
-async def nuts_simulate(req: NUTSSimulateRequest):
+def nuts_simulate(req: NUTSSimulateRequest):
     """Run differentiable forward model for NFW lensing simulation."""
     if not NUTS_AVAILABLE:
         raise HTTPException(status_code=503, detail="NUTS-HMC engine not available")
@@ -1629,7 +1656,7 @@ async def nuts_simulate(req: NUTSSimulateRequest):
 
 
 @app.post("/api/v1/nuts/posterior", tags=["NUTS-HMC"])
-async def nuts_posterior(req: NUTSPosteriorRequest):
+def nuts_posterior(req: NUTSPosteriorRequest):
     """Run NUTS-HMC posterior sampling for NFW lens parameters."""
     if not NUTS_AVAILABLE:
         raise HTTPException(status_code=503, detail="NUTS-HMC engine not available")
@@ -1683,7 +1710,7 @@ async def nuts_posterior(req: NUTSPosteriorRequest):
 
 
 @app.post("/api/v1/nuts/fisher", tags=["NUTS-HMC"])
-async def nuts_fisher(req: NUTSFisherRequest):
+def nuts_fisher(req: NUTSFisherRequest):
     """Compute Fisher information matrix at given NFW parameters."""
     if not NUTS_AVAILABLE:
         raise HTTPException(status_code=503, detail="NUTS-HMC engine not available")
@@ -1749,7 +1776,7 @@ class ImageSolverRequest(LensingAnalysisRequest):
 
 
 @app.post("/api/v1/lensing/critical-curves", tags=["lensing-analysis"])
-async def compute_critical_curves(req: LensingAnalysisRequest):
+def compute_critical_curves(req: LensingAnalysisRequest):
     """Compute critical curves and caustics for an NFW lens profile."""
     try:
         from src.lens_models import LensSystem, NFWProfile
@@ -1788,7 +1815,7 @@ async def compute_critical_curves(req: LensingAnalysisRequest):
 
 
 @app.post("/api/v1/lensing/solve-images", tags=["lensing-analysis"])
-async def solve_image_positions(req: ImageSolverRequest):
+def solve_image_positions(req: ImageSolverRequest):
     """Find multiple image positions for a source behind an NFW lens."""
     try:
         from src.lens_models import LensSystem, NFWProfile

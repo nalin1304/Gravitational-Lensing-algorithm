@@ -162,7 +162,7 @@ class WavefrontErrorModel:
     ):
         self.detector_shape = detector_shape
         self.poly_order = polynomials_order
-        rng = np.random.RandomState(seed)
+        rng = np.random.default_rng(seed)
 
         # Each Zernike coefficient is a low-order polynomial over FOV
         n_coeffs = (polynomials_order + 1) ** 2

@@ -197,3 +197,4 @@ async def get_optional_user(
         return payload.get("sub")
     except HTTPException:
         return None
+

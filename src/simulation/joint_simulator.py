@@ -70,7 +70,7 @@ SLACS_REAL_CATALOG = [
     {"name": "SDSS J1402+6321", "z_l": 0.205,  "z_s": 0.481,  "sigma_v": 267.0, "theta_E": 1.35},
     {"name": "SDSS J0252+0039", "z_l": 0.280,  "z_s": 0.982,  "sigma_v": 164.0, "theta_E": 1.04},
     {"name": "SDSS J0037-0942", "z_l": 0.195,  "z_s": 0.632,  "sigma_v": 279.0, "theta_E": 1.53},
-    {"name": "SDSS J0737+3216", "z_l": 0.3223, "z_s": 0.5812, "sigma_v": 338.0, "theta_E": 1.03},
+    {"name": "SDSS J0737+3216", "z_l": 0.3223, "z_s": 0.5812, "sigma_v": 322.0, "theta_E": 1.00},
     {"name": "SDSS J1205+4910", "z_l": 0.2150, "z_s": 0.4808, "sigma_v": 281.0, "theta_E": 1.22},
     {"name": "SDSS J1630+4520", "z_l": 0.2479, "z_s": 0.7933, "sigma_v": 279.0, "theta_E": 1.81},
     {"name": "SDSS J2321-0939", "z_l": 0.0819, "z_s": 0.5324, "sigma_v": 245.0, "theta_E": 1.57},

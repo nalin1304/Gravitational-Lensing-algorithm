@@ -281,3 +281,4 @@ if __name__ == "__main__":
     print("=" * 60)
     print("\nThis implementation uses astropy.units to prevent dimensional")
     print("analysis bugs. All calculations are unit-checked at runtime.")
+

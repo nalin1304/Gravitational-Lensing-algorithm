@@ -395,3 +395,4 @@ class TestLensingLogPosterior:
         lp = log_post()
         lp.backward()
         assert nfw_simulator.profile.log10_M_vir.grad is not None
+

@@ -49,3 +49,4 @@ analysis:
   uncertainty_quantification: true
   compute_time_delay: true  # Enables time delay cosmography
   model_comparison: true
+

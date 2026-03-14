@@ -66,3 +66,4 @@ class TestMuGlanceValidator_JAX:
         assert jnp.isfinite(res_map).all()
         # Confirm absolute stability bounds derived from pure interpolation logic
         assert jnp.max(jnp.abs(res_map)) <= 1.0
+

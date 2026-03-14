@@ -95,6 +95,10 @@ results/figures/
 *.safetensors
 models/checkpoints/
 !models/.gitkeep
+# Trained research checkpoints (required for inference)
+!models/pinn_best.eqx
+!models/lens_finder.pt
+!models/pi_sbi_joint.pt
 
 # Docker
 docker-compose.override.yml

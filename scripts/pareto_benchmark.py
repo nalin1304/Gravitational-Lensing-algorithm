@@ -223,7 +223,7 @@ def run_pareto_sweep(
                     eval_mode = (
                         "analytic_nfw"
                         if mode_name == "Physics-Only"
-                        else "checkpoint_inference"
+                        else "checkpoint_gated"
                     )
                     result = {
                         "mode": mode_name,

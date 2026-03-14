@@ -82,3 +82,4 @@ def test_npe_sampling():
     
     assert samples.shape == (500, param_dim)
     assert not jnp.any(jnp.isnan(samples))
+

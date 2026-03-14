@@ -37,3 +37,4 @@ def test_ui_page_modules_served() -> None:
         response = client.get(f"/ui-static/pages/{page}.js")
         assert response.status_code == 200, f"Page module {page}.js not served"
         assert "export function render" in response.text, f"{page}.js missing render()"
+

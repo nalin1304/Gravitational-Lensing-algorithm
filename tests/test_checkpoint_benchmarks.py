@@ -102,3 +102,4 @@ def test_checkpoint_calibration_produces_non_negative_prediction() -> None:
     assert prediction.shape == test_map.shape
     assert np.all(np.isfinite(prediction))
     assert np.all(prediction >= 0.0)
+

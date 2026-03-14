@@ -52,7 +52,7 @@ async function api(path, { method = "GET", body = null, auth = true } = {}) {
       }
       // After failed refresh attempt, clear auth to prevent infinite loop
       clearAuth();
-      location.hash = '#login';
+      location.hash = '#/account';
     }
     const err = await resp.json().catch(() => ({ detail: resp.statusText }));
     throw new Error(err.detail || err.error || resp.statusText);
@@ -117,7 +117,7 @@ async function checkHealth() {
 
 const routes = {};
 let currentPage = null;
-const ASSET_VERSION = "2026-03-13-lensing-fix";
+const ASSET_VERSION = "2026-03-14-redesign";
 
 function registerPage(name, mod) { routes[name] = mod; }
 
@@ -154,12 +154,19 @@ async function navigate() {
   const subEl = document.getElementById("pageSubtitle");
   if (subEl) subEl.textContent = subtitles[pageName] || "";
 
+  // Cleanup previous page (e.g. purge Plotly plots)
+  if (currentPage && routes[currentPage]?.cleanup) {
+    try { routes[currentPage].cleanup(); } catch (_) {}
+  }
+
   const app = document.getElementById("app");
   const mod = routes[pageName];
-  if (!mod) { app.innerHTML = `<div class="empty-state"><p>Page not found</p></div>`; return; }
+  if (!mod) { app.innerHTML = `<div class="empty-state"><p>Page not found</p></div>`; currentPage = null; return; }
 
   currentPage = pageName;
+  app.style.opacity = "0";
   app.innerHTML = mod.render();
+  requestAnimationFrame(() => { app.style.opacity = "1"; });
   if (mod.init) {
     try { await mod.init(); } catch (e) { console.error(`[${pageName}] init error:`, e); }
   }

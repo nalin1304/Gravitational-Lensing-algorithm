@@ -15,6 +15,13 @@ try:
     import torch.nn.functional as F
     _TORCH_AVAILABLE = True
 except ImportError:
+    import warnings as _w
+    _w.warn(
+        "PyTorch not available — pinn_advanced.py models cannot be instantiated. "
+        "Install torch to enable advanced PINN architectures.",
+        ImportWarning,
+        stacklevel=2,
+    )
     torch = None  # type: ignore[assignment]
     F = None      # type: ignore[assignment]
     _TORCH_AVAILABLE = False

@@ -663,3 +663,4 @@ def plot_wave_vs_geometric(
         print(f"Saved comparison plot to {save_path}")
     
     return fig
+

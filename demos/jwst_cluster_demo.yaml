@@ -61,3 +61,4 @@ analysis:
   detect_substructure: true  # 🔑 Enable PINN substructure detection
   model_comparison: true
   output_convergence_map: true
+

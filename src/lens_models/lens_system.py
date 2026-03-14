@@ -236,3 +236,4 @@ class LensSystem:
         """String representation of the lens system."""
         return (f"LensSystem(z_lens={self.z_l:.3f}, z_source={self.z_s:.3f}, "
                 f"H0={self.cosmology.H0.value:.1f})")
+

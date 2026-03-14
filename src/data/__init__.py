@@ -24,3 +24,4 @@ __all__ = [
     'ASTROPY_AVAILABLE',
     'SCIPY_AVAILABLE',
 ]
+

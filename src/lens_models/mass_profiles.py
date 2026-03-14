@@ -1432,3 +1432,4 @@ class DarkMatterFactory:
             'M_expected': M_expected,
             'r_max': r_max
         }
+

@@ -508,3 +508,4 @@ async def get_stats(
     """
     stats = get_user_stats(db, current_user.id)
     return stats
+

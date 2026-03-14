@@ -407,3 +407,4 @@ if __name__ == '__main__':
     
     logger.info(f"Losses extracted: {losses['mse_params']}")
     logger.info("✅ CNN Inference JAX Test Passed!")
+

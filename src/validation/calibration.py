@@ -576,3 +576,4 @@ def run_full_calibration_suite() -> SyntheticDataCalibrator:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     calibrator = run_full_calibration_suite()
+
