@@ -22,8 +22,11 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Base class for when Equinox is unavailable
+_EqxModule = eqx.Module if eqx is not None else object
 
-class LensingPINN(eqx.Module):
+
+class LensingPINN(_EqxModule):
     """
     Physics-Informed Neural Network for gravitational lensing in JAX.
     """

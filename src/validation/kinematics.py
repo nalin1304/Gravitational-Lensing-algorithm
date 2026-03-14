@@ -37,7 +37,9 @@ from typing import Dict, Optional, Tuple
 import warnings
 
 # NumPy 2.0+ renamed trapz → trapezoid; support both versions
-_np_trapezoid = getattr(np, 'trapezoid', np.trapz)
+_np_trapezoid = getattr(np, 'trapezoid', None) or getattr(np, 'trapz', None)
+if _np_trapezoid is None:
+    raise ImportError("Neither np.trapezoid nor np.trapz available")
 
 # Physical constants — imported from authoritative source
 from src.utils.constants import (

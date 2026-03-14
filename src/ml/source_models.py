@@ -9,11 +9,11 @@ from typing import Any, Dict
 try:
     import jax  # type: ignore
     import jax.numpy as jnp  # type: ignore
-except ImportError as exc:  # pragma: no cover - hard requirement
-    raise ImportError(
-        "JAX is required for PixelizedSourceModel. "
-        "Install JAX to enable GP-regularized inversion."
-    ) from exc
+    _HAS_JAX = True
+except ImportError:  # pragma: no cover
+    jax = None  # type: ignore[assignment]
+    jnp = None  # type: ignore[assignment]
+    _HAS_JAX = False
 
 
 ArrayLike = Any
@@ -57,6 +57,11 @@ class PixelizedSourceModel:
     """
 
     def __init__(self, resolution: int = 50, extent: float = 2.0):
+        if not _HAS_JAX:
+            raise RuntimeError(
+                "JAX is required for PixelizedSourceModel. "
+                "Install JAX to enable GP-regularized inversion."
+            )
         x = jnp.linspace(-extent, extent, resolution)
         y = jnp.linspace(-extent, extent, resolution)
         self.grid_x, self.grid_y = jnp.meshgrid(x, y)
