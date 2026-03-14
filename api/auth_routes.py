@@ -63,7 +63,7 @@ EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 class UserRegister(BaseModel):
     """User registration request"""
     email: str
-    username: str = Field(..., min_length=3, max_length=50)
+    username: str = Field(..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_.-]+$")
     password: str = Field(..., min_length=8)
     full_name: Optional[str] = Field(None, max_length=255)
 
@@ -74,6 +74,15 @@ class UserRegister(BaseModel):
         if not EMAIL_PATTERN.match(normalized):
             raise ValueError("Invalid email address format")
         return normalized
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_complexity(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v
 
 
 class UserLogin(BaseModel):
@@ -365,14 +374,17 @@ async def update_current_user(
     # Update user
     updated_user = update_user(db, current_user.id, **update_data)
     
-    # Create audit log
+    # Create audit log (strip sensitive data)
+    safe_changes = {k: v for k, v in update_data.items() if k != "hashed_password"}
+    if "hashed_password" in update_data:
+        safe_changes["password"] = "***changed***"
     create_audit_log(
         db=db,
         user_id=current_user.id,
         action="update_profile",
         resource_type="user",
         resource_id=current_user.id,
-        changes=update_data
+        changes=safe_changes
     )
     
     return updated_user

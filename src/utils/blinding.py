@@ -88,6 +88,11 @@ class BlindingHandler:
         delta = _derive_offset(self._phrase, "omega_m", -0.01, 0.01)
         return float(omega_m + delta)
 
+    def blind_sigma8(self, sigma8: float) -> float:
+        """Blind σ₈ by a correlated small shift (±0.01)."""
+        delta = _derive_offset(self._phrase, "sigma8", -0.01, 0.01)
+        return float(sigma8 + delta)
+
     # ── Unblinding ────────────────────────────────────────────────────────
 
     def _verify_phrase(self, phrase: str) -> None:

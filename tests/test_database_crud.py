@@ -268,7 +268,7 @@ class TestAuthEndpoints:
             json={
                 "email": "newapi@lensing-lab.org",
                 "username": "newapi",
-                "password": "securepass123",
+                "password": "SecurePass123",
                 "full_name": "New API User"
             }
         )
@@ -286,7 +286,7 @@ class TestAuthEndpoints:
             json={
                 "email": test_user.email,
                 "username": "different",
-                "password": "password123"
+                "password": "Password123"
             }
         )
         

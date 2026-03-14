@@ -80,14 +80,17 @@ def get_users(
     return query.offset(skip).limit(limit).all()
 
 
+_USER_UPDATABLE_FIELDS = {"email", "full_name", "hashed_password", "is_active"}
+
+
 def update_user(db: Session, user_id: int, **kwargs) -> Optional[User]:
-    """Update user fields"""
+    """Update user fields (allowlisted to prevent mass assignment)"""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         return None
     
     for key, value in kwargs.items():
-        if hasattr(user, key):
+        if key in _USER_UPDATABLE_FIELDS and hasattr(user, key):
             setattr(user, key, value)
     
     db.commit()
@@ -169,14 +172,17 @@ def get_public_analyses(db: Session, skip: int = 0, limit: int = 100) -> List[An
     ).order_by(desc(Analysis.created_at)).offset(skip).limit(limit).all()
 
 
+_ANALYSIS_UPDATABLE_FIELDS = {"name", "description", "config", "is_public", "status"}
+
+
 def update_analysis(db: Session, analysis_id: int, **kwargs) -> Optional[Analysis]:
-    """Update analysis fields"""
+    """Update analysis fields (allowlisted to prevent mass assignment)"""
     analysis = db.query(Analysis).filter(Analysis.id == analysis_id).first()
     if not analysis:
         return None
     
     for key, value in kwargs.items():
-        if hasattr(analysis, key):
+        if key in _ANALYSIS_UPDATABLE_FIELDS and hasattr(analysis, key):
             setattr(analysis, key, value)
     
     db.commit()

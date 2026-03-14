@@ -79,7 +79,7 @@ class User(Base):
     oauth_id = Column(String(255))
     
     # Preferences
-    preferences = Column(JSON, default={})
+    preferences = Column(JSON, default=dict)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -156,10 +156,10 @@ class Analysis(Base):
     
     # Sharing
     is_public = Column(Boolean, default=False, nullable=False)
-    shared_with = Column(JSON, default=[])  # List of user IDs
+    shared_with = Column(JSON, default=list)  # List of user IDs
     
     # Tags for organization
-    tags = Column(JSON, default=[])
+    tags = Column(JSON, default=list)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -235,7 +235,7 @@ class Result(Base):
     # Result data
     result_type = Column(String(50), nullable=False)  # convergence_map, inference, etc.
     data = Column(JSON, nullable=False)  # Main result data
-    result_metadata = Column(JSON, default={})  # Renamed from metadata
+    result_metadata = Column(JSON, default=dict)  # Renamed from metadata
     
     # File storage
     file_path = Column(String(500))  # Path to stored file (e.g., .npy, .fits)

@@ -216,6 +216,8 @@ class SyntheticRequest(BaseModel):
     scale_radius: float = Field(200.0, ge=50.0, le=500.0, description="Scale radius in kpc")
     ellipticity: float = Field(0.0, ge=0.0, le=0.5, description="Ellipticity parameter")
     grid_size: int = Field(64, description="Grid size (32, 64, or 128)")
+    z_lens: float = Field(0.5, ge=0.01, le=2.0, description="Lens redshift")
+    z_source: float = Field(1.5, ge=0.05, le=5.0, description="Source redshift")
     
     @field_validator('profile_type')
     @classmethod
@@ -639,7 +641,9 @@ def generate_synthetic(
             mass=request.mass,
             scale_radius=request.scale_radius,
             ellipticity=request.ellipticity,
-            grid_size=request.grid_size
+            grid_size=request.grid_size,
+            z_lens=request.z_lens,
+            z_source=request.z_source
         )
         
         # Prepare response
@@ -685,7 +689,7 @@ def generate_synthetic(
         logger.error(f"Job {job_id}: Error generating convergence map: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error generating convergence map: {str(e)}"
+            detail="Error generating convergence map"
         )
 
 
@@ -844,7 +848,7 @@ def run_inference(
         logger.error(f"Job {job_id}: Error during inference: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Error during inference: {str(e)}"
+            detail="Error during inference"
         )
 
 
@@ -860,6 +864,14 @@ class PISBISimulateRequest(BaseModel):
     grid_size: int = Field(64, ge=16, le=128)
     n_omega: int = Field(32, ge=8, le=64)
     seed: int = Field(42, ge=0)
+
+    @field_validator("z_s")
+    @classmethod
+    def source_behind_lens(cls, v, info):
+        z_l = info.data.get("z_l", 0.06)
+        if v <= z_l:
+            raise ValueError("z_s must be greater than z_l")
+        return v
 
 
 @app.post("/api/v1/pi-sbi/simulate", tags=["PI-SBI"])
@@ -891,7 +903,7 @@ def pi_sbi_simulate(req: PISBISimulateRequest):
         }
     except Exception as e:
         logger.exception("PI-SBI simulation error")
-        raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Simulation failed")
 
 
 class PISBIPosteriorRequest(BaseModel):
@@ -913,13 +925,10 @@ def pi_sbi_posterior(req: PISBIPosteriorRequest):
 
     ckpt_path = Path("models/pi_sbi_joint.pt")
     if not ckpt_path.exists():
-        return {
-            "status": "checkpoint_missing",
-            "message": "Train PI-SBI first: python3 scripts/train_pi_sbi.py",
-            "posterior_mean": None,
-            "posterior_std": None,
-            "param_names": ["log10_M_vir", "log10_r_s", "z_l", "z_s", "beta_x", "beta_y"],
-        }
+        raise HTTPException(
+            status_code=503,
+            detail="PI-SBI checkpoint not available. Train first: python3 scripts/train_pi_sbi.py"
+        )
 
     try:
         from src.ml.pi_sbi import JointNPE
@@ -951,7 +960,7 @@ def pi_sbi_posterior(req: PISBIPosteriorRequest):
         }
     except Exception as e:
         logger.exception("PI-SBI posterior estimation error")
-        raise HTTPException(status_code=500, detail=f"Posterior estimation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Posterior estimation failed")
 
 
 @app.get("/api/v1/pi-sbi/status", tags=["PI-SBI"])
@@ -1285,7 +1294,7 @@ def survey_finder(req: FinderRequest):
         }
     except Exception as e:
         logger.exception("Finder error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class EPSFRequest(BaseModel):
@@ -1351,7 +1360,7 @@ def survey_epsf(req: EPSFRequest):
         }
     except Exception as e:
         logger.exception("ePSF error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 def _estimate_fwhm(kernel: np.ndarray) -> float:
@@ -1391,7 +1400,7 @@ def survey_epsf_fov(zernike_index: int = 4):
         }
     except Exception as e:
         logger.exception("ePSF FOV error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class BlindingUnblindRequest(BaseModel):
@@ -1418,13 +1427,13 @@ async def apply_blinding(request: BlindingRequest):
             "h0_blind": handler.blind_h0(request.h0),
             "dtd_blind": handler.blind_dtd(request.dtd),
             "omega_m_blind": handler.blind_omega_m(request.omega_m),
-            "sigma8_blind": request.sigma8,
+            "sigma8_blind": handler.blind_sigma8(request.sigma8),
             "blinding_method": "HMAC-SHA256",
             "note": "Use /api/v1/survey/blinding/unblind with the same phrase to recover true values.",
         }
     except Exception as e:
         logger.exception("Blinding apply error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.post("/api/v1/survey/blinding/unblind")
@@ -1468,7 +1477,7 @@ async def survey_blinding_unblind(req: BlindingUnblindRequest):
         return {"gate_passed": False, "reason": str(e)}
     except Exception as e:
         logger.exception("Blinding unblind error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class CovarianceRequest(BaseModel):
@@ -1509,7 +1518,7 @@ def survey_covariance(req: CovarianceRequest):
         }
     except Exception as e:
         logger.exception("Covariance error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class JointSurveyRequest(BaseModel):
@@ -1557,7 +1566,7 @@ def survey_joint(req: JointSurveyRequest):
         }
     except Exception as e:
         logger.exception("Joint survey error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1593,6 +1602,14 @@ class NUTSSimulateRequest(BaseModel):
             raise ValueError("source_type must be 'gaussian' or 'sersic'")
         return v
 
+    @field_validator("z_source")
+    @classmethod
+    def source_behind_lens(cls, v, info):
+        z_l = info.data.get("z_lens", 0.01)
+        if v <= z_l:
+            raise ValueError("z_source must be greater than z_lens")
+        return v
+
 
 class NUTSPosteriorRequest(BaseModel):
     log10_M_vir: float = Field(14.0, ge=10.0, le=16.0, description="log10(M_vir/M☉)")
@@ -1606,6 +1623,21 @@ class NUTSPosteriorRequest(BaseModel):
     n_samples: int = Field(200, ge=10, le=5000, description="Number of posterior samples")
     warmup: int = Field(100, ge=10, le=5000, description="Number of warmup steps")
     noise_std: float = Field(0.01, ge=1e-6, le=1.0, description="Observation noise std")
+
+    @field_validator("source_type")
+    @classmethod
+    def validate_source_type(cls, v: str) -> str:
+        if v not in ("gaussian", "sersic"):
+            raise ValueError("source_type must be 'gaussian' or 'sersic'")
+        return v
+
+    @field_validator("z_source")
+    @classmethod
+    def source_behind_lens(cls, v, info):
+        z_l = info.data.get("z_lens", 0.01)
+        if v <= z_l:
+            raise ValueError("z_source must be greater than z_lens")
+        return v
 
 
 class NUTSFisherRequest(BaseModel):
@@ -1622,6 +1654,14 @@ class NUTSFisherRequest(BaseModel):
     def validate_source_type(cls, v: str) -> str:
         if v not in ("gaussian", "sersic"):
             raise ValueError("source_type must be 'gaussian' or 'sersic'")
+        return v
+
+    @field_validator("z_source")
+    @classmethod
+    def source_behind_lens(cls, v, info):
+        z_l = info.data.get("z_lens", 0.01)
+        if v <= z_l:
+            raise ValueError("z_source must be greater than z_lens")
         return v
 
 
@@ -1652,7 +1692,7 @@ def nuts_simulate(req: NUTSSimulateRequest):
         }
     except Exception as e:
         logger.exception("NUTS simulate error")
-        raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Simulation failed")
 
 
 @app.post("/api/v1/nuts/posterior", tags=["NUTS-HMC"])
@@ -1706,7 +1746,7 @@ def nuts_posterior(req: NUTSPosteriorRequest):
         }
     except Exception as e:
         logger.exception("NUTS posterior error")
-        raise HTTPException(status_code=500, detail=f"Posterior sampling failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Posterior sampling failed")
 
 
 @app.post("/api/v1/nuts/fisher", tags=["NUTS-HMC"])
@@ -1744,7 +1784,7 @@ def nuts_fisher(req: NUTSFisherRequest):
         }
     except Exception as e:
         logger.exception("NUTS Fisher error")
-        raise HTTPException(status_code=500, detail=f"Fisher computation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Fisher computation failed")
 
 
 # ---------------------------------------------------------------------------
@@ -1811,7 +1851,7 @@ def compute_critical_curves(req: LensingAnalysisRequest):
         }
     except Exception as e:
         logger.exception("Critical curves computation failed")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.post("/api/v1/lensing/solve-images", tags=["lensing-analysis"])
@@ -1840,7 +1880,7 @@ def solve_image_positions(req: ImageSolverRequest):
         }
     except Exception as e:
         logger.exception("Image position solver failed")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 if __name__ == "__main__":
