@@ -38,41 +38,53 @@ fi
 
 # ---- Step 1: Run test suite ----
 echo ""
-echo "▶ Step 1/6: Running test suite..."
+echo "▶ Step 1/8: Running test suite..."
 cd "$PROJECT_DIR"
 
 $PY -m pytest tests/ -q 2>&1 | tee "$RESULTS_DIR/test_output.txt"
 
 # ---- Step 2: Run ablation study ----
 echo ""
-echo "▶ Step 2/6: Running ablation study..."
+echo "▶ Step 2/8: Running ablation study..."
 $PY scripts/ablation_study.py --grid 64 --n-trials 3 --n-calibration 6 --systems-per-trial 8 --outdir "$RESULTS_DIR" 2>&1 \
     | tee -a "$RESULTS_DIR/ablation_output.txt"
 
 # ---- Step 3: Run real data validation ----
 echo ""
-echo "▶ Step 3/6: Running real data validation..."
+echo "▶ Step 3/8: Running real data validation..."
 $PY scripts/validate_real_data.py --grid 64 --use-real --strict-observational --outdir "$RESULTS_DIR/real_data" 2>&1 \
     | tee -a "$RESULTS_DIR/real_data_output.txt"
 
 # ---- Step 4: Run SOTA comparison ----
 echo ""
-echo "▶ Step 4/6: Running SOTA comparison..."
+echo "▶ Step 4/8: Running SOTA comparison..."
 $PY scripts/sota_comparison.py --grid 64 --n-lenses 10 --n-calibration 6 --outdir "$RESULTS_DIR" 2>&1 \
     | tee -a "$RESULTS_DIR/sota_output.txt"
 
 # ---- Step 5: Run scalability benchmark ----
 echo ""
-echo "▶ Step 5/6: Running scalability benchmark..."
+echo "▶ Step 5/8: Running scalability benchmark..."
 $PY scripts/scalability_benchmark.py --outdir "$RESULTS_DIR" 2>&1 \
     | tee -a "$RESULTS_DIR/scalability_output.txt"
 
 # ---- Step 6: Run uncertainty calibration ----
 echo ""
-echo "▶ Step 6/6: Running uncertainty calibration..."
+echo "▶ Step 6/8: Running uncertainty calibration..."
 echo "  Training/loading checkpoint-backed Bayesian surrogate for held-out synthetic NFW analog calibration."
 $PY scripts/uncertainty_calibration.py --grid 64 --n-samples 30 --seed 21 --dropout-rate 0.04 --outdir "$RESULTS_DIR" --model "$PROJECT_DIR/models/bayesian_uq_synthetic.pt" 2>&1 \
     | tee -a "$RESULTS_DIR/calibration_output.txt"
+
+# ---- Step 7: Run Pareto benchmark ----
+echo ""
+echo "▶ Step 7/8: Running Pareto benchmark..."
+$PY scripts/pareto_benchmark.py --outdir "$RESULTS_DIR" 2>&1 \
+    | tee -a "$RESULTS_DIR/pareto_output.txt"
+
+# ---- Step 8: Run multi-messenger demo ----
+echo ""
+echo "▶ Step 8/8: Running multi-messenger demo..."
+$PY scripts/multi_messenger_demo.py --outdir "$RESULTS_DIR" 2>&1 \
+    | tee -a "$RESULTS_DIR/multi_messenger_output.txt"
 
 # ---- Verification hash ----
 echo ""
@@ -80,7 +92,7 @@ echo "==========================================================================
 echo "  VERIFICATION HASH"
 echo "============================================================================"
 
-HASH=$(find "$RESULTS_DIR" -name "*.json" -exec cat {} \; | shasum -a 256 | cut -d' ' -f1)
+HASH=$(find "$RESULTS_DIR" -name "*.json" | sort | xargs cat 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
 echo "  SHA-256: $HASH"
 echo "  Results: $RESULTS_DIR/"
 echo ""

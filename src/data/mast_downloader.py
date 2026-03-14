@@ -5,7 +5,7 @@ Automated download of real Hubble Space Telescope observations from the
 Mikulski Archive for Space Telescopes (MAST) using the astroquery API.
 
 Targets SLACS Survey lenses (Bolton et al. 2008, ApJ 682, 964):
-  - HST Proposal IDs: 10886, 10494, 10587, 10798
+  - HST Proposal IDs: 10886, 10494, 10174
   - Instrument: ACS/WFC
   - Primary filter: F814W (I-band)
 

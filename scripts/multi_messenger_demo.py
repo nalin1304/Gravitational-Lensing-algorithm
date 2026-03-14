@@ -209,7 +209,8 @@ def compute_cross_correlation(optical: Dict, gw: Dict) -> Dict:
     gw_mean_mu = float(np.mean(gw['magnification']))
     gw_std_mu = float(np.std(gw['magnification']))
 
-    # Geometric optics magnification at lens centre (κ only, γ ≈ 0 approx)
+    # Geometric optics magnification at lens centre
+    # At the halo centre, shear γ→0 by symmetry, so μ = 1/(1-κ)² is exact
     kappa_max = float(np.max(kappa))
     kappa_center = float(kappa[center, center])
     mu_geo = (1.0 / (1.0 - kappa_center) ** 2

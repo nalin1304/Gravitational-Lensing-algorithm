@@ -147,19 +147,16 @@ def _estimate_mcmc_time(grid_size: int, n_walkers: int = 32, n_steps: int = 5000
     """
     # Attempt to measure a single forward-model evaluation at this grid size
     try:
-        _measure_lens = LensSystem(
-            z_lens=0.3, z_source=1.5,
-            mass_profile=NFWProfile(M_vir=1e14, concentration=5.0,
-                                    z_lens=0.3, z_source=1.5),
-        )
+        _measure_sys = LensSystem(z_lens=0.3, z_source=1.5)
+        _measure_nfw = NFWProfile(M_vir=1e14, concentration=5.0, lens_system=_measure_sys)
         t0 = time.perf_counter()
-        generate_convergence_map_vectorized(_measure_lens, grid_size=grid_size, extent=2.0)
+        generate_convergence_map_vectorized(_measure_nfw, grid_size=grid_size, extent=2.0)
         measured_ms = (time.perf_counter() - t0) * 1000.0
     except Exception:
         measured_ms = 0.5 * (grid_size / 64.0) ** 2  # published fallback
 
-    n_params = 5  # NFW: M_vir, c, z_l, e, PA
-    total_evals = n_walkers * n_steps * n_params
+    # emcee: n_walkers likelihood evaluations per step
+    total_evals = n_walkers * n_steps
     total_time_s = total_evals * measured_ms / 1000.0
     return total_time_s
 

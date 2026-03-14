@@ -287,13 +287,26 @@ class JointSimulator:
         theta = [log10(M_vir/Msun), log10(r_s/arcsec), z_l, z_s, beta_x, beta_y]
         """
         log10_M, log10_rs, z_l, z_s, bx, by = theta
+        M_vir = 10.0 ** log10_M
+        r_s_arcsec = 10.0 ** log10_rs
+
+        # Derive NFW concentration from M_vir and r_s (angular)
+        # r_vir = (3 M_vir / (4π Δ ρ_crit))^{1/3}, c = r_vir / r_s_phys
+        z_l_f = float(z_l)
+        rho_crit = COSMOLOGY.critical_density(z_l_f).to('Msun / kpc3').value
+        r_vir_kpc = (3.0 * M_vir / (4.0 * np.pi * 200.0 * rho_crit)) ** (1.0 / 3.0)
+        D_l_kpc = COSMOLOGY.angular_diameter_distance(z_l_f).to('kpc').value
+        r_s_kpc = r_s_arcsec * D_l_kpc / 206265.0  # arcsec → radians → kpc
+        concentration = max(r_vir_kpc / max(r_s_kpc, 1e-6), 1.0)
+
         return {
-            'M_vir': 10.0 ** log10_M,    # Msun
-            'r_s': 10.0 ** log10_rs,      # arcsec
-            'z_l': float(z_l),
+            'M_vir': M_vir,
+            'r_s': r_s_arcsec,
+            'concentration': float(np.clip(concentration, 1.0, 50.0)),
+            'z_l': z_l_f,
             'z_s': float(z_s),
-            'beta_x': float(bx),          # arcsec
-            'beta_y': float(by),          # arcsec
+            'beta_x': float(bx),
+            'beta_y': float(by),
         }
 
     def simulate_kappa_map(self, theta: np.ndarray,
@@ -322,7 +335,7 @@ class JointSimulator:
         try:
             lens_sys = LensSystem(z_lens=p['z_l'], z_source=p['z_s'],
                                   cosmology=COSMOLOGY)
-            nfw = NFWProfile(M_vir=p['M_vir'], concentration=5.0,
+            nfw = NFWProfile(M_vir=p['M_vir'], concentration=p['concentration'],
                              lens_system=lens_sys)
             kappa = nfw.convergence(self.x_flat, self.y_flat)
             kappa = kappa.reshape(self.grid_size, self.grid_size)
@@ -383,7 +396,7 @@ class JointSimulator:
             try:
                 lens_sys = LensSystem(z_lens=p['z_l'], z_source=p['z_s'],
                                       cosmology=COSMOLOGY)
-                nfw = NFWProfile(M_vir=p['M_vir'], concentration=5.0,
+                nfw = NFWProfile(M_vir=p['M_vir'], concentration=p['concentration'],
                                  lens_system=lens_sys)
 
                 # Einstein radius in arcsec for frequency scaling
@@ -412,7 +425,7 @@ class JointSimulator:
             try:
                 lens_sys = LensSystem(z_lens=p['z_l'], z_source=p['z_s'],
                                       cosmology=COSMOLOGY)
-                nfw = NFWProfile(M_vir=p['M_vir'], concentration=5.0,
+                nfw = NFWProfile(M_vir=p['M_vir'], concentration=p['concentration'],
                                  lens_system=lens_sys)
                 # Simple approximation: magnification modulation over frequency
                 # (fallback only, wave_engine preferred)

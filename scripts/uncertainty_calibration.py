@@ -789,7 +789,7 @@ def main() -> int:
                 "mean_uq_error_correlation": mean_corr,
                 "prediction_mode": "checkpoint_backed_mc_dropout",
                 "evaluation_mode": "synthetic_held_out_nfw_analogs",
-                "publication_valid": True,
+                "publication_valid": mean_ece < 0.10 and mean_coverage_90 > 0.85,
                 "publication_scope": "synthetic NFW analog calibration only; not observational posterior calibration",
                 "checkpoint_path": str(bundle.checkpoint_path),
                 "checkpoint_calibration_ece": bundle.calibration_ece,
