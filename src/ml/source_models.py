@@ -42,6 +42,12 @@ def matern_kernel(
     if nu == 2.5:
         factor = jnp.sqrt(5.0) * dist / length_scale
         return (1.0 + factor + (factor**2) / 3.0) * jnp.exp(-factor)
+    # Unsupported nu: fall back to RBF (squared-exponential) kernel
+    import warnings
+    warnings.warn(
+        f"Matérn nu={nu} not implemented; falling back to RBF kernel",
+        stacklevel=2,
+    )
     return jnp.exp(-0.5 * (dist / length_scale) ** 2)
 
 

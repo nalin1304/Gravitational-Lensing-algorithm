@@ -143,6 +143,15 @@ class MultiPlaneLens:
                 f"Lens plane redshift ({redshift}) must be less than "
                 f"source redshift ({self.source_redshift})"
             )
+
+        # Validate profile z_source consistency for reduced-deflection correctness
+        if hasattr(profile, 'lens_system') and hasattr(profile.lens_system, 'z_s'):
+            if abs(profile.lens_system.z_s - self.source_redshift) > 1e-6:
+                raise ValueError(
+                    f"Profile z_source ({profile.lens_system.z_s}) must match "
+                    f"MultiPlaneLens source_redshift ({self.source_redshift}) "
+                    f"for correct reduced-deflection weighting"
+                )
         
         # Compute distances
         Dd = self.cosmology.angular_diameter_distance(redshift).value  # in Mpc

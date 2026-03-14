@@ -54,14 +54,17 @@ from scipy.signal import fftconvolve
 
 
 # ---------------------------------------------------------------------------
-# Zernike polynomials (Z1 – Z22, ANSI OSA indexing)
+# Zernike polynomials (Z1 – Z22)
+# NOTE: Uses sequential (n, m) ordering with m increasing from -n to +n,
+# which differs from the Noll (1976) / ANSI OSA standard. The physical
+# wavefront aberration content is identical; only the index→aberration
+# name mapping differs (e.g., j=4 here is astigmatism, not defocus).
 # ---------------------------------------------------------------------------
 
 # Map from linear Zernike index j (1-based) to (n, m)
-# Computed via: j = n(n+2)/2 + m + 1 (0-based j shifted)
 _ZERNIKE_NM: Dict[int, Tuple[int, int]] = {}
 _j = 1
-for _n in range(9):  # n = 0..8 covers all up to Z36, we need up to Z22
+for _n in range(9):  # n = 0..8 covers all up to Z36
     for _m in range(-_n, _n + 1, 2):
         _ZERNIKE_NM[_j] = (_n, _m)
         _j += 1

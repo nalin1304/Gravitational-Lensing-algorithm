@@ -526,29 +526,33 @@ def _newton_raphson_lens(
         if fx**2 + fy**2 < tol**2:
             return (x, y)
 
-        # Jacobian via finite differences
-        ax_px, _ = profile.deflection_angle(
+        # Jacobian via central differences (O(dx²) accuracy)
+        ax_px, ay_px = profile.deflection_angle(
             np.array([x + dx]), np.array([y])
         )
-        _, ay_py = profile.deflection_angle(
+        ax_mx, ay_mx = profile.deflection_angle(
+            np.array([x - dx]), np.array([y])
+        )
+        ax_py, ay_py = profile.deflection_angle(
             np.array([x]), np.array([y + dx])
+        )
+        ax_my, ay_my = profile.deflection_angle(
+            np.array([x]), np.array([y - dx])
         )
         ax_px = np.asarray(ax_px).item()
+        ax_mx = np.asarray(ax_mx).item()
+        ay_px = np.asarray(ay_px).item()
+        ay_mx = np.asarray(ay_mx).item()
+        ax_py = np.asarray(ax_py).item()
+        ax_my = np.asarray(ax_my).item()
         ay_py = np.asarray(ay_py).item()
+        ay_my = np.asarray(ay_my).item()
 
-        ax_py_val, _ = profile.deflection_angle(
-            np.array([x]), np.array([y + dx])
-        )
-        _, ay_px_val = profile.deflection_angle(
-            np.array([x + dx]), np.array([y])
-        )
-        ax_py_val = np.asarray(ax_py_val).item()
-        ay_px_val = np.asarray(ay_px_val).item()
-
-        A11 = 1.0 - (ax_px - ax) / dx
-        A12 = -(ax_py_val - ax) / dx
-        A21 = -(ay_px_val - ay) / dx
-        A22 = 1.0 - (ay_py - ay) / dx
+        ddx = 2.0 * dx
+        A11 = 1.0 - (ax_px - ax_mx) / ddx
+        A12 = -(ax_py - ax_my) / ddx
+        A21 = -(ay_px - ay_mx) / ddx
+        A22 = 1.0 - (ay_py - ay_my) / ddx
 
         det = A11 * A22 - A12 * A21
         if abs(det) < 1e-15:

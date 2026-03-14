@@ -527,7 +527,7 @@ def quick_deflection_comparison(
     print(f"\nPN model:       {result['deflection_angle_arcsec']:.6f} arcsec")
     print(f"Born model:     {result['simplified_angle_arcsec']:.6f} arcsec")
     print(f"Relative error: {result['relative_error']:.2%}")
-    print(f"PN > Born:      {result['gr_exceeds_simplified']}")
+    print(f"GR > Born:            {result['gr_exceeds_simplified']}")
     print("=" * 45)
 
 
@@ -541,7 +541,7 @@ if __name__ == "__main__":
     validation = validate_paper_accuracy_table()
 
     print("\n" + "=" * 70)
-    print("PN VS BORN DEFLECTION COMPARISON TABLE")
+    print("SCHWARZSCHILD VS BORN DEFLECTION COMPARISON TABLE")
     print("=" * 70)
     print(f"{'b/rs':>8} | {'Born α':>12} | {'PN α':>12} | {'Error':>8} | {'Regime':>15}")
     print("-" * 70)

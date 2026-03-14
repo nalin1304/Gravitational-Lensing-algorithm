@@ -367,7 +367,7 @@ class SersicProfile(MassProfile):
         self.M_L = M_L
         self.lens_sys = lens_sys  # Store as lens_sys for consistency
         
-        # Calculate b_n (approximation from Capaccioli 1989)
+        # Calculate b_n (exact via inverse incomplete gamma; Ciotti 1991)
         self.b_n = self._calculate_b_n(n)
     
     @staticmethod

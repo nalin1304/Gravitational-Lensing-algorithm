@@ -98,7 +98,7 @@ class LensingLogPosterior(nn.Module):
 # ---------------------------------------------------------------------------
 # Leapfrog integrator
 # ---------------------------------------------------------------------------
-def _leapfrog(
+def _leapfrog(  # retained as public utility; NUTS tree uses _build_tree_leaf instead
     params: List[torch.Tensor],
     momenta: List[torch.Tensor],
     log_prob_fn: Callable[[], torch.Tensor],

@@ -627,7 +627,8 @@ class NFWProfile(MassProfile):
 
     def _g_nfw(self, x: np.ndarray) -> np.ndarray:
         """
-        Legacy helper retained for backward compatibility.
+        Legacy helper: mean convergence κ̄(x). Retained for backward
+        compatibility but not used by current convergence/potential methods.
         
         Parameters
         ----------
