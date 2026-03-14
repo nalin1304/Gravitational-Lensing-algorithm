@@ -213,21 +213,32 @@ class RealNVPCouplingLayer(nn.Module):
         super().__init__()
         self.dim = dim
         self.split = dim // 2
+        self.mask_type = mask_type
 
         # Which half is masked (fixed)
         self.register_buffer('mask', self._make_mask(dim, mask_type))
 
+        # Network dimensions depend on which half is fixed vs transformed.
+        # Lower mask: fix z[:split], transform z[split:] → input=split, output=dim-split
+        # Upper mask: fix z[split:], transform z[:split] → input=dim-split, output=split
+        if mask_type == 'lower':
+            n_fixed = self.split
+            n_transformed = dim - self.split
+        else:
+            n_fixed = dim - self.split
+            n_transformed = self.split
+
         # s and t networks (scale and translation)
-        st_input_dim = self.split + context_dim
+        st_input_dim = n_fixed + context_dim
         self.st_net = nn.Sequential(
             nn.Linear(st_input_dim, hidden_dim), nn.GELU(),
             nn.Linear(hidden_dim, hidden_dim), nn.GELU(),
-            nn.Linear(hidden_dim, dim - self.split),  # only transforms unmasked half
+            nn.Linear(hidden_dim, n_transformed),
         )
         self.log_scale_net = nn.Sequential(
             nn.Linear(st_input_dim, hidden_dim), nn.GELU(),
             nn.Linear(hidden_dim, hidden_dim), nn.GELU(),
-            nn.Linear(hidden_dim, dim - self.split),
+            nn.Linear(hidden_dim, n_transformed),
         )
         # Initialize to identity
         nn.init.zeros_(self.st_net[-1].weight)
@@ -243,6 +254,19 @@ class RealNVPCouplingLayer(nn.Module):
             mask[dim // 2:] = 1.0
         return mask
 
+    def _split_and_condition(self, z: torch.Tensor, context: torch.Tensor):
+        """Extract the fixed half for conditioning and identify the transformed half."""
+        if self.mask_type == 'lower':
+            z_fixed = z[..., :self.split]
+            z_transformed = z[..., self.split:]
+        else:
+            z_fixed = z[..., self.split:]
+            z_transformed = z[..., :self.split]
+        st_input = torch.cat([z_fixed, context], dim=-1)
+        t = self.st_net(st_input)
+        s = self.log_scale_net(st_input).tanh() * 2.0  # bounded log-scale ∈ [-2, 2]
+        return z_fixed, z_transformed, t, s
+
     def forward(self, z: torch.Tensor, context: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Forward pass (data -> latent). Returns (z_out, log_det_J).
 
@@ -251,37 +275,30 @@ class RealNVPCouplingLayer(nn.Module):
         gets transformed. Alternating frozen halves (lower/upper masks) ensures
         all dimensions get updated over K layers — no dimension is ever stuck.
         """
-        # Safe device transfer: register_buffer stores the mask on CPU at init,
-        # but z may arrive on CUDA. This ensures the multiplication never fails.
-        mask = self.mask.to(z.device)
-        z1 = z * mask           # masked (unchanged)
-        z2 = z * (1.0 - mask)   # transformed
+        z_fixed, z_transformed, t, s = self._split_and_condition(z, context)
 
-        st_input = torch.cat([z1[..., :self.split], context], dim=-1)
-        t = self.st_net(st_input)
-        s = self.log_scale_net(st_input).tanh() * 2.0  # bounded log-scale ∈ [-2, 2]
+        # Forward coupling: z2_latent = (z2_data - t) * exp(-s)
+        z_transformed_new = (z_transformed - t) * torch.exp(-s)
 
-        # Apply coupling: z2_new = z2 * exp(s) + t (on unmasked dims)
-        z2_transformed = z2.clone()
-        z2_transformed[..., self.split:] = (z2[..., self.split:] - t) * torch.exp(-s)
+        if self.mask_type == 'lower':
+            z_out = torch.cat([z_fixed, z_transformed_new], dim=-1)
+        else:
+            z_out = torch.cat([z_transformed_new, z_fixed], dim=-1)
 
-        z_out = z1 + z2_transformed
         log_det = -s.sum(dim=-1)  # log|det J| = -sum(s) for forward (data->latent)
         return z_out, log_det
 
     def inverse(self, z: torch.Tensor, context: torch.Tensor) -> torch.Tensor:
         """Inverse pass (latent -> data). Used for sampling."""
-        mask = self.mask.to(z.device)  # safe device transfer (same reason as forward)
-        z1 = z * mask
-        z2 = z * (1.0 - mask)
+        z_fixed, z_transformed, t, s = self._split_and_condition(z, context)
 
-        st_input = torch.cat([z1[..., :self.split], context], dim=-1)
-        t = self.st_net(st_input)
-        s = self.log_scale_net(st_input).tanh() * 2.0
+        # Inverse coupling: z2_data = z2_latent * exp(s) + t
+        z_transformed_new = z_transformed * torch.exp(s) + t
 
-        z2_out = z2.clone()
-        z2_out[..., self.split:] = z2[..., self.split:] * torch.exp(s) + t
-        return z1 + z2_out
+        if self.mask_type == 'lower':
+            return torch.cat([z_fixed, z_transformed_new], dim=-1)
+        else:
+            return torch.cat([z_transformed_new, z_fixed], dim=-1)
 
 
 class RealNVPFlow(nn.Module):
